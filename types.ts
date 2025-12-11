@@ -40,6 +40,7 @@ export interface UserProfile {
   last_name?: string;
   avatar_url?: string;
   credits: number;
+  has_completed_onboarding?: boolean;
 }
 
 export interface PersonaData {

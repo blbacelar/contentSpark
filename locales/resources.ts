@@ -20,6 +20,8 @@ export const resources = {
         add_calendar: "Add to Calendar",
         all_status: "All Statuses",
         select: "Select...",
+        switch_language: "Switch Language",
+        copy_clipboard: "Copy to clipboard"
       },
       auth: {
         title: "ContentSpark",
@@ -37,7 +39,8 @@ export const resources = {
         email_placeholder: "you@company.com",
         password_placeholder: "••••••••",
         name_placeholder: "Jane",
-        surname_placeholder: "Doe"
+        surname_placeholder: "Doe",
+        invalid_credentials: "Invalid email or password."
       },
       sidebar: {
         new_strategy: "New Strategy",
@@ -49,7 +52,9 @@ export const resources = {
         no_results: "No matching ideas found.",
         pro_plan: "Pro Plan",
         general: "General",
-        add_manual: "Add Manual Idea"
+        add_manual: "Add Manual Idea",
+        draft_ready: "Draft Ready",
+        scheduled: "Scheduled"
       },
       calendar: {
         today: "Today",
@@ -93,7 +98,9 @@ export const resources = {
         hashtags_label: "Hashtags",
         hashtags_placeholder: "#content #strategy",
         status_label: "Status",
-        platforms_label: "Platforms"
+        platforms_label: "Platforms",
+        date_past_error: "Date cannot be in the past.",
+        title_required: "Title is required."
       },
       profile: {
         back_calendar: "Back to Calendar",
@@ -122,7 +129,9 @@ export const resources = {
         save_strategy: "Save Strategy",
         toast_saved: "Persona saved! Future content will be targeted to this profile.",
         toast_updated: "Profile updated successfully!",
-        toast_cleared: "Form cleared. Click Save to persist changes."
+        toast_cleared: "Form cleared. Click Save to persist changes.",
+        remove_item: "Remove item",
+        clear_fields: "Clear all fields"
       },
       settings: {
         connection: "Connection",
@@ -204,6 +213,8 @@ export const resources = {
         add_calendar: "Adicionar ao Calendário",
         all_status: "Todos os Status",
         select: "Selecionar...",
+        switch_language: "Mudar Idioma",
+        copy_clipboard: "Copiar para área de transferência"
       },
       auth: {
         title: "ContentSpark",
@@ -221,7 +232,8 @@ export const resources = {
         email_placeholder: "voce@empresa.com",
         password_placeholder: "••••••••",
         name_placeholder: "João",
-        surname_placeholder: "Silva"
+        surname_placeholder: "Silva",
+        invalid_credentials: "E-mail ou senha inválidos."
       },
       sidebar: {
         new_strategy: "Nova Estratégia",
@@ -233,7 +245,9 @@ export const resources = {
         no_results: "Nenhuma ideia encontrada.",
         pro_plan: "Plano Pro",
         general: "Geral",
-        add_manual: "Adicionar Ideia Manual"
+        add_manual: "Adicionar Ideia Manual",
+        draft_ready: "Pronto para Rascunho",
+        scheduled: "Agendado"
       },
       calendar: {
         today: "Hoje",
@@ -277,7 +291,9 @@ export const resources = {
         hashtags_label: "Hashtags",
         hashtags_placeholder: "#conteudo #estrategia",
         status_label: "Status",
-        platforms_label: "Plataformas"
+        platforms_label: "Plataformas",
+        date_past_error: "A data não pode ser no passado.",
+        title_required: "O título é obrigatório."
       },
       profile: {
         back_calendar: "Voltar ao Calendário",
@@ -306,7 +322,9 @@ export const resources = {
         save_strategy: "Salvar Estratégia",
         toast_saved: "Persona salva! Conteúdos futuros serão direcionados a este perfil.",
         toast_updated: "Perfil atualizado com sucesso!",
-        toast_cleared: "Formulário limpo. Clique em Salvar para persistir."
+        toast_cleared: "Formulário limpo. Clique em Salvar para persistir.",
+        remove_item: "Remover item",
+        clear_fields: "Limpar todos os campos"
       },
       settings: {
         connection: "Conexão",

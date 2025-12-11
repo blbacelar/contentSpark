@@ -172,7 +172,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentDate, ideas, onEvent
   ];
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-tr-[32px] rounded-br-[32px] shadow-sm overflow-hidden border-l border-gray-200">
+    <div id="tour-calendar" className="flex flex-col h-full bg-white rounded-tr-[32px] rounded-br-[32px] shadow-sm overflow-hidden border-l border-gray-200">
       
       {/* Weekday Headers */}
       <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">

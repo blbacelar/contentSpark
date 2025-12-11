@@ -4,6 +4,7 @@ import { format, addMonths } from 'date-fns';
 import { enUS, ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Settings, LogOut, Loader2, AlertCircle, CheckCircle2, UserCircle2, ArrowRight, Zap, Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import Joyride, { CallBackProps, EVENTS, STATUS, Step } from 'react-joyride';
 import { FormData, Tone, ContentIdea, WebhookConfig, PersonaData, IdeaStatus } from './types';
 import Sidebar from './components/Sidebar';
 import CalendarGrid from './components/IdeaGrid'; 
@@ -12,13 +13,38 @@ import SparkForm from './components/SparkForm';
 import SettingsModal from './components/SettingsModal';
 import AuthPage from './components/AuthPage';
 import ProfilePage from './components/ProfilePage';
-import { generateContent, updateContent, fetchUserIdeas, deleteContent, fetchUserPersona, generateId } from './services/genai';
+import { generateContent, updateContent, fetchUserIdeas, deleteContent, fetchUserPersona, generateId, createContentIdea, completeUserOnboarding } from './services/genai';
 import { useAuth } from './context/AuthContext';
 
 // Default Webhook URL
 const DEFAULT_WEBHOOK = "https://n8n.bacelardigital.tech/webhook/f7465ddb-c12a-4f30-9917-7720c62876bc";
 
 type ViewState = 'calendar' | 'profile';
+
+// Define steps outside component to prevent re-render resets
+const TOUR_STEPS: Step[] = [
+    {
+      target: 'body',
+      placement: 'center',
+      content: "Welcome to ContentSpark! Let's get your content engine running in 3 simple steps.",
+      disableBeacon: true,
+    },
+    {
+      target: '#tour-persona-card',
+      content: "First, define your Audience here. The more details (Pains, Goals) you add, the better your AI ideas will be.",
+      placement: 'left',
+    },
+    {
+      target: '#tour-generator-input',
+      content: "Enter a topic here (e.g., 'Vegan Diet') and click Generate to see the magic happen.",
+      placement: 'bottom', // Changed to bottom to avoid overlapping with modal header
+    },
+    {
+      target: '#tour-calendar',
+      content: "Drag and drop your generated ideas onto the calendar to schedule your week.",
+      placement: 'center', // Changed to center for better visibility
+    }
+];
 
 export default function App() {
   const { user, loading, signOut, profile, refreshProfile, updateCredits } = useAuth();
@@ -47,6 +73,10 @@ export default function App() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editingIdea, setEditingIdea] = useState<ContentIdea | null>(null);
+
+  // Joyride State
+  const [runTour, setRunTour] = useState(false);
+  const [stepIndex, setStepIndex] = useState(0);
 
   // Configuration
   const [formData, setFormData] = useState<FormData>({
@@ -93,6 +123,67 @@ export default function App() {
   useEffect(() => {
     refreshData();
   }, [user]);
+
+  // Check for onboarding status
+  useEffect(() => {
+    if (profile && !loading && !profile.has_completed_onboarding) {
+        setRunTour(true);
+    }
+  }, [profile, loading]);
+
+  const handleJoyrideCallback = async (data: CallBackProps) => {
+    const { status, type, index, action } = data;
+
+    if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
+        setRunTour(false);
+        setIsFormOpen(false);
+        if (user) {
+            await completeUserOnboarding(user.id);
+            await refreshProfile(); 
+        }
+    } else if (type === EVENTS.STEP_AFTER && action === 'next') {
+        const nextIndex = index + 1;
+
+        if (index === 0) {
+            // Step 0 -> 1: Move to Profile Page
+            setRunTour(false); // Pause tour to avoid flashing step 0 on new view
+            setView('profile');
+            // Allow render cycle to complete
+            setTimeout(() => {
+                setStepIndex(nextIndex);
+                setRunTour(true);
+            }, 200);
+        } 
+        else if (index === 1) {
+            // Step 1 -> 2: Move back to Calendar and Open Modal
+            setRunTour(false);
+            setView('calendar');
+            // Small delay to ensure view is mounted before opening modal
+            setTimeout(() => {
+                setIsFormOpen(true);
+                // Longer delay to wait for Modal animation (animate-scale-in is 0.3s)
+                setTimeout(() => {
+                    setStepIndex(nextIndex);
+                    setRunTour(true);
+                }, 500); 
+            }, 100);
+        } 
+        else if (index === 2) {
+             // Step 2 -> 3: Close modal, show calendar
+             setRunTour(false); // Pause tour while transition happens
+             setIsFormOpen(false);
+             
+             // Wait for modal to close (animation duration)
+             setTimeout(() => {
+                 setStepIndex(nextIndex);
+                 setRunTour(true);
+             }, 500);
+        } 
+        else {
+             setStepIndex(nextIndex);
+        }
+    }
+  };
 
   // Derived filtered ideas for Calendar View
   const safeLower = (s?: string) => (s || '').toLowerCase();
@@ -254,10 +345,12 @@ export default function App() {
     }));
   };
 
-  const updateIdea = (updated: ContentIdea) => {
+  const updateIdea = async (updated: ContentIdea) => {
+    // Check if it's a new idea (not in current list)
+    const isNew = !ideas.some(i => i.id === updated.id);
+
     setIdeas(prev => {
-        const exists = prev.some(i => i.id === updated.id);
-        if (exists) {
+        if (!isNew) {
             return prev.map(i => i.id === updated.id ? updated : i);
         } else {
             return [...prev, updated];
@@ -265,22 +358,28 @@ export default function App() {
     });
 
     if (user) {
-        updateContent({ 
-            id: updated.id, 
-            date: updated.date,
-            time: updated.time,
-            status: updated.status,
-            platform: updated.platform,
-            title: updated.title,
-            description: updated.description,
-            hook: updated.hook,
-            caption: updated.caption,
-            cta: updated.cta,
-            hashtags: updated.hashtags
-        }, user.id).catch(err => {
-            console.error("Update idea failed", err);
+        try {
+            if (isNew) {
+                 await createContentIdea(updated, user.id);
+            } else {
+                 await updateContent({ 
+                    id: updated.id, 
+                    date: updated.date,
+                    time: updated.time,
+                    status: updated.status,
+                    platform: updated.platform,
+                    title: updated.title,
+                    description: updated.description,
+                    hook: updated.hook,
+                    caption: updated.caption,
+                    cta: updated.cta,
+                    hashtags: updated.hashtags
+                }, user.id);
+            }
+        } catch (err: any) {
+            console.error("Operation failed", err);
             triggerToast(err.message || "Failed to save changes", true);
-        });
+        }
     }
   };
 
@@ -312,203 +411,236 @@ export default function App() {
     return <AuthPage />;
   }
 
-  // View Switching
-  if (view === 'profile') {
-      return <ProfilePage onBack={() => {
-          setView('calendar');
-          refreshData();
-      }} />;
-  }
-
   // Credit Badge Logic
   const credits = profile?.credits ?? 0;
   const isLowCredits = credits <= 3;
   const dateLocale = isPt ? ptBR : enUS;
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#F2F2F2] relative">
-      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        
-        {/* Toast Notification */}
-        {toast && (
-            <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-2xl z-[100] animate-fade-in flex items-center gap-3 font-bold text-sm border ${toast.isError ? 'bg-red-500 text-white border-red-600' : 'bg-[#1A1A1A] text-white border-black'}`}>
-                {toast.isError ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
-                {toast.message}
-            </div>
-        )}
-
-        {/* Left Sidebar */}
-        <Sidebar 
-            ideas={ideas} 
-            isLoading={isFetching}
-            onEventClick={setEditingIdea}
-            onGenerateClick={() => setIsFormOpen(true)}
-            onProfileClick={() => setView('profile')}
-            onManualCreate={handleManualCreate}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-        />
-
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col h-full min-w-0">
-            {/* Top Navigation Bar */}
-            <header className="flex items-center justify-between px-8 py-5 bg-[#F2F2F2] border-b border-gray-200/50">
-                <div className="flex items-center gap-6">
-                    <h2 className="text-2xl font-bold text-[#1A1A1A] tracking-tight capitalize">
-                        {format(currentDate, 'MMMM yyyy', { locale: dateLocale })}
-                    </h2>
-                    <div className="flex items-center gap-1 bg-white rounded-lg p-1 border border-gray-200 shadow-sm">
-                        <button onClick={() => setCurrentDate(addMonths(currentDate, -1))} className="p-1.5 hover:bg-gray-100 rounded-md text-gray-600">
-                            <ChevronLeft size={18} />
-                        </button>
-                        <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-gray-600 hover:bg-gray-100 rounded-md">
-                            {t('calendar.today')}
-                        </button>
-                        <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-1.5 hover:bg-gray-100 rounded-md text-gray-600">
-                            <ChevronRight size={18} />
-                        </button>
+    <>
+      <Joyride
+        steps={TOUR_STEPS}
+        run={runTour}
+        stepIndex={stepIndex}
+        continuous
+        showSkipButton
+        callback={handleJoyrideCallback}
+        disableOverlayClose={true}
+        spotlightClicks={true}
+        styles={{
+            options: {
+                primaryColor: '#FFDA47',
+                textColor: '#1A1A1A',
+                zIndex: 10000,
+            },
+            tooltip: {
+                borderRadius: '16px',
+                padding: '20px',
+            },
+            buttonNext: {
+                backgroundColor: '#FFDA47',
+                color: '#1A1A1A',
+                fontWeight: 'bold',
+                borderRadius: '8px',
+                outline: 'none',
+            },
+            buttonBack: {
+                color: '#888',
+            }
+        }}
+      />
+      {view === 'profile' ? (
+        <ProfilePage onBack={() => {
+            setView('calendar');
+            refreshData();
+        }} />
+      ) : (
+        <div className="flex h-screen w-screen overflow-hidden bg-[#F2F2F2] relative">
+            <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                
+                {/* Toast Notification */}
+                {toast && (
+                    <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-2xl z-[100] animate-fade-in flex items-center gap-3 font-bold text-sm border ${toast.isError ? 'bg-red-500 text-white border-red-600' : 'bg-[#1A1A1A] text-white border-black'}`}>
+                        {toast.isError ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
+                        {toast.message}
                     </div>
-                    {isFetching && <span className="text-xs text-gray-400 font-medium animate-pulse">{t('calendar.syncing')}</span>}
-                </div>
+                )}
 
-                <div className="flex items-center gap-3">
-                    {/* Language Switcher */}
-                    <button 
-                        onClick={toggleLanguage}
-                        className="p-2.5 bg-white text-gray-500 hover:text-[#1A1A1A] border border-gray-200 rounded-xl hover:shadow-md transition-all flex items-center justify-center"
-                        title="Switch Language"
-                    >
-                        <Globe size={18} />
-                        <span className="ml-1 text-xs font-bold uppercase">{isPt ? 'PT' : 'EN'}</span>
-                    </button>
-
-                    {/* Credit Badge */}
-                    <div className={`
-                        flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors
-                        ${isLowCredits ? 'bg-red-50 text-red-600 border-red-100' : 'bg-gray-100 text-gray-700 border-gray-200'}
-                    `}>
-                        <Zap size={14} className={isLowCredits ? 'fill-red-600' : 'fill-gray-400 text-gray-400'} />
-                        {credits} {t('calendar.credits')}
-                    </div>
-
-                    <button 
-                        onClick={() => setIsSettingsOpen(true)}
-                        className="p-2.5 bg-white text-gray-500 hover:text-[#1A1A1A] border border-gray-200 rounded-xl hover:shadow-md transition-all"
-                    >
-                        <Settings size={20} />
-                    </button>
-                    <button 
-                        onClick={signOut}
-                        className="p-2.5 bg-[#1A1A1A] text-white border border-[#1A1A1A] rounded-xl hover:shadow-md hover:scale-105 transition-all"
-                        title={t('common.sign_out')}
-                    >
-                        <LogOut size={20} />
-                    </button>
-                </div>
-            </header>
-
-            {/* Calendar Grid */}
-            <div className="flex-1 min-h-0 p-6 pt-2">
-                <CalendarGrid 
-                    currentDate={currentDate} 
-                    ideas={calendarFilteredIdeas} 
+                {/* Left Sidebar */}
+                <Sidebar 
+                    ideas={ideas} 
+                    isLoading={isFetching}
                     onEventClick={setEditingIdea}
+                    onGenerateClick={() => setIsFormOpen(true)}
+                    onProfileClick={() => setView('profile')}
+                    onManualCreate={handleManualCreate}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
                 />
-            </div>
-        </div>
 
-        {/* --- Overlays & Modals --- */}
-        
-        {/* Drag Overlay */}
-        <DragOverlay>
-            {activeIdea ? (
-                <div className="bg-white border border-[#FFDA47] shadow-xl p-3 rounded-lg w-48 rotate-3 cursor-grabbing z-50">
-                    <p className="font-bold text-sm text-[#1A1A1A] truncate">{activeIdea.title}</p>
-                </div>
-            ) : null}
-        </DragOverlay>
+                {/* Main Content Area */}
+                <div className="flex-1 flex flex-col h-full min-w-0">
+                    {/* Top Navigation Bar */}
+                    <header className="flex items-center justify-between px-8 py-5 bg-[#F2F2F2] border-b border-gray-200/50">
+                        <div className="flex items-center gap-6">
+                            <h2 className="text-2xl font-bold text-[#1A1A1A] tracking-tight capitalize">
+                                {format(currentDate, 'MMMM yyyy', { locale: dateLocale })}
+                            </h2>
+                            <div className="flex items-center gap-1 bg-white rounded-lg p-1 border border-gray-200 shadow-sm">
+                                <button onClick={() => setCurrentDate(addMonths(currentDate, -1))} className="p-1.5 hover:bg-gray-100 rounded-md text-gray-600">
+                                    <ChevronLeft size={18} />
+                                </button>
+                                <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-gray-600 hover:bg-gray-100 rounded-md">
+                                    {t('calendar.today')}
+                                </button>
+                                <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-1.5 hover:bg-gray-100 rounded-md text-gray-600">
+                                    <ChevronRight size={18} />
+                                </button>
+                            </div>
+                            {isFetching && <span className="text-xs text-gray-400 font-medium animate-pulse">{t('calendar.syncing')}</span>}
+                        </div>
 
-        {/* Edit Modal */}
-        <EventModal 
-            isOpen={!!editingIdea} 
-            idea={editingIdea} 
-            onClose={() => setEditingIdea(null)}
-            onSave={updateIdea}
-            onDelete={deleteIdea}
-            isNew={isNewIdea}
-        />
+                        <div className="flex items-center gap-3">
+                            {/* Language Switcher */}
+                            <button 
+                                onClick={toggleLanguage}
+                                className="p-2.5 bg-white text-gray-500 hover:text-[#1A1A1A] border border-gray-200 rounded-xl hover:shadow-md transition-all flex items-center justify-center"
+                                title={t('common.switch_language')}
+                            >
+                                <Globe size={18} />
+                                <span className="ml-1 text-xs font-bold uppercase">{isPt ? 'PT' : 'EN'}</span>
+                            </button>
 
-        {/* Generation Modal */}
-        {isFormOpen && (
-             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A1A1A]/30 backdrop-blur-sm animate-fade-in">
-                <div className="bg-white rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-scale-in relative">
-                    <button 
-                        onClick={() => setIsFormOpen(false)}
-                        className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 z-10"
-                    >
-                        <span className="sr-only">{t('common.close')}</span>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                    <div className="p-2">
-                        <SparkForm 
-                            formData={formData}
-                            setFormData={setFormData}
-                            onSubmit={validateAndGenerate}
-                            isLoading={isGenerating}
-                            credits={credits}
+                            {/* Credit Badge */}
+                            <div className={`
+                                flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors
+                                ${isLowCredits ? 'bg-red-50 text-red-600 border-red-100' : 'bg-gray-100 text-gray-700 border-gray-200'}
+                            `}>
+                                <Zap size={14} className={isLowCredits ? 'fill-red-600' : 'fill-gray-400 text-gray-400'} />
+                                {credits} {t('calendar.credits')}
+                            </div>
+
+                            <button 
+                                onClick={() => setIsSettingsOpen(true)}
+                                className="p-2.5 bg-white text-gray-500 hover:text-[#1A1A1A] border border-gray-200 rounded-xl hover:shadow-md transition-all"
+                                title={t('common.settings')}
+                            >
+                                <Settings size={20} />
+                            </button>
+                            <button 
+                                onClick={signOut}
+                                className="p-2.5 bg-[#1A1A1A] text-white border border-[#1A1A1A] rounded-xl hover:shadow-md hover:scale-105 transition-all"
+                                title={t('common.sign_out')}
+                            >
+                                <LogOut size={20} />
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* Calendar Grid */}
+                    <div className="flex-1 min-h-0 p-6 pt-2">
+                        <CalendarGrid 
+                            currentDate={currentDate} 
+                            ideas={calendarFilteredIdeas} 
+                            onEventClick={setEditingIdea}
                         />
                     </div>
                 </div>
-             </div>
-        )}
 
-        {/* Missing Persona Alert Modal */}
-        {showPersonaAlert && (
-             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A1A1A]/50 backdrop-blur-sm animate-fade-in">
-                <div className="bg-white rounded-[24px] w-full max-w-sm shadow-2xl overflow-hidden animate-scale-in p-6">
-                    <div className="flex flex-col items-center text-center space-y-4">
-                        <div className="w-12 h-12 bg-yellow-50 rounded-full flex items-center justify-center">
-                            <UserCircle2 className="w-6 h-6 text-[#E6C200]" />
+                {/* --- Overlays & Modals --- */}
+                
+                {/* Drag Overlay */}
+                <DragOverlay>
+                    {activeIdea ? (
+                        <div className="bg-white border border-[#FFDA47] shadow-xl p-3 rounded-lg w-48 rotate-3 cursor-grabbing z-50">
+                            <p className="font-bold text-sm text-[#1A1A1A] truncate">{activeIdea.title}</p>
                         </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-[#1A1A1A]">{t('alert.missing_persona_title')}</h3>
-                            <p className="text-sm text-gray-500 mt-2 leading-relaxed">
-                                {t('alert.missing_persona_desc')}
-                            </p>
-                        </div>
-                        <div className="flex flex-col w-full gap-2 pt-2">
+                    ) : null}
+                </DragOverlay>
+
+                {/* Edit Modal */}
+                <EventModal 
+                    isOpen={!!editingIdea} 
+                    idea={editingIdea} 
+                    onClose={() => setEditingIdea(null)}
+                    onSave={updateIdea}
+                    onDelete={deleteIdea}
+                    isNew={isNewIdea}
+                />
+
+                {/* Generation Modal */}
+                {isFormOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A1A1A]/30 backdrop-blur-sm animate-fade-in">
+                        <div className="bg-white rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-scale-in relative">
                             <button 
-                                onClick={() => {
-                                    setShowPersonaAlert(false);
-                                    setView('profile');
-                                }}
-                                className="w-full bg-[#1A1A1A] text-white py-3 rounded-xl font-bold text-sm hover:bg-black transition-all shadow-lg shadow-black/5"
+                                onClick={() => setIsFormOpen(false)}
+                                className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 z-10"
                             >
-                                {t('alert.setup_profile')}
+                                <span className="sr-only">{t('common.close')}</span>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
-                            <button 
-                                onClick={performGeneration}
-                                className="w-full bg-white text-gray-500 py-3 rounded-xl font-bold text-sm hover:bg-gray-50 hover:text-gray-800 transition-all flex items-center justify-center gap-1"
-                            >
-                                {t('alert.continue_anyway')} <ArrowRight className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="p-2">
+                                <SparkForm 
+                                    formData={formData}
+                                    setFormData={setFormData}
+                                    onSubmit={validateAndGenerate}
+                                    isLoading={isGenerating}
+                                    credits={credits}
+                                />
+                            </div>
                         </div>
                     </div>
-                </div>
-             </div>
-        )}
+                )}
 
-        {/* Settings Modal */}
-        <SettingsModal 
-            isOpen={isSettingsOpen} 
-            onClose={() => setIsSettingsOpen(false)}
-            config={webhookConfig}
-            setConfig={setWebhookConfig}
-        />
+                {/* Missing Persona Alert Modal */}
+                {showPersonaAlert && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A1A1A]/50 backdrop-blur-sm animate-fade-in">
+                        <div className="bg-white rounded-[24px] w-full max-w-sm shadow-2xl overflow-hidden animate-scale-in p-6">
+                            <div className="flex flex-col items-center text-center space-y-4">
+                                <div className="w-12 h-12 bg-yellow-50 rounded-full flex items-center justify-center">
+                                    <UserCircle2 className="w-6 h-6 text-[#E6C200]" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-[#1A1A1A]">{t('alert.missing_persona_title')}</h3>
+                                    <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+                                        {t('alert.missing_persona_desc')}
+                                    </p>
+                                </div>
+                                <div className="flex flex-col w-full gap-2 pt-2">
+                                    <button 
+                                        onClick={() => {
+                                            setShowPersonaAlert(false);
+                                            setView('profile');
+                                        }}
+                                        className="w-full bg-[#1A1A1A] text-white py-3 rounded-xl font-bold text-sm hover:bg-black transition-all shadow-lg shadow-black/5"
+                                    >
+                                        {t('alert.setup_profile')}
+                                    </button>
+                                    <button 
+                                        onClick={performGeneration}
+                                        className="w-full bg-white text-gray-500 py-3 rounded-xl font-bold text-sm hover:bg-gray-50 hover:text-gray-800 transition-all flex items-center justify-center gap-1"
+                                    >
+                                        {t('alert.continue_anyway')} <ArrowRight className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
-      </DndContext>
-    </div>
+                {/* Settings Modal */}
+                <SettingsModal 
+                    isOpen={isSettingsOpen} 
+                    onClose={() => setIsSettingsOpen(false)}
+                    config={webhookConfig}
+                    setConfig={setWebhookConfig}
+                />
+
+            </DndContext>
+        </div>
+      )}
+    </>
   );
 }

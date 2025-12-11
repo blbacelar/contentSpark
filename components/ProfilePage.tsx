@@ -4,12 +4,25 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import { fetchUserPersona, saveUserPersona, updateUserPersona } from '../services/genai';
 import { PersonaData } from '../types';
-import { ArrowLeft, Camera, Loader2, CheckCircle2, AlertCircle, Save, Trash2, Plus, Target, HeartCrack, HelpCircle, User } from 'lucide-react';
+import { ArrowLeft, Camera, Loader2, CheckCircle2, AlertCircle, Save, Trash2, Plus, Target, HeartCrack, HelpCircle, User, Info } from 'lucide-react';
 import CustomSelect from './CustomSelect';
 
 interface ProfilePageProps {
     onBack: () => void;
 }
+
+// Tooltip Component
+const Tooltip = ({ text }: { text: string }) => {
+  return (
+    <div className="group relative flex items-center">
+      <Info size={14} className="text-gray-400 hover:text-[#1A1A1A] cursor-help transition-colors" />
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-3 bg-[#1A1A1A] text-white text-xs font-medium rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 shadow-xl pointer-events-none z-50 text-center leading-relaxed transform translate-y-2 group-hover:translate-y-0">
+        {text}
+        <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-[#1A1A1A]"></div>
+      </div>
+    </div>
+  );
+};
 
 // Internal Component for Dynamic Lists
 const DynamicList = ({ 
@@ -25,6 +38,8 @@ const DynamicList = ({
   onRemove: (idx: number) => void,
   placeholder: string
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <div className="space-y-3 animate-fade-in">
       {items.map((item, index) => (
@@ -39,7 +54,7 @@ const DynamicList = ({
            <button 
              onClick={() => onRemove(index)}
              className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-             title="Remove item"
+             title={t('profile.remove_item')}
            >
              <Trash2 size={16} />
            </button>
@@ -401,7 +416,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                 </div>
 
                 {/* --- CARD 2: STRATEGY CENTER --- */}
-                <div className="w-full overflow-hidden rounded-[32px] bg-white shadow-sm animate-scale-in" style={{ animationDelay: '0.1s' }}>
+                <div id="tour-persona-card" className="w-full overflow-hidden rounded-[32px] bg-white shadow-sm animate-scale-in" style={{ animationDelay: '0.1s' }}>
                     
                     {/* Header */}
                     <div className="p-8 pb-0 flex items-start justify-between">
@@ -412,7 +427,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                         <button 
                             onClick={handleClearPersona}
                             className="text-xs font-bold text-red-400 hover:text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5"
-                            title="Clear all fields"
+                            title={t('profile.clear_fields')}
                         >
                             <Trash2 size={14} /> {t('profile.clear_all')}
                         </button>
@@ -558,7 +573,10 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                             {/* --- TAB 2: PAINS & FRUSTRATIONS --- */}
                             {activeTab === 1 && (
                                 <div className="space-y-4">
-                                    <p className="text-sm text-gray-400 mb-2">{t('profile.pains_desc')}</p>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h3 className="text-sm font-bold text-[#1A1A1A]">{t('profile.tabs.pains')}</h3>
+                                        <Tooltip text={t('profile.pains_desc')} />
+                                    </div>
                                     <DynamicList 
                                         items={personaData.pains_list}
                                         onChange={(idx, val) => updateList('pains_list', idx, val)}
@@ -572,7 +590,10 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                             {/* --- TAB 3: DREAMS & GOALS --- */}
                             {activeTab === 2 && (
                                 <div className="space-y-4">
-                                    <p className="text-sm text-gray-400 mb-2">{t('profile.goals_desc')}</p>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h3 className="text-sm font-bold text-[#1A1A1A]">{t('profile.tabs.goals')}</h3>
+                                        <Tooltip text={t('profile.goals_desc')} />
+                                    </div>
                                     <DynamicList 
                                         items={personaData.goals_list}
                                         onChange={(idx, val) => updateList('goals_list', idx, val)}
@@ -586,7 +607,10 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                             {/* --- TAB 4: BURNING QUESTIONS --- */}
                             {activeTab === 3 && (
                                 <div className="space-y-4">
-                                    <p className="text-sm text-gray-400 mb-2">{t('profile.questions_desc')}</p>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h3 className="text-sm font-bold text-[#1A1A1A]">{t('profile.tabs.questions')}</h3>
+                                        <Tooltip text={t('profile.questions_desc')} />
+                                    </div>
                                     <DynamicList 
                                         items={personaData.questions_list}
                                         onChange={(idx, val) => updateList('questions_list', idx, val)}

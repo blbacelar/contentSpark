@@ -47,12 +47,12 @@ const DraggableChip: React.FC<DraggableChipProps> = ({ idea, onClick }) => {
             <div className="flex items-center gap-1.5">
                 <h4 className="text-sm font-bold text-[#1A1A1A] truncate">{idea.title}</h4>
                 {hasContent && (
-                    <div title="Draft Ready" className="text-[#FFDA47] flex-shrink-0">
+                    <div title={t('sidebar.draft_ready')} className="text-[#FFDA47] flex-shrink-0">
                         <FileText size={12} fill="#FFDA47" />
                     </div>
                 )}
                 {isScheduled && (
-                    <div title="Scheduled" className="text-blue-400 flex-shrink-0">
+                    <div title={t('sidebar.scheduled')} className="text-blue-400 flex-shrink-0">
                         <Calendar size={12} />
                     </div>
                 )}

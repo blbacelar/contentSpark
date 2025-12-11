@@ -68,6 +68,8 @@ export default function AuthPage() {
       // with a friendly message if the user was just created.
       if (isSignUp && err.message.includes("Email not confirmed")) {
           setSuccessMessage(t('auth.account_created'));
+      } else if (err.message === "Invalid login credentials") {
+          setError(t('auth.invalid_credentials'));
       } else {
           setError(err.message);
       }

@@ -38,7 +38,7 @@ const FieldHeader = ({ label, icon: Icon, text }: { label: string, icon: any, te
                 <button 
                     onClick={handleCopy}
                     className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 hover:text-[#1A1A1A] bg-gray-50 hover:bg-gray-200 px-2 py-1 rounded-md transition-all"
-                    title="Copy to clipboard"
+                    title={t('common.copy_clipboard')}
                 >
                     {copied ? <Check size={10} className="text-green-600" /> : <Copy size={10} />}
                     {copied ? <span className="text-green-600">{t('common.copied')}</span> : <span>{t('common.copy')}</span>}
@@ -53,17 +53,20 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
   const [formData, setFormData] = React.useState<ContentIdea | null>(null);
   const [showCopyFeedback, setShowCopyFeedback] = React.useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     setFormData(idea);
     setShowCopyFeedback(false);
     setShowDeleteConfirm(false);
+    setError(null);
   }, [idea, isOpen]);
 
   if (!isOpen || !formData) return null;
 
   const handleChange = (field: keyof ContentIdea, value: any) => {
     setFormData(prev => prev ? ({ ...prev, [field]: value }) : null);
+    setError(null);
   };
 
   const togglePlatform = (platform: string) => {
@@ -78,12 +81,30 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
     });
   };
 
+  const getMinDate = () => {
+      if (!isNew) return undefined;
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+  };
+
   const handleSave = () => {
     if (formData) {
       if (!formData.title.trim()) {
-        // Simple validation visualization could be added here
+        setError(t('modal.title_required'));
         return;
       }
+
+      if (isNew && formData.date) {
+         const minDate = getMinDate();
+         if (minDate && formData.date < minDate) {
+             setError(t('modal.date_past_error'));
+             return;
+         }
+      }
+
       onSave(formData);
       onClose();
     }
@@ -148,23 +169,24 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
              <div className="md:col-span-2 space-y-2">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('modal.scheduled_for')}</label>
                 <div className="flex gap-3">
-                  <div className="relative flex-1">
-                    <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+                  <div className="relative flex-1 bg-gray-50 border border-gray-200 rounded-xl focus-within:border-[#FFDA47] transition-colors">
                     <input 
                       type="date" 
                       value={formData.date || ''}
+                      min={getMinDate()}
                       onChange={(e) => handleChange('date', e.target.value || null)}
-                      className="w-full bg-gray-50 border border-gray-200 text-sm font-medium rounded-xl pl-9 pr-2 py-2.5 outline-none focus:border-[#FFDA47] transition-colors"
+                      className="w-full bg-transparent text-sm font-medium pl-9 pr-2 py-2.5 outline-none rounded-xl"
                     />
+                    <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                   </div>
-                  <div className="relative flex-1">
-                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+                  <div className="relative flex-1 bg-gray-50 border border-gray-200 rounded-xl focus-within:border-[#FFDA47] transition-colors">
                       <input 
                           type="time" 
                           value={formData.time || ''}
                           onChange={(e) => handleChange('time', e.target.value || null)}
-                          className="w-full bg-gray-50 border border-gray-200 text-sm font-medium rounded-xl pl-9 pr-2 py-2.5 outline-none focus:border-[#FFDA47] transition-colors"
+                          className="w-full bg-transparent text-sm font-medium pl-9 pr-2 py-2.5 outline-none rounded-xl"
                       />
+                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                   </div>
                 </div>
              </div>
@@ -310,7 +332,16 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
                     <Trash2 size={16} /> {t('common.delete')}
                   </button>
                )}
-               {isNew && <div className="flex-1"></div>}
+               
+               {error ? (
+                   <div className="flex-1 px-4 text-center">
+                       <span className="text-red-500 text-xs font-bold flex items-center justify-center gap-1">
+                           <AlertCircle size={14} /> {error}
+                       </span>
+                   </div>
+               ) : (
+                   <div className="flex-1"></div>
+               )}
               
               <div className="flex items-center gap-3">
                  {!isNew && (

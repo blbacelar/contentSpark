@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ContentIdea, FormData, Tone, PersonaData } from "../types";
+import { supabase } from "../services/supabase";
 
 // Initialize Gemini Client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -11,6 +12,7 @@ const DELETE_WEBHOOK_URL = "https://n8n.bacelardigital.tech/webhook/delete-user-
 const GET_PERSONA_URL = "https://n8n.bacelardigital.tech/webhook/get-persona";
 const SAVE_PERSONA_URL = "https://n8n.bacelardigital.tech/webhook/save-persona";
 const UPDATE_PERSONA_URL = "https://n8n.bacelardigital.tech/webhook/update-persona";
+const CREATE_IDEA_WEBHOOK_URL = "https://n8n.bacelardigital.tech/webhook/create-idea";
 
 export const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -41,6 +43,34 @@ const invalidateCache = (key: string) => {
         console.warn("Cache clear failed", e);
     }
 }
+
+// --- Helper for Retries ---
+const fetchWithRetry = async (url: string, options: RequestInit, retries = 1): Promise<Response> => {
+    try {
+        const response = await fetch(url, options);
+        // If server is overwhelmed (custom 500 or 503 from some backends), or explicitly tells us to wait
+        if (response.status === 503 || response.status === 429) {
+             throw new Error("Server busy");
+        }
+        
+        // Check for specific error messages in text if status is error-like
+        if (!response.ok) {
+            const clone = response.clone();
+            const text = await clone.text();
+            if (text.includes("overwhelmed") || text.includes("database is busy")) {
+                throw new Error("Server overwhelmed");
+            }
+        }
+        
+        return response;
+    } catch (err: any) {
+        if (retries > 0 && (err.message.includes("busy") || err.message.includes("overwhelmed"))) {
+            await new Promise(res => setTimeout(res, 2000)); // Wait 2s
+            return fetchWithRetry(url, options, retries - 1);
+        }
+        throw err;
+    }
+};
 
 // --- Services ---
 
@@ -165,7 +195,7 @@ export const updateContent = async (payload: Partial<ContentIdea>, userId?: stri
         finalPayload.time = `${payload.date}T${payload.time}:00`;
     }
 
-    const response = await fetch(UPDATE_WEBHOOK_URL, {
+    const response = await fetchWithRetry(UPDATE_WEBHOOK_URL, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(finalPayload),
@@ -180,6 +210,55 @@ export const updateContent = async (payload: Partial<ContentIdea>, userId?: stri
     }
   } catch (error) {
     console.error("Failed to update content via webhook:", error);
+    throw error;
+  }
+};
+
+export const createContentIdea = async (idea: ContentIdea, userId: string) => {
+  // Optimistically update cache
+  const cacheKey = `${CACHE_PREFIX}IDEAS_${userId}`;
+  const cached = getCache<ContentIdea[]>(cacheKey) || [];
+  // Avoid duplicates in cache if possible
+  if (!cached.some(i => i.id === idea.id)) {
+      setCache(cacheKey, [...cached, idea]);
+  }
+
+  try {
+    const payload: any = {
+        ...idea,
+        user_id: userId,
+        platform_suggestion: idea.platform
+    };
+
+    if (idea.date && idea.time) {
+        payload.time = `${idea.date}T${idea.time}:00`;
+    }
+
+    const response = await fetchWithRetry(CREATE_IDEA_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await response.text();
+    let data: any = {};
+    try { data = JSON.parse(text); } catch (e) {}
+
+    if (response.status === 500 || !response.ok || data.error === true) {
+        // Handle n8n specific error message "Unused Respond to Webhook..."
+        const msg = data.message || (typeof data.error === 'string' ? data.error : '');
+        if (msg.includes("Unused Respond to Webhook node")) {
+            // This is a configuration error on n8n side but operation likely finished.
+            // We can treat it as a warning and return success.
+            console.warn("Webhook warning:", msg);
+            return { success: true, warning: "Webhook response missing" };
+        }
+        
+        throw new Error(msg || `Create failed: ${response.status}`);
+    }
+    return data;
+  } catch (error) {
+    console.error("Failed to create content via webhook:", error);
     throw error;
   }
 };
@@ -334,7 +413,7 @@ export const generateContent = async (
   // If a webhook URL is provided, prioritize it
   if (webhookUrl && webhookUrl.trim() !== "") {
     try {
-      const response = await fetch(webhookUrl, {
+      const response = await fetchWithRetry(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -482,3 +561,30 @@ export const generateContent = async (
 
   return generatedIdeas;
 };
+
+export const completeUserOnboarding = async (userId: string) => {
+    const WEBHOOK_URL = "https://n8n.bacelardigital.tech/webhook/complete-onboarding";
+    
+    // 1. Try Webhook (Log warning on failure but don't stop)
+    try {
+        await fetch(WEBHOOK_URL, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, has_completed_onboarding: true })
+        });
+    } catch (e) {
+        console.warn("Webhook update failed, trying direct DB update", e);
+    }
+
+    // 2. Fallback: Update Supabase directly to ensure state is saved
+    try {
+        const { error } = await supabase
+            .from('profiles')
+            .update({ has_completed_onboarding: true })
+            .eq('id', userId);
+        
+        if (error) throw error;
+    } catch (e) {
+        console.error("Failed to update onboarding status in DB", e);
+    }
+}

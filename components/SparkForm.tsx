@@ -40,6 +40,7 @@ const SparkForm: React.FC<SparkFormProps> = ({ formData, setFormData, onSubmit, 
             <Target className="w-3.5 h-3.5" /> {t('form.topic')}
           </label>
           <input
+            id="tour-generator-input"
             type="text"
             name="topic"
             value={formData.topic}
