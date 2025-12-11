@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { DndContext, DragOverlay, DragEndEvent, useSensor, useSensors, MouseSensor, TouchSensor } from '@dnd-kit/core';
 import { format, addMonths } from 'date-fns';
-import { ChevronLeft, ChevronRight, Settings, LogOut, Loader2, AlertCircle, CheckCircle2, UserCircle2, ArrowRight, Zap } from 'lucide-react';
-import { FormData, Tone, ContentIdea, WebhookConfig, PersonaData } from './types';
+import { enUS, ptBR } from 'date-fns/locale';
+import { ChevronLeft, ChevronRight, Settings, LogOut, Loader2, AlertCircle, CheckCircle2, UserCircle2, ArrowRight, Zap, Globe } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { FormData, Tone, ContentIdea, WebhookConfig, PersonaData, IdeaStatus } from './types';
 import Sidebar from './components/Sidebar';
 import CalendarGrid from './components/IdeaGrid'; 
 import EventModal from './components/EventModal';
@@ -20,6 +22,7 @@ type ViewState = 'calendar' | 'profile';
 
 export default function App() {
   const { user, loading, signOut, profile, refreshProfile, updateCredits } = useAuth();
+  const { t, i18n } = useTranslation();
 
   // --- State ---
   const [view, setView] = useState<ViewState>('calendar');
@@ -28,6 +31,10 @@ export default function App() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
+  
+  // Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<IdeaStatus | 'All'>('All');
   
   // Persona State
   const [userPersona, setUserPersona] = useState<PersonaData | null>(null);
@@ -87,10 +94,34 @@ export default function App() {
     refreshData();
   }, [user]);
 
+  // Derived filtered ideas for Calendar View
+  const safeLower = (s?: string) => (s || '').toLowerCase();
+  
+  const calendarFilteredIdeas = ideas.filter(i => {
+      const query = searchQuery.toLowerCase().trim();
+      
+      const matchesSearch = !query || (
+          safeLower(i.title).includes(query) ||
+          safeLower(i.description).includes(query) ||
+          safeLower(i.hook).includes(query) ||
+          safeLower(i.caption).includes(query) ||
+          safeLower(i.cta).includes(query) ||
+          safeLower(i.hashtags).includes(query) ||
+          (Array.isArray(i.platform) && i.platform.some(p => safeLower(p).includes(query)))
+      );
+
+      const matchesStatus = statusFilter === 'All' || i.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+  });
+
+  // Safe Language Check
+  const isPt = (i18n.resolvedLanguage || i18n.language || 'en').startsWith('pt');
+
   const validateAndGenerate = async () => {
       // Check Credits First
       if (profile && profile.credits <= 0) {
-          triggerToast("You are out of credits!", true);
+          triggerToast(t('sidebar.out_of_credits'), true);
           return;
       }
 
@@ -123,12 +154,13 @@ export default function App() {
         formData, 
         webhookConfig.useWebhook ? webhookConfig.url : undefined,
         user.id,
-        userPersona
+        userPersona,
+        isPt ? 'pt' : 'en' // Pass robust language code
       );
       
       setIdeas(prev => [...prev, ...newIdeas]);
       setIsFormOpen(false); // Close modal on success
-      triggerToast("Strategy generated successfully!", false);
+      triggerToast(t('form.generate_btn') + " Success!", false);
       
       // Optimistically decrement credits
       updateCredits(Math.max(0, profile.credits - 1));
@@ -138,7 +170,7 @@ export default function App() {
       
       const errorMessage = err.message || "";
       if (errorMessage.includes("402") || errorMessage.toLowerCase().includes("credits")) {
-          triggerToast("You have run out of magic credits! Upgrade to keep creating.", true);
+          triggerToast(t('form.upgrade_text'), true);
           // Sync with server to ensure correct credit state
           refreshProfile();
       } else {
@@ -259,6 +291,11 @@ export default function App() {
     }
   };
 
+  const toggleLanguage = () => {
+    const newLang = isPt ? 'en' : 'pt';
+    i18n.changeLanguage(newLang);
+  };
+
   const activeIdea = activeId ? ideas.find(i => i.id === activeId) : null;
   const isNewIdea = editingIdea ? !ideas.some(i => i.id === editingIdea.id) : false;
 
@@ -286,6 +323,7 @@ export default function App() {
   // Credit Badge Logic
   const credits = profile?.credits ?? 0;
   const isLowCredits = credits <= 3;
+  const dateLocale = isPt ? ptBR : enUS;
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#F2F2F2] relative">
@@ -307,6 +345,10 @@ export default function App() {
             onGenerateClick={() => setIsFormOpen(true)}
             onProfileClick={() => setView('profile')}
             onManualCreate={handleManualCreate}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
         />
 
         {/* Main Content Area */}
@@ -314,31 +356,41 @@ export default function App() {
             {/* Top Navigation Bar */}
             <header className="flex items-center justify-between px-8 py-5 bg-[#F2F2F2] border-b border-gray-200/50">
                 <div className="flex items-center gap-6">
-                    <h2 className="text-2xl font-bold text-[#1A1A1A] tracking-tight">
-                        {format(currentDate, 'MMMM yyyy')}
+                    <h2 className="text-2xl font-bold text-[#1A1A1A] tracking-tight capitalize">
+                        {format(currentDate, 'MMMM yyyy', { locale: dateLocale })}
                     </h2>
                     <div className="flex items-center gap-1 bg-white rounded-lg p-1 border border-gray-200 shadow-sm">
                         <button onClick={() => setCurrentDate(addMonths(currentDate, -1))} className="p-1.5 hover:bg-gray-100 rounded-md text-gray-600">
                             <ChevronLeft size={18} />
                         </button>
                         <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-gray-600 hover:bg-gray-100 rounded-md">
-                            Today
+                            {t('calendar.today')}
                         </button>
                         <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-1.5 hover:bg-gray-100 rounded-md text-gray-600">
                             <ChevronRight size={18} />
                         </button>
                     </div>
-                    {isFetching && <span className="text-xs text-gray-400 font-medium animate-pulse">Syncing...</span>}
+                    {isFetching && <span className="text-xs text-gray-400 font-medium animate-pulse">{t('calendar.syncing')}</span>}
                 </div>
 
                 <div className="flex items-center gap-3">
+                    {/* Language Switcher */}
+                    <button 
+                        onClick={toggleLanguage}
+                        className="p-2.5 bg-white text-gray-500 hover:text-[#1A1A1A] border border-gray-200 rounded-xl hover:shadow-md transition-all flex items-center justify-center"
+                        title="Switch Language"
+                    >
+                        <Globe size={18} />
+                        <span className="ml-1 text-xs font-bold uppercase">{isPt ? 'PT' : 'EN'}</span>
+                    </button>
+
                     {/* Credit Badge */}
                     <div className={`
                         flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors
                         ${isLowCredits ? 'bg-red-50 text-red-600 border-red-100' : 'bg-gray-100 text-gray-700 border-gray-200'}
                     `}>
                         <Zap size={14} className={isLowCredits ? 'fill-red-600' : 'fill-gray-400 text-gray-400'} />
-                        {credits} Credits
+                        {credits} {t('calendar.credits')}
                     </div>
 
                     <button 
@@ -350,7 +402,7 @@ export default function App() {
                     <button 
                         onClick={signOut}
                         className="p-2.5 bg-[#1A1A1A] text-white border border-[#1A1A1A] rounded-xl hover:shadow-md hover:scale-105 transition-all"
-                        title="Sign Out"
+                        title={t('common.sign_out')}
                     >
                         <LogOut size={20} />
                     </button>
@@ -361,7 +413,7 @@ export default function App() {
             <div className="flex-1 min-h-0 p-6 pt-2">
                 <CalendarGrid 
                     currentDate={currentDate} 
-                    ideas={ideas} 
+                    ideas={calendarFilteredIdeas} 
                     onEventClick={setEditingIdea}
                 />
             </div>
@@ -396,7 +448,7 @@ export default function App() {
                         onClick={() => setIsFormOpen(false)}
                         className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 z-10"
                     >
-                        <span className="sr-only">Close</span>
+                        <span className="sr-only">{t('common.close')}</span>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                     <div className="p-2">
@@ -421,9 +473,9 @@ export default function App() {
                             <UserCircle2 className="w-6 h-6 text-[#E6C200]" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-[#1A1A1A]">Target Persona Missing</h3>
+                            <h3 className="text-lg font-bold text-[#1A1A1A]">{t('alert.missing_persona_title')}</h3>
                             <p className="text-sm text-gray-500 mt-2 leading-relaxed">
-                                You haven't defined your Target Persona yet. The results might be generic. Do you want to continue or set up your profile first?
+                                {t('alert.missing_persona_desc')}
                             </p>
                         </div>
                         <div className="flex flex-col w-full gap-2 pt-2">
@@ -434,13 +486,13 @@ export default function App() {
                                 }}
                                 className="w-full bg-[#1A1A1A] text-white py-3 rounded-xl font-bold text-sm hover:bg-black transition-all shadow-lg shadow-black/5"
                             >
-                                Set Up Profile
+                                {t('alert.setup_profile')}
                             </button>
                             <button 
                                 onClick={performGeneration}
                                 className="w-full bg-white text-gray-500 py-3 rounded-xl font-bold text-sm hover:bg-gray-50 hover:text-gray-800 transition-all flex items-center justify-center gap-1"
                             >
-                                Continue Anyway <ArrowRight className="w-3.5 h-3.5" />
+                                {t('alert.continue_anyway')} <ArrowRight className="w-3.5 h-3.5" />
                             </button>
                         </div>
                     </div>

@@ -310,7 +310,8 @@ export const generateContent = async (
   formData: FormData,
   webhookUrl?: string,
   userId?: string,
-  persona?: PersonaData | null
+  persona?: PersonaData | null,
+  language: string = 'en'
 ): Promise<ContentIdea[]> => {
   
   // Construct Persona Payload Object
@@ -339,7 +340,8 @@ export const generateContent = async (
         body: JSON.stringify({
             ...formData,
             user_id: userId,
-            persona: personaPayload
+            persona: personaPayload,
+            language: language // Pass selected language
         }),
       });
 
@@ -410,7 +412,7 @@ export const generateContent = async (
         }
 
         const prompt = `
-        Generate 6 unique, creative, and high-quality content ideas.
+        Generate 6 unique, creative, and high-quality content ideas in ${language.startsWith('pt') ? 'Portuguese' : 'English'}.
         
         Context:
         - Niche/Topic: ${formData.topic}

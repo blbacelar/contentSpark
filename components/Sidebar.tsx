@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
+import { useTranslation } from 'react-i18next';
 import { ContentIdea, IdeaStatus } from '../types';
-import { GripVertical, Plus, Zap, Search, Filter, FileText, PlusCircle } from 'lucide-react';
+import { GripVertical, Plus, Zap, Search, Filter, FileText, PlusCircle, Calendar, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import CustomSelect from './CustomSelect';
 
@@ -16,17 +17,17 @@ const DraggableChip: React.FC<DraggableChipProps> = ({ idea, onClick }) => {
       id: idea.id,
       data: { idea }
     });
+    
+    const { t } = useTranslation();
   
     const style = transform ? {
       transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
       zIndex: 999,
     } : undefined;
   
-    // Handle displaying multiple platforms
-    const platformDisplay = idea.platform && idea.platform.length > 0 ? idea.platform.join(', ') : 'General';
-    
-    // Check if it has content
+    const platformDisplay = idea.platform && idea.platform.length > 0 ? idea.platform.join(', ') : t('sidebar.general');
     const hasContent = !!idea.caption && idea.caption.length > 10;
+    const isScheduled = !!idea.date;
 
     return (
       <div
@@ -50,11 +51,21 @@ const DraggableChip: React.FC<DraggableChipProps> = ({ idea, onClick }) => {
                         <FileText size={12} fill="#FFDA47" />
                     </div>
                 )}
+                {isScheduled && (
+                    <div title="Scheduled" className="text-blue-400 flex-shrink-0">
+                        <Calendar size={12} />
+                    </div>
+                )}
             </div>
             <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[10px] bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded-full uppercase tracking-wide font-bold truncate max-w-full">
                   {platformDisplay}
                 </span>
+                {isScheduled && (
+                    <span className="text-[10px] text-gray-400">
+                        {idea.date}
+                    </span>
+                )}
             </div>
         </div>
       </div>
@@ -68,63 +79,74 @@ interface SidebarProps {
     onGenerateClick: () => void;
     onProfileClick: () => void;
     onManualCreate?: () => void;
+    searchQuery: string;
+    setSearchQuery: (query: string) => void;
+    statusFilter: IdeaStatus | 'All';
+    setStatusFilter: (status: IdeaStatus | 'All') => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ ideas, isLoading, onEventClick, onGenerateClick, onProfileClick, onManualCreate }) => {
+const Sidebar: React.FC<SidebarProps> = ({ 
+    ideas, 
+    isLoading, 
+    onEventClick, 
+    onGenerateClick, 
+    onProfileClick, 
+    onManualCreate,
+    searchQuery,
+    setSearchQuery,
+    statusFilter,
+    setStatusFilter
+}) => {
     const { user, profile } = useAuth();
-    const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState<IdeaStatus | 'All'>('All');
+    const { t } = useTranslation();
     
     const { setNodeRef, isOver } = useDroppable({
         id: 'backlog',
     });
 
-    const unscheduledIdeas = ideas.filter(i => !i.date);
-    
-    // Helper for safe lowercase checks
     const safeLower = (s?: string) => (s || '').toLowerCase();
+    const isFiltering = searchQuery.trim().length > 0 || statusFilter !== 'All';
 
-    const filteredIdeas = unscheduledIdeas.filter(i => {
+    const filteredIdeas = ideas.filter(i => {
         const query = searchQuery.toLowerCase().trim();
-        
-        // If no query, just check status
-        if (!query) {
-             return statusFilter === 'All' || i.status === statusFilter;
-        }
+        if (!isFiltering) return !i.date;
 
-        const matchesSearch = 
+        const matchesSearch = !query || (
             safeLower(i.title).includes(query) ||
             safeLower(i.description).includes(query) ||
             safeLower(i.hook).includes(query) ||
             safeLower(i.caption).includes(query) ||
             safeLower(i.cta).includes(query) ||
             safeLower(i.hashtags).includes(query) ||
-            (Array.isArray(i.platform) && i.platform.some(p => safeLower(p).includes(query)));
+            (Array.isArray(i.platform) && i.platform.some(p => safeLower(p).includes(query)))
+        );
 
         const matchesStatus = statusFilter === 'All' || i.status === statusFilter;
-
         return matchesSearch && matchesStatus;
     });
 
     const statusOptions = [
-        { value: 'All', label: 'All Statuses' },
-        { value: 'Pending', label: 'Pending' },
-        { value: 'In Progress', label: 'In Progress' },
-        { value: 'Blocked', label: 'Blocked' },
-        { value: 'Completed', label: 'Completed' },
-        { value: 'Posted', label: 'Posted' },
+        { value: 'All', label: t('common.all_status') },
+        { value: 'Pending', label: t('status.Pending') },
+        { value: 'In Progress', label: t('status.In Progress') },
+        { value: 'Blocked', label: t('status.Blocked') },
+        { value: 'Completed', label: t('status.Completed') },
+        { value: 'Posted', label: t('status.Posted') },
     ];
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
         setSearchQuery(val);
-        // Only reset status filter if the search box is cleared, not when typing
         if (val === '') {
             setStatusFilter('All');
         }
     };
 
-    // Calculate display name and initial based on profile context
+    const handleClearSearch = () => {
+        setSearchQuery('');
+        setStatusFilter('All');
+    };
+
     const displayName = profile?.first_name 
         ? `${profile.first_name} ${profile.last_name || ''}`.trim()
         : user?.email || 'Strategy Team';
@@ -147,7 +169,7 @@ const Sidebar: React.FC<SidebarProps> = ({ ideas, isLoading, onEventClick, onGen
                          <Zap className="w-4 h-4 text-[#FFE566] fill-[#FFE566]" />
                     </div>
                     <span className="text-lg font-bold tracking-tight text-[#1A1A1A]">
-                        ContentSpark
+                        {t('auth.title')}
                     </span>
                 </div>
                 
@@ -160,37 +182,39 @@ const Sidebar: React.FC<SidebarProps> = ({ ideas, isLoading, onEventClick, onGen
                             ? 'bg-[#1A1A1A] text-white hover:bg-black shadow-black/5 hover:scale-[1.02]' 
                             : 'bg-gray-200 text-gray-500 cursor-not-allowed shadow-none'}
                     `}
-                    title={hasCredits ? "Create new content strategy" : "You have 0 credits. Upgrade to continue."}
+                    title={hasCredits ? t('sidebar.new_strategy') : t('sidebar.out_of_credits')}
                 >
                     {hasCredits ? (
                         <>
-                            <Plus size={16} /> New Strategy
+                            <Plus size={16} /> {t('sidebar.new_strategy')}
                         </>
                     ) : (
                         <>
-                            <Zap size={16} className="text-gray-500 fill-gray-500" /> Out of Credits
+                            <Zap size={16} className="text-gray-500 fill-gray-500" /> {t('sidebar.out_of_credits')}
                         </>
                     )}
                 </button>
             </div>
 
-            {/* Backlog Area */}
+            {/* Backlog / List Area */}
             <div className="flex-1 flex flex-col min-h-0">
                 <div className="px-6 py-3 space-y-3">
                      <div className="flex items-center justify-between">
-                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Unscheduled Ideas</h3>
+                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                            {isFiltering ? t('sidebar.search_results') : t('sidebar.unscheduled_ideas')}
+                         </h3>
                          <div className="flex items-center gap-2">
                             {onManualCreate && (
                                 <button 
                                     onClick={onManualCreate}
                                     className="text-gray-400 hover:text-[#1A1A1A] p-1 rounded hover:bg-gray-200 transition-colors"
-                                    title="Add Manual Idea"
+                                    title={t('sidebar.add_manual')}
                                 >
                                     <PlusCircle size={16} />
                                 </button>
                             )}
                             <span className="bg-gray-200 text-gray-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                                {isLoading ? '...' : unscheduledIdeas.length}
+                                {isLoading ? '...' : filteredIdeas.length}
                             </span>
                          </div>
                      </div>
@@ -200,11 +224,20 @@ const Sidebar: React.FC<SidebarProps> = ({ ideas, isLoading, onEventClick, onGen
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#1A1A1A] transition-colors" />
                         <input 
                             type="text"
-                            placeholder="Filter ideas..."
+                            placeholder={t('sidebar.search_placeholder')}
                             value={searchQuery}
                             onChange={handleSearchChange}
-                            className="w-full bg-white border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-xs font-medium placeholder-gray-400 outline-none focus:border-[#FFDA47] focus:ring-1 focus:ring-[#FFDA47] transition-all"
+                            className="w-full bg-white border border-gray-200 rounded-lg pl-9 pr-8 py-2 text-xs font-medium placeholder-gray-400 outline-none focus:border-[#FFDA47] focus:ring-1 focus:ring-[#FFDA47] transition-all"
                         />
+                        {searchQuery && (
+                            <button
+                                onClick={handleClearSearch}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+                                title={t('common.close')}
+                            >
+                                <X size={12} />
+                            </button>
+                        )}
                      </div>
 
                      {/* Status Filter */}
@@ -242,7 +275,7 @@ const Sidebar: React.FC<SidebarProps> = ({ ideas, isLoading, onEventClick, onGen
                     ) : filteredIdeas.length === 0 ? (
                         <div className="h-32 flex flex-col items-center justify-center text-center p-4 border-2 border-dashed border-gray-200 rounded-xl mt-2">
                             <span className="text-xs text-gray-400 font-medium">
-                                {searchQuery || statusFilter !== 'All' ? 'No matching ideas found.' : 'No unscheduled ideas.'}
+                                {isFiltering ? t('sidebar.no_results') : t('sidebar.no_ideas')}
                             </span>
                         </div>
                     ) : (
@@ -270,7 +303,7 @@ const Sidebar: React.FC<SidebarProps> = ({ ideas, isLoading, onEventClick, onGen
                         <p className="font-bold text-[#1A1A1A] text-xs truncate group-hover:text-[#000]">
                             {displayName}
                         </p>
-                        <p className="text-gray-400 text-[10px] truncate group-hover:text-gray-600">Pro Plan • Settings</p>
+                        <p className="text-gray-400 text-[10px] truncate group-hover:text-gray-600">{t('sidebar.pro_plan')} • {t('common.settings')}</p>
                     </div>
                 </button>
             </div>

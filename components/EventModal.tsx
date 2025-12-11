@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Trash2, Calendar as CalendarIcon, Save, Monitor, Activity, Copy, Check, Clock, AlertCircle, Quote, MessageSquare, Hash, Target, Plus, FileText } from 'lucide-react';
 import { ContentIdea, IdeaStatus, STATUS_COLORS, SOCIAL_PLATFORMS } from '../types';
 import CustomSelect from './CustomSelect';
@@ -14,6 +15,7 @@ interface EventModalProps {
 
 // Helper Component for Header with Copy
 const FieldHeader = ({ label, icon: Icon, text }: { label: string, icon: any, text?: string }) => {
+    const { t } = useTranslation();
     const [copied, setCopied] = React.useState(false);
 
     const handleCopy = async () => {
@@ -39,7 +41,7 @@ const FieldHeader = ({ label, icon: Icon, text }: { label: string, icon: any, te
                     title="Copy to clipboard"
                 >
                     {copied ? <Check size={10} className="text-green-600" /> : <Copy size={10} />}
-                    {copied ? <span className="text-green-600">Copied</span> : <span>Copy</span>}
+                    {copied ? <span className="text-green-600">{t('common.copied')}</span> : <span>{t('common.copy')}</span>}
                 </button>
             )}
         </div>
@@ -47,6 +49,7 @@ const FieldHeader = ({ label, icon: Icon, text }: { label: string, icon: any, te
 };
 
 const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, onDelete, isNew = false }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = React.useState<ContentIdea | null>(null);
   const [showCopyFeedback, setShowCopyFeedback] = React.useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
@@ -105,19 +108,19 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
 
   const statusOptions = Object.keys(STATUS_COLORS).map(status => ({
       value: status,
-      label: status
+      label: t(`status.${status}`)
   }));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A1A1A]/30 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-[24px] w-full max-w-2xl shadow-2xl overflow-hidden animate-scale-in flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-[24px] w-full max-w-5xl shadow-2xl overflow-hidden animate-scale-in flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
           <div className="flex items-center gap-3">
              <div className="p-2 bg-white rounded-lg shadow-sm border border-gray-100">
                 <Activity size={18} className="text-[#1A1A1A]" />
              </div>
-             <h3 className="text-lg font-bold text-[#1A1A1A]">{isNew ? 'Create New Idea' : 'Edit Content'}</h3>
+             <h3 className="text-lg font-bold text-[#1A1A1A]">{isNew ? t('modal.create_title') : t('modal.edit_title')}</h3>
           </div>
           <button 
             onClick={onClose}
@@ -128,106 +131,117 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+        <div className="p-8 space-y-8 overflow-y-auto custom-scrollbar flex-1">
           
-          {/* Top Row: Title & Date */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-             <div className="md:col-span-2 space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Title / Concept</label>
+          {/* Top Row: Title & Date - Uses 5 columns now */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+             <div className="md:col-span-3 space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('modal.title_label')}</label>
                 <textarea 
                   value={formData.title}
                   onChange={(e) => handleChange('title', e.target.value)}
                   rows={2}
                   className="w-full text-lg font-bold text-[#1A1A1A] placeholder-gray-300 border-b border-gray-200 outline-none focus:border-[#FFDA47] bg-transparent pb-2 transition-colors resize-none leading-snug"
-                  placeholder="Idea Title"
+                  placeholder={t('modal.title_placeholder')}
                 />
              </div>
-             <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Scheduled For</label>
-                <div className="relative">
-                  <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
-                  <input 
-                    type="date" 
-                    value={formData.date || ''}
-                    onChange={(e) => handleChange('date', e.target.value || null)}
-                    className="w-full bg-gray-50 border border-gray-200 text-sm font-medium rounded-xl pl-9 pr-2 py-2.5 outline-none focus:border-[#FFDA47] transition-colors"
-                  />
+             <div className="md:col-span-2 space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('modal.scheduled_for')}</label>
+                <div className="flex gap-3">
+                  <div className="relative flex-1">
+                    <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+                    <input 
+                      type="date" 
+                      value={formData.date || ''}
+                      onChange={(e) => handleChange('date', e.target.value || null)}
+                      className="w-full bg-gray-50 border border-gray-200 text-sm font-medium rounded-xl pl-9 pr-2 py-2.5 outline-none focus:border-[#FFDA47] transition-colors"
+                    />
+                  </div>
+                  <div className="relative flex-1">
+                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+                      <input 
+                          type="time" 
+                          value={formData.time || ''}
+                          onChange={(e) => handleChange('time', e.target.value || null)}
+                          className="w-full bg-gray-50 border border-gray-200 text-sm font-medium rounded-xl pl-9 pr-2 py-2.5 outline-none focus:border-[#FFDA47] transition-colors"
+                      />
+                  </div>
                 </div>
              </div>
           </div>
 
           {/* Middle Section: The Content */}
-          <div className="space-y-5">
+          <div className="space-y-6">
 
               {/* Description (Separated) */}
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                    <FileText size={12} /> Description / Notes
+                    <FileText size={12} /> {t('modal.description_label')}
                 </label>
                 <textarea 
                   value={formData.description || ''}
                   onChange={(e) => handleChange('description', e.target.value)}
                   rows={3}
                   className="w-full text-sm text-gray-700 leading-relaxed placeholder-gray-300 border border-gray-200 rounded-xl p-4 outline-none focus:border-[#FFDA47] focus:ring-1 focus:ring-[#FFDA47] transition-all resize-none bg-white"
-                  placeholder="Internal summary or context..."
+                  placeholder={t('modal.description_placeholder')}
                 />
               </div>
 
               {/* Hook */}
               <div className="space-y-2">
-                <FieldHeader label="Hook (First Sentence)" icon={Quote} text={formData.hook} />
+                <FieldHeader label={t('modal.hook_label')} icon={Quote} text={formData.hook} />
                 <input 
                     type="text"
                     value={formData.hook || ''}
                     onChange={(e) => handleChange('hook', e.target.value)}
-                    placeholder="Grab their attention..."
+                    placeholder={t('modal.hook_placeholder')}
                     className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-[#1A1A1A] outline-none focus:border-[#FFDA47] focus:ring-1 focus:ring-[#FFDA47] transition-all"
                 />
               </div>              
 
               {/* Caption */}
               <div className="space-y-2">
-                <FieldHeader label="Post Caption" icon={MessageSquare} text={formData.caption} />
+                <FieldHeader label={t('modal.caption_label')} icon={MessageSquare} text={formData.caption} />
                 <textarea 
                   value={formData.caption || ''}
                   onChange={(e) => handleChange('caption', e.target.value)}
                   rows={8}
                   className="w-full text-sm text-gray-700 leading-relaxed placeholder-gray-300 border border-gray-200 rounded-xl p-4 outline-none focus:border-[#FFDA47] focus:ring-1 focus:ring-[#FFDA47] transition-all resize-none bg-white"
-                  placeholder="Write your full post caption here..."
+                  placeholder={t('modal.caption_placeholder')}
                 />
               </div>
 
               {/* CTA */}
               <div className="space-y-2">
-                <FieldHeader label="Call to Action" icon={Target} text={formData.cta} />
+                <FieldHeader label={t('modal.cta_label')} icon={Target} text={formData.cta} />
                 <input 
                     type="text"
                     value={formData.cta || ''}
                     onChange={(e) => handleChange('cta', e.target.value)}
-                    placeholder="e.g. Save this for later!"
+                    placeholder={t('modal.cta_placeholder')}
                     className="w-full bg-gray-50 border border-transparent rounded-xl px-4 py-3 text-sm font-medium text-[#1A1A1A] outline-none focus:bg-white focus:border-[#FFDA47] transition-all"
                 />
               </div>
           </div>
 
           {/* Bottom Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
              
              {/* Hashtags */}
              <div className="space-y-2 md:col-span-2">
-                 <FieldHeader label="Hashtags" icon={Hash} text={formData.hashtags} />
+                 <FieldHeader label={t('modal.hashtags_label')} icon={Hash} text={formData.hashtags} />
                 <input 
                     type="text"
                     value={formData.hashtags || ''}
                     onChange={(e) => handleChange('hashtags', e.target.value)}
-                    placeholder="#content #strategy"
+                    placeholder={t('modal.hashtags_placeholder')}
                     className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-blue-600 font-medium outline-none focus:border-[#FFDA47] transition-all"
                 />
              </div>
 
              {/* Status */}
              <div className="space-y-2">
-               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Status</label>
+               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('modal.status_label')}</label>
                <CustomSelect
                 value={formData.status}
                 onChange={(val) => handleChange('status', val as IdeaStatus)}
@@ -239,7 +253,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
              {/* Platforms */}
              <div className="space-y-2">
               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                <Monitor size={14} /> Platforms
+                <Monitor size={14} /> {t('modal.platforms_label')}
               </label>
               <div className="flex flex-wrap gap-2">
                 {SOCIAL_PLATFORMS.map(p => (
@@ -269,20 +283,20 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
             <div className="flex items-center justify-between w-full animate-fade-in bg-red-50 p-2 rounded-xl border border-red-100">
                <div className="flex items-center gap-2 px-2">
                    <AlertCircle className="w-5 h-5 text-red-600" />
-                   <span className="text-xs font-bold text-red-700">Delete this permanently?</span>
+                   <span className="text-xs font-bold text-red-700">{t('common.delete_confirm_msg')}</span>
                </div>
                <div className="flex items-center gap-2">
                    <button 
                        onClick={() => setShowDeleteConfirm(false)}
                        className="text-gray-500 hover:text-gray-700 px-3 py-1.5 text-xs font-bold transition-colors"
                    >
-                       Cancel
+                       {t('common.cancel')}
                    </button>
                    <button 
                        onClick={() => { onDelete(formData.id); onClose(); }}
                        className="bg-red-500 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-red-600 transition-colors shadow-sm"
                    >
-                       Confirm Delete
+                       {t('common.confirm_delete')}
                    </button>
                </div>
             </div>
@@ -293,7 +307,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
                     onClick={() => setShowDeleteConfirm(true)}
                     className="text-red-500 text-sm font-bold hover:bg-red-50 px-4 py-2 rounded-xl transition-colors flex items-center gap-2"
                   >
-                    <Trash2 size={16} /> Delete
+                    <Trash2 size={16} /> {t('common.delete')}
                   </button>
                )}
                {isNew && <div className="flex-1"></div>}
@@ -303,7 +317,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
                      <>
                         {showCopyFeedback && (
                             <span className="text-xs font-bold text-green-600 animate-fade-in flex items-center gap-1">
-                                <Check size={14} /> Copied!
+                                <Check size={14} /> {t('common.copied')}
                             </span>
                         )}
                         <button 
@@ -311,7 +325,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
                            disabled={showCopyFeedback}
                            className="text-gray-600 text-sm font-bold hover:bg-gray-100 px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-50"
                          >
-                           <Copy size={16} /> Copy Full Post
+                           <Copy size={16} /> {t('common.copy_full')}
                          </button>
                      </>
                  )}
@@ -322,11 +336,11 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
                   >
                     {isNew ? (
                         <>
-                            <Plus size={16} /> Add to Calendar
+                            <Plus size={16} /> {t('common.add_calendar')}
                         </>
                     ) : (
                         <>
-                            <Save size={16} /> Save Changes
+                            <Save size={16} /> {t('common.save')}
                         </>
                     )}
                   </button>

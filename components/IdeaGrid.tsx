@@ -1,5 +1,6 @@
 import React from 'react';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
+import { useTranslation } from 'react-i18next';
 import { 
   format, 
   endOfMonth, 
@@ -141,6 +142,8 @@ const DayCell: React.FC<DayCellProps> = ({ day, currentMonth, ideas, onEventClic
 };
 
 const CalendarGrid: React.FC<CalendarGridProps> = ({ currentDate, ideas, onEventClick }) => {
+  const { t } = useTranslation();
+
   // Native date manipulation to replace missing startOfMonth
   const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
   monthStart.setHours(0, 0, 0, 0);
@@ -158,7 +161,15 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentDate, ideas, onEvent
     end: endDate,
   });
 
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const weekDays = [
+      t('calendar.sun'), 
+      t('calendar.mon'), 
+      t('calendar.tue'), 
+      t('calendar.wed'), 
+      t('calendar.thu'), 
+      t('calendar.fri'), 
+      t('calendar.sat')
+  ];
 
   return (
     <div className="flex flex-col h-full bg-white rounded-tr-[32px] rounded-br-[32px] shadow-sm overflow-hidden border-l border-gray-200">

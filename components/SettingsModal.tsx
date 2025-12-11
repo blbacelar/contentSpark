@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Webhook, CheckCircle2 } from 'lucide-react';
 import { WebhookConfig } from '../types';
 
@@ -10,6 +11,7 @@ interface SettingsModalProps {
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, setConfig }) => {
+  const { t } = useTranslation();
   const [localUrl, setLocalUrl] = useState(config.url);
 
   if (!isOpen) return null;
@@ -30,7 +32,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, 
             <div className="p-2 bg-[#F5F5F5] rounded-full">
                 <Webhook className="w-4 h-4 text-[#1A1A1A]" />
             </div>
-            Connection
+            {t('settings.connection')}
           </h3>
           <button onClick={onClose} className="p-2 bg-[#F5F5F5] rounded-full text-gray-500 hover:text-black hover:bg-gray-200 transition-colors">
             <X className="w-5 h-5" />
@@ -39,12 +41,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, 
         
         <div className="p-8 space-y-6">
           <p className="text-sm font-medium text-gray-500">
-            Configure external processing via n8n. Leaving this empty defaults to the internal AI Engine.
+            {t('settings.description')}
           </p>
           
           <div className="space-y-3">
             <label className="text-xs font-bold text-[#1A1A1A] uppercase tracking-wider">
-              n8n Webhook URL
+              {t('settings.webhook_url')}
             </label>
             <input
               type="url"
@@ -62,7 +64,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, config, 
             className="flex items-center gap-2 bg-[#1A1A1A] text-white px-6 py-3 rounded-2xl text-sm font-bold hover:bg-black transition-transform hover:scale-105"
           >
             <CheckCircle2 className="w-4 h-4" />
-            Save Changes
+            {t('common.save')}
           </button>
         </div>
       </div>

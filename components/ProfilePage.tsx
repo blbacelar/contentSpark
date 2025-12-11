@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import { fetchUserPersona, saveUserPersona, updateUserPersona } from '../services/genai';
@@ -55,14 +56,15 @@ const DynamicList = ({
 };
 
 export default function ProfilePage({ onBack }: ProfilePageProps) {
-    const { user, signOut } = useAuth();
+    const { user, profile, signOut, refreshProfile } = useAuth();
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
     
-    // Profile State
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+    // Profile State - Initialize from context immediately if available
+    const [firstName, setFirstName] = useState(profile?.first_name || '');
+    const [lastName, setLastName] = useState(profile?.last_name || '');
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url || null);
     
     // Persona State
     const [personaLoading, setPersonaLoading] = useState(false);
@@ -89,9 +91,17 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
     // Feedback
     const [toast, setToast] = useState<{ message: string; isError: boolean } | null>(null);
 
+    // Sync state with profile updates from context
+    useEffect(() => {
+        if (profile) {
+            setFirstName(profile.first_name || '');
+            setLastName(profile.last_name || '');
+            setAvatarUrl(profile.avatar_url || null);
+        }
+    }, [profile]);
+
     useEffect(() => {
         if (user) {
-            getProfile();
             getPersona();
         }
     }, [user]);
@@ -99,31 +109,6 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
     const showToast = (message: string, isError: boolean = false) => {
         setToast({ message, isError });
         setTimeout(() => setToast(null), 4000);
-    };
-
-    const getProfile = async () => {
-        try {
-            setLoading(true);
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', user!.id)
-                .single();
-
-            if (error && error.code !== 'PGRST116') {
-                throw error;
-            }
-
-            if (data) {
-                setFirstName(data.first_name || '');
-                setLastName(data.last_name || '');
-                setAvatarUrl(data.avatar_url);
-            }
-        } catch (error) {
-            console.error('Error loading user data!', error);
-        } finally {
-            setLoading(false);
-        }
     };
 
     const getPersona = async () => {
@@ -171,7 +156,9 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
             if (error) {
                 throw error;
             }
-            showToast('Profile updated successfully!');
+
+            await refreshProfile(); // Refresh context to sync UI
+            showToast(t('profile.toast_updated'));
         } catch (error) {
             console.error('Error updating the data!', error);
             showToast('Error updating profile.', true);
@@ -209,7 +196,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                 questions_list: cleanData.questions_list.length ? cleanData.questions_list : ['']
             }));
 
-            showToast('Persona saved! Future content will be targeted to this profile.');
+            showToast(t('profile.toast_saved'));
         } catch (error: any) {
             console.error(error);
             showToast(error.message || 'Failed to save persona. Please try again.', true);
@@ -236,7 +223,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                 goals_list: [''],
                 questions_list: ['']
             }));
-            showToast('Form cleared. Click Save to persist changes.');
+            showToast(t('profile.toast_cleared'));
         }
     };
 
@@ -253,7 +240,13 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
             const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
             if (uploadError) throw uploadError;
             const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-            setAvatarUrl(data.publicUrl);
+            
+            // Update local state and trigger profile update
+            const newAvatarUrl = data.publicUrl;
+            setAvatarUrl(newAvatarUrl);
+            
+            // Note: We don't save to DB immediately here to allow user to confirm with "Save Changes", 
+            // but for UX it might be better to show preview. Current implementation shows preview via avatarUrl state.
         } catch (error) {
             showToast('Error uploading avatar!', true);
         } finally {
@@ -287,50 +280,50 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
 
     // Select Options
     const genderOptions = [
-        { value: 'Male', label: 'Male' },
-        { value: 'Female', label: 'Female' },
-        { value: 'Non-binary', label: 'Non-binary' },
-        { value: 'All', label: 'All' },
+        { value: 'Male', label: t('options.gender.Male') },
+        { value: 'Female', label: t('options.gender.Female') },
+        { value: 'Non-binary', label: t('options.gender.NonBinary') },
+        { value: 'All', label: t('options.gender.All') },
     ];
     const eduOptions = [
-        { value: 'High School', label: 'High School' },
-        { value: 'Bachelor\'s', label: 'Bachelor\'s' },
-        { value: 'Master\'s', label: 'Master\'s' },
-        { value: 'PhD', label: 'PhD' },
+        { value: 'High School', label: t('options.education.HighSchool') },
+        { value: 'Bachelor\'s', label: t('options.education.Bachelor') },
+        { value: 'Master\'s', label: t('options.education.Master') },
+        { value: 'PhD', label: t('options.education.PhD') },
     ];
     const maritalOptions = [
-        { value: 'Single', label: 'Single' },
-        { value: 'Married', label: 'Married' },
-        { value: 'Divorced', label: 'Divorced' },
+        { value: 'Single', label: t('options.marital.Single') },
+        { value: 'Married', label: t('options.marital.Married') },
+        { value: 'Divorced', label: t('options.marital.Divorced') },
     ];
     const incomeOptions = [
-        { value: 'Low', label: 'Low' },
-        { value: 'Middle', label: 'Middle' },
-        { value: 'High', label: 'High' },
-        { value: 'Affluent', label: 'Affluent' },
+        { value: 'Low', label: t('options.income.Low') },
+        { value: 'Middle', label: t('options.income.Middle') },
+        { value: 'High', label: t('options.income.High') },
+        { value: 'Affluent', label: t('options.income.Affluent') },
     ];
 
     const tabs = [
-        { id: 0, label: 'Identity', icon: User },
-        { id: 1, label: 'Pains & Frustrations', icon: HeartCrack },
-        { id: 2, label: 'Dreams & Goals', icon: Target },
-        { id: 3, label: 'Burning Questions', icon: HelpCircle },
+        { id: 0, label: t('profile.tabs.identity'), icon: User },
+        { id: 1, label: t('profile.tabs.pains'), icon: HeartCrack },
+        { id: 2, label: t('profile.tabs.goals'), icon: Target },
+        { id: 3, label: t('profile.tabs.questions'), icon: HelpCircle },
     ];
 
     return (
         <div className="flex flex-col h-screen w-full items-center bg-[#F2F2F2] p-4 overflow-y-auto custom-scrollbar">
             {/* Header / Nav */}
-            <div className="w-full max-w-2xl mb-4 flex items-center justify-between flex-shrink-0">
+            <div className="w-full max-w-6xl mb-4 flex items-center justify-between flex-shrink-0">
                 <button 
                     onClick={onBack}
                     className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-gray-600 shadow-sm hover:text-[#1A1A1A] hover:shadow-md transition-all"
                 >
-                    <ArrowLeft size={16} /> Back to Calendar
+                    <ArrowLeft size={16} /> {t('profile.back_calendar')}
                 </button>
             </div>
 
             {/* Main Content Stack */}
-            <div className="w-full max-w-2xl space-y-6 pb-20">
+            <div className="w-full max-w-6xl space-y-6 pb-20">
 
                 {/* --- CARD 1: USER PROFILE --- */}
                 <div className="w-full overflow-hidden rounded-[32px] bg-white shadow-sm animate-scale-in">
@@ -367,23 +360,23 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                         {/* Inputs */}
                         <div className="w-full grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <label className="pl-3 text-xs font-bold uppercase tracking-wider text-gray-400">First Name</label>
+                                <label className="pl-3 text-xs font-bold uppercase tracking-wider text-gray-400">{t('auth.first_name')}</label>
                                 <input 
                                     type="text"
                                     value={firstName}
                                     onChange={(e) => setFirstName(e.target.value)}
                                     className="w-full rounded-2xl bg-gray-50 px-5 py-3 text-sm font-bold text-[#1A1A1A] placeholder-gray-300 outline-none focus:ring-2 focus:ring-[#FFDA47] transition-all"
-                                    placeholder="Jane"
+                                    placeholder={t('auth.name_placeholder')}
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="pl-3 text-xs font-bold uppercase tracking-wider text-gray-400">Last Name</label>
+                                <label className="pl-3 text-xs font-bold uppercase tracking-wider text-gray-400">{t('auth.last_name')}</label>
                                 <input 
                                     type="text"
                                     value={lastName}
                                     onChange={(e) => setLastName(e.target.value)}
                                     className="w-full rounded-2xl bg-gray-50 px-5 py-3 text-sm font-bold text-[#1A1A1A] placeholder-gray-300 outline-none focus:ring-2 focus:ring-[#FFDA47] transition-all"
-                                    placeholder="Doe"
+                                    placeholder={t('auth.surname_placeholder')}
                                 />
                             </div>
                         </div>
@@ -393,7 +386,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                 onClick={signOut}
                                 className="text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors"
                             >
-                                Sign Out
+                                {t('profile.sign_out')}
                             </button>
                             <button 
                                 onClick={updateProfile}
@@ -401,7 +394,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                 className="flex items-center justify-center gap-2 rounded-xl bg-[#1A1A1A] px-6 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-black hover:shadow-lg disabled:opacity-70 hover:scale-105"
                             >
                                 {loading ? <Loader2 className="animate-spin" size={16} /> : null}
-                                Save Changes
+                                {t('profile.save_changes')}
                             </button>
                         </div>
                     </div>
@@ -413,15 +406,15 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                     {/* Header */}
                     <div className="p-8 pb-0 flex items-start justify-between">
                         <div>
-                            <h2 className="text-xl font-bold text-[#1A1A1A] tracking-tight">Target Persona Strategy</h2>
-                            <p className="text-sm text-gray-500 font-medium mt-1">Define your ideal customer so the AI can generate targeted content.</p>
+                            <h2 className="text-xl font-bold text-[#1A1A1A] tracking-tight">{t('profile.strategy_title')}</h2>
+                            <p className="text-sm text-gray-500 font-medium mt-1">{t('profile.strategy_desc')}</p>
                         </div>
                         <button 
                             onClick={handleClearPersona}
                             className="text-xs font-bold text-red-400 hover:text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5"
                             title="Clear all fields"
                         >
-                            <Trash2 size={14} /> Clear All
+                            <Trash2 size={14} /> {t('profile.clear_all')}
                         </button>
                     </div>
 
@@ -461,9 +454,9 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                                         {/* Gender */}
                                         <div className="space-y-2">
-                                            <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">Gender</label>
+                                            <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.gender')}</label>
                                             <CustomSelect 
-                                                value={personaData.gender || 'Select...'}
+                                                value={personaData.gender || t('common.select')}
                                                 onChange={(val) => handlePersonaChange('gender', val)}
                                                 options={genderOptions}
                                                 className="bg-gray-50 rounded-xl px-4 py-3 text-sm font-bold text-[#1A1A1A] focus:ring-2 focus:ring-[#FFDA47]"
@@ -472,33 +465,33 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
 
                                         {/* Age Range */}
                                         <div className="space-y-2">
-                                            <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">Age Range</label>
+                                            <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.age_range')}</label>
                                             <input 
                                                 type="text"
                                                 value={personaData.age_range}
                                                 onChange={(e) => handlePersonaChange('age_range', e.target.value)}
-                                                placeholder="e.g., 25-34"
+                                                placeholder={t('placeholders.age')}
                                                 className="w-full rounded-xl bg-gray-50 px-4 py-3 text-sm font-bold text-[#1A1A1A] placeholder-gray-300 outline-none focus:ring-2 focus:ring-[#FFDA47] transition-all"
                                             />
                                         </div>
 
                                         {/* Occupation */}
                                         <div className="space-y-2">
-                                            <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">Occupation</label>
+                                            <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.occupation')}</label>
                                             <input 
                                                 type="text"
                                                 value={personaData.occupation}
                                                 onChange={(e) => handlePersonaChange('occupation', e.target.value)}
-                                                placeholder="e.g., Marketing Manager"
+                                                placeholder={t('placeholders.marketing')}
                                                 className="w-full rounded-xl bg-gray-50 px-4 py-3 text-sm font-bold text-[#1A1A1A] placeholder-gray-300 outline-none focus:ring-2 focus:ring-[#FFDA47] transition-all"
                                             />
                                         </div>
 
                                         {/* Education */}
                                         <div className="space-y-2">
-                                            <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">Education Level</label>
+                                            <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.education')}</label>
                                             <CustomSelect 
-                                                value={personaData.education || 'Select...'}
+                                                value={personaData.education || t('common.select')}
                                                 onChange={(val) => handlePersonaChange('education', val)}
                                                 options={eduOptions}
                                                 className="bg-gray-50 rounded-xl px-4 py-3 text-sm font-bold text-[#1A1A1A] focus:ring-2 focus:ring-[#FFDA47]"
@@ -507,9 +500,9 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
 
                                         {/* Marital Status */}
                                         <div className="space-y-2">
-                                            <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">Marital Status</label>
+                                            <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.marital_status')}</label>
                                             <CustomSelect 
-                                                value={personaData.marital_status || 'Select...'}
+                                                value={personaData.marital_status || t('common.select')}
                                                 onChange={(val) => handlePersonaChange('marital_status', val)}
                                                 options={maritalOptions}
                                                 className="bg-gray-50 rounded-xl px-4 py-3 text-sm font-bold text-[#1A1A1A] focus:ring-2 focus:ring-[#FFDA47]"
@@ -518,9 +511,9 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
 
                                         {/* Income Level */}
                                         <div className="space-y-2">
-                                            <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">Income Level</label>
+                                            <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.income_level')}</label>
                                             <CustomSelect 
-                                                value={personaData.income_level || 'Select...'}
+                                                value={personaData.income_level || t('common.select')}
                                                 onChange={(val) => handlePersonaChange('income_level', val)}
                                                 options={incomeOptions}
                                                 className="bg-gray-50 rounded-xl px-4 py-3 text-sm font-bold text-[#1A1A1A] focus:ring-2 focus:ring-[#FFDA47]"
@@ -529,12 +522,12 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
 
                                         {/* Social Networks */}
                                         <div className="space-y-2 md:col-span-2">
-                                            <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">Social Networks</label>
+                                            <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.social_networks')}</label>
                                             <input 
                                                 type="text"
                                                 value={personaData.social_networks}
                                                 onChange={(e) => handlePersonaChange('social_networks', e.target.value)}
-                                                placeholder="e.g., Instagram, LinkedIn, Pinterest"
+                                                placeholder={t('placeholders.networks')}
                                                 className="w-full rounded-xl bg-gray-50 px-4 py-3 text-sm font-bold text-[#1A1A1A] placeholder-gray-300 outline-none focus:ring-2 focus:ring-[#FFDA47] transition-all"
                                             />
                                         </div>
@@ -556,7 +549,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                                     `} 
                                                 />
                                             </button>
-                                            <span className="text-sm font-bold text-[#1A1A1A]">Has Children?</span>
+                                            <span className="text-sm font-bold text-[#1A1A1A]">{t('profile.has_children')}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -565,13 +558,13 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                             {/* --- TAB 2: PAINS & FRUSTRATIONS --- */}
                             {activeTab === 1 && (
                                 <div className="space-y-4">
-                                    <p className="text-sm text-gray-400 mb-2">What keeps your persona awake at night? What problems are they desperate to solve?</p>
+                                    <p className="text-sm text-gray-400 mb-2">{t('profile.pains_desc')}</p>
                                     <DynamicList 
                                         items={personaData.pains_list}
                                         onChange={(idx, val) => updateList('pains_list', idx, val)}
                                         onAdd={() => addListItem('pains_list')}
                                         onRemove={(idx) => removeListItem('pains_list', idx)}
-                                        placeholder="e.g., Can't find time to cook healthy meals"
+                                        placeholder={t('placeholders.pains')}
                                     />
                                 </div>
                             )}
@@ -579,13 +572,13 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                             {/* --- TAB 3: DREAMS & GOALS --- */}
                             {activeTab === 2 && (
                                 <div className="space-y-4">
-                                    <p className="text-sm text-gray-400 mb-2">What does their ideal life look like? What are they striving for?</p>
+                                    <p className="text-sm text-gray-400 mb-2">{t('profile.goals_desc')}</p>
                                     <DynamicList 
                                         items={personaData.goals_list}
                                         onChange={(idx, val) => updateList('goals_list', idx, val)}
                                         onAdd={() => addListItem('goals_list')}
                                         onRemove={(idx) => removeListItem('goals_list', idx)}
-                                        placeholder="e.g., Run a half-marathon this year"
+                                        placeholder={t('placeholders.goals')}
                                     />
                                 </div>
                             )}
@@ -593,13 +586,13 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                             {/* --- TAB 4: BURNING QUESTIONS --- */}
                             {activeTab === 3 && (
                                 <div className="space-y-4">
-                                    <p className="text-sm text-gray-400 mb-2">What specific questions are they typing into Google or asking friends?</p>
+                                    <p className="text-sm text-gray-400 mb-2">{t('profile.questions_desc')}</p>
                                     <DynamicList 
                                         items={personaData.questions_list}
                                         onChange={(idx, val) => updateList('questions_list', idx, val)}
                                         onAdd={() => addListItem('questions_list')}
                                         onRemove={(idx) => removeListItem('questions_list', idx)}
-                                        placeholder="e.g., Is the keto diet safe for beginners?"
+                                        placeholder={t('placeholders.questions')}
                                     />
                                 </div>
                             )}
@@ -612,7 +605,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                     className="flex items-center gap-2 bg-[#FFDA47] text-[#1A1A1A] px-8 py-3.5 rounded-xl text-base font-bold shadow-md hover:shadow-xl hover:bg-[#FFC040] hover:scale-[1.02] transition-all disabled:opacity-70 disabled:hover:scale-100"
                                 >
                                     {savingPersona ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                                    Save Strategy
+                                    {t('profile.save_strategy')}
                                 </button>
                             </div>
                             </>
