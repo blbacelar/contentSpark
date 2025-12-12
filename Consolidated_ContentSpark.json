@@ -1,0 +1,268 @@
+{
+    "name": "Consolidated ContentSpark",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "api/*",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -1600,
+                -120
+            ],
+            "id": "webhook_post",
+            "name": "Webhook POST"
+        },
+        {
+            "parameters": {
+                "httpMethod": "GET",
+                "path": "api/*",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -1600,
+                40
+            ],
+            "id": "webhook_get",
+            "name": "Webhook GET"
+        },
+        {
+            "parameters": {
+                "httpMethod": "PATCH",
+                "path": "api/*",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -1600,
+                200
+            ],
+            "id": "webhook_patch",
+            "name": "Webhook PATCH"
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "https://tciqwxkdukfbflhiziql.supabase.co/auth/v1/user",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "={{ $json.headers.authorization }}"
+                        },
+                        {
+                            "name": "apikey",
+                            "value": "sb_publishable_kp4l5uKw4iMU7FnGE9ibIQ_JF2CwYbN"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.3,
+            "position": [
+                -1380,
+                0
+            ],
+            "id": "auth_check",
+            "name": "Auth Check"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "c42f33d4-1fe4-49f9-b6ef-1423fc1de85d",
+                            "leftValue": "={{ $json.identities }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "array",
+                                "operation": "exists",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                -1160,
+                0
+            ],
+            "id": "is_authenticated",
+            "name": "Is Authenticated?"
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "{\n  \"error\": true,\n  \"status\": 403,\n  \"message\": \"Unauthorized: Invalid or missing authentication token.\",\n  \"code\": \"AUTH_FAILED\"\n}",
+                "options": {
+                    "responseCode": 403
+                }
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.4,
+            "position": [
+                -1160,
+                240
+            ],
+            "id": "auth_failed_response",
+            "name": "Auth Failed"
+        },
+        {
+            "parameters": {
+                "dataType": "string",
+                "value1": "={{ $json.path }}",
+                "rules": {
+                    "rules": [
+                        {
+                            "value2": "api/generate",
+                            "output": 0
+                        },
+                        {
+                            "value2": "api/save-persona",
+                            "output": 1
+                        },
+                        {
+                            "value2": "api/update-persona",
+                            "output": 2
+                        },
+                        {
+                            "value2": "api/delete-persona",
+                            "output": 3
+                        },
+                        {
+                            "value2": "api/get-profile",
+                            "output": 4
+                        }
+                    ]
+                },
+                "fallbackOutput": 5
+            },
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 1,
+            "position": [
+                -900,
+                0
+            ],
+            "id": "router",
+            "name": "Router"
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "{\n  \"error\": true,\n  \"message\": \"Route not found\"\n}",
+                "options": {
+                    "responseCode": 404
+                }
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.4,
+            "position": [
+                -600,
+                600
+            ],
+            "id": "not_found",
+            "name": "404 Not Found"
+        }
+    ],
+    "connections": {
+        "Webhook POST": {
+            "main": [
+                [
+                    {
+                        "node": "Auth Check",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Webhook GET": {
+            "main": [
+                [
+                    {
+                        "node": "Auth Check",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Webhook PATCH": {
+            "main": [
+                [
+                    {
+                        "node": "Auth Check",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Auth Check": {
+            "main": [
+                [
+                    {
+                        "node": "Is Authenticated?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is Authenticated?": {
+            "main": [
+                [
+                    {
+                        "node": "Router",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Auth Failed",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Router": {
+            "main": [
+                [],
+                [],
+                [],
+                [],
+                [],
+                [
+                    {
+                        "node": "404 Not Found",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { createCheckoutSession } from '../services/genai';
 import { Zap, Sparkles, User, Calendar, CheckCircle2, ArrowRight, Menu } from 'lucide-react';
+import { Button } from './ui/button';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -36,12 +37,12 @@ const LandingPage = () => {
                 Sign In
               </button>
             )}
-            <button
+            <Button
               onClick={() => user ? navigate('/app') : navigate('/login')}
-              className="bg-[#FFDA47] text-[#1A1A1A] px-5 py-2.5 rounded-full text-sm font-bold hover:bg-[#FFC040] hover:scale-105 transition-all shadow-sm"
+              className="rounded-full font-bold shadow-sm bg-[#FFDA47] text-[#1A1A1A] hover:bg-[#FFC040] hover:scale-105 transition-all"
             >
               {user ? 'Dashboard' : 'Get Started Free'}
-            </button>
+            </Button>
           </div>
         </div>
       </nav>
@@ -67,12 +68,12 @@ const LandingPage = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <button
+              <Button
                 onClick={() => user ? navigate('/app') : navigate('/login')}
-                className="flex items-center justify-center gap-2 bg-[#1A1A1A] text-white px-8 py-4 rounded-full text-base font-bold hover:bg-black hover:scale-105 transition-all shadow-xl shadow-black/10"
+                className="rounded-full text-base font-bold shadow-xl shadow-black/10 bg-[#1A1A1A] hover:bg-black hover:scale-105 transition-all text-white h-auto px-8 py-4"
               >
-                {user ? 'Go to Dashboard' : 'Start Creating for Free'} <ArrowRight size={18} />
-              </button>
+                {user ? 'Go to Dashboard' : 'Start Creating for Free'} <ArrowRight size={18} className="ml-2" />
+              </Button>
             </div>
 
             <div className="flex items-center gap-3 text-xs font-bold text-gray-400">
@@ -112,9 +113,9 @@ const LandingPage = () => {
                     <span className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px]">IG</span>
                     <span className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px]">TT</span>
                   </div>
-                  <button className="bg-[#1A1A1A] text-white p-2 rounded-full">
+                  <Button size="icon" className="bg-[#1A1A1A] text-white rounded-full">
                     <Calendar size={14} />
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -262,7 +263,13 @@ const LandingPage = () => {
                 <li className="flex items-center gap-2 text-sm font-medium text-gray-700"><CheckCircle2 size={16} className="text-[#1A1A1A]" /> 10 Credits</li>
                 <li className="flex items-center gap-2 text-sm font-medium text-gray-700"><CheckCircle2 size={16} className="text-[#1A1A1A]" /> Basic Persona</li>
               </ul>
-              <button onClick={() => user ? navigate('/app') : navigate('/login')} className="w-full py-3 rounded-xl border-2 border-[#1A1A1A] text-[#1A1A1A] font-bold hover:bg-[#1A1A1A] hover:text-white transition-colors">{user ? 'Go to Dashboard' : 'Start Free'}</button>
+              <Button
+                onClick={() => user ? navigate('/app') : navigate('/login')}
+                variant="outline"
+                className="w-full py-6 rounded-xl border-2 border-[#1A1A1A] text-[#1A1A1A] font-bold hover:bg-[#1A1A1A] hover:text-white transition-colors"
+              >
+                {user ? 'Go to Dashboard' : 'Start Free'}
+              </Button>
             </div>
 
             {/* Creator */}
@@ -276,7 +283,7 @@ const LandingPage = () => {
                 <li className="flex items-center gap-2 text-sm font-medium"><CheckCircle2 size={16} className="text-[#FFDA47]" /> Advanced Persona</li>
                 <li className="flex items-center gap-2 text-sm font-medium"><CheckCircle2 size={16} className="text-[#FFDA47]" /> Calendar Export</li>
               </ul>
-              <button
+              <Button
                 onClick={async () => {
                   if (user) {
                     try {
@@ -290,10 +297,11 @@ const LandingPage = () => {
                     navigate('/login');
                   }
                 }}
-                className="w-full py-3 rounded-xl bg-[#FFDA47] text-[#1A1A1A] font-bold hover:bg-[#FFC040] transition-colors"
+                className="w-full py-6 rounded-xl bg-[#FFDA47] text-[#1A1A1A] font-bold hover:bg-[#FFC040] transition-colors"
+                variant="default"
               >
                 {user ? 'Upgrade to Creator' : 'Get Started'}
-              </button>
+              </Button>
             </div>
 
             {/* Pro */}
@@ -305,7 +313,7 @@ const LandingPage = () => {
                 <li className="flex items-center gap-2 text-sm font-medium text-gray-700"><CheckCircle2 size={16} className="text-[#1A1A1A]" /> 1,000 Credits / mo</li>
                 <li className="flex items-center gap-2 text-sm font-medium text-gray-700"><CheckCircle2 size={16} className="text-[#1A1A1A]" /> Multiple Personas</li>
               </ul>
-              <button onClick={() => navigate('/login')} className="w-full py-3 rounded-xl border-2 border-gray-200 text-gray-500 font-bold hover:border-[#1A1A1A] hover:text-[#1A1A1A] transition-colors">Contact Sales</button>
+              <Button onClick={() => navigate('/login')} variant="outline" className="w-full py-6 rounded-xl border-2 border-gray-200 text-gray-500 font-bold hover:border-[#1A1A1A] hover:text-[#1A1A1A] transition-colors">Contact Sales</Button>
             </div>
           </div>
         </div>
@@ -315,12 +323,12 @@ const LandingPage = () => {
       <section className="bg-[#FFDA47] py-24 px-6 text-center">
         <div className="max-w-3xl mx-auto space-y-8">
           <h2 className="text-4xl md:text-5xl font-extrabold text-[#1A1A1A]">Ready to explode your engagement?</h2>
-          <button
+          <Button
             onClick={() => user ? navigate('/app') : navigate('/login')}
-            className="bg-white text-[#1A1A1A] px-10 py-5 rounded-full text-lg font-bold hover:scale-105 transition-transform shadow-xl"
+            className="bg-white text-[#1A1A1A] px-10 py-6 h-auto rounded-full text-lg font-bold hover:scale-105 transition-transform shadow-xl hover:bg-white/90"
           >
             {user ? 'Go to Dashboard' : 'Create My Free Account'}
-          </button>
+          </Button>
           <p className="text-[#1A1A1A]/60 text-sm font-medium">No credit card required for free tier.</p>
         </div>
       </section>

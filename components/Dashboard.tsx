@@ -14,6 +14,7 @@ import SettingsModal from './SettingsModal';
 import ProfilePage from './ProfilePage';
 import { generateContent, updateContent, fetchUserIdeas, deleteContent, fetchUserPersona, fetchPersonas, generateId, createContentIdea, completeUserOnboarding } from '../services/genai';
 import { useAuth } from '../context/AuthContext';
+import { Button } from './ui/button';
 
 // Default Webhook URL
 const DEFAULT_WEBHOOK = "https://n8n.bacelardigital.tech/webhook/f7465ddb-c12a-4f30-9917-7720c62876bc";
@@ -460,37 +461,43 @@ export default function Dashboard() {
                                 </div>
 
                                 <div className="flex items-center gap-3">
-                                    <button
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
                                         onClick={toggleLanguage}
-                                        className="p-2.5 bg-white text-gray-500 hover:text-[#1A1A1A] border border-gray-200 rounded-xl hover:shadow-md transition-all flex items-center justify-center"
+                                        className="w-10 h-10 rounded-xl"
                                         title={t('common.switch_language')}
                                     >
                                         <Globe size={18} />
-                                        <span className="ml-1 text-xs font-bold uppercase">{isPt ? 'PT' : 'EN'}</span>
-                                    </button>
+                                        <span className="sr-only">{isPt ? 'PT' : 'EN'}</span>
+                                    </Button>
 
                                     <div className={`
-                                flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors
-                                ${isLowCredits ? 'bg-red-50 text-red-600 border-red-100' : 'bg-gray-100 text-gray-700 border-gray-200'}
-                            `}>
+                                        flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors
+                                        ${isLowCredits ? 'bg-red-50 text-red-600 border-red-100' : 'bg-gray-100 text-gray-700 border-gray-200'}
+                                    `}>
                                         <Zap size={14} className={isLowCredits ? 'fill-red-600' : 'fill-gray-400 text-gray-400'} />
                                         {credits} {t('calendar.credits')}
                                     </div>
 
-                                    <button
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
                                         onClick={() => setIsSettingsOpen(true)}
-                                        className="p-2.5 bg-white text-gray-500 hover:text-[#1A1A1A] border border-gray-200 rounded-xl hover:shadow-md transition-all"
+                                        className="w-10 h-10 rounded-xl"
                                         title={t('common.settings')}
                                     >
                                         <Settings size={20} />
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
+                                        variant="default"
+                                        size="icon"
                                         onClick={signOut}
-                                        className="p-2.5 bg-[#1A1A1A] text-white border border-[#1A1A1A] rounded-xl hover:shadow-md hover:scale-105 transition-all"
+                                        className="w-10 h-10 rounded-xl bg-[#1A1A1A] hover:bg-black text-white"
                                         title={t('common.sign_out')}
                                     >
                                         <LogOut size={20} />
-                                    </button>
+                                    </Button>
                                 </div>
                             </header>
 

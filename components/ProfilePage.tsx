@@ -3,24 +3,36 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import { fetchUserPersona, saveUserPersona, updateUserPersona, fetchPersonas, deletePersona } from '../services/genai';
-import { PersonaData } from '../types';
+
+import { PersonaData, SOCIAL_PLATFORMS } from '../types';
 import { ArrowLeft, Camera, Loader2, CheckCircle2, AlertCircle, Save, Trash2, Plus, Target, HeartCrack, HelpCircle, User, Info } from 'lucide-react';
-import CustomSelect from './CustomSelect';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Label } from './ui/label';
+import { Switch } from './ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 interface ProfilePageProps {
     onBack: () => void;
 }
 
 // Tooltip Component
-const Tooltip = ({ text }: { text: string }) => {
+const HelperTooltip = ({ text }: { text: string }) => {
     return (
-        <div className="group relative flex items-center">
-            <Info size={14} className="text-gray-400 hover:text-[#1A1A1A] cursor-help transition-colors" />
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-3 bg-[#1A1A1A] text-white text-xs font-medium rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 shadow-xl pointer-events-none z-50 text-center leading-relaxed transform translate-y-2 group-hover:translate-y-0">
-                {text}
-                <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-[#1A1A1A]"></div>
-            </div>
-        </div>
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Info size={14} className="text-gray-400 hover:text-[#1A1A1A] cursor-help transition-colors" />
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p className="w-64 text-center">{text}</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
     );
 };
 
@@ -44,28 +56,31 @@ const DynamicList = ({
         <div className="space-y-3 animate-fade-in">
             {items.map((item, index) => (
                 <div key={index} className="flex items-center gap-2 group">
-                    <input
+                    <Input
                         type="text"
                         value={item}
                         onChange={(e) => onChange(index, e.target.value)}
                         placeholder={placeholder}
-                        className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-5 py-3 text-sm font-medium text-[#1A1A1A] placeholder-gray-400 outline-none focus:border-[#FFDA47] focus:ring-1 focus:ring-[#FFDA47] transition-all"
+                        className="flex-1"
                     />
-                    <button
+                    <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => onRemove(index)}
-                        className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                        className="text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
                         title={t('profile.remove_item')}
                     >
                         <Trash2 size={16} />
-                    </button>
+                    </Button>
                 </div>
             ))}
-            <button
+            <Button
+                variant="ghost"
                 onClick={onAdd}
                 className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-[#1A1A1A] px-2 py-1 transition-colors"
             >
                 <Plus size={16} /> Add another
-            </button>
+            </Button>
         </div>
     );
 };
@@ -108,7 +123,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
     const [personaData, setPersonaData] = useState<PersonaData>(defaultPersona);
 
     // Feedback
-    const [toast, setToast] = useState<{ message: string; isError: boolean } | null>(null);
+    // const [toast, setToast] = useState<{ message: string; isError: boolean } | null>(null);
 
     // Sync state with profile updates from context
     useEffect(() => {
@@ -125,10 +140,11 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
         }
     }, [user]);
 
-    const showToast = (message: string, isError: boolean = false) => {
-        setToast({ message, isError });
-        setTimeout(() => setToast(null), 4000);
-    };
+    // Toast removed, using sonner
+    // const showToast = (message: string, isError: boolean = false) => {
+    //     setToast({ message, isError });
+    //     setTimeout(() => setToast(null), 4000);
+    // };
 
     const loadPersonas = async () => {
         if (!user) return;
@@ -192,9 +208,9 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                 } else {
                     handleCreateNew();
                 }
-                showToast("Persona deleted");
+                toast.success("Persona deleted");
             } catch (e) {
-                showToast("Failed to delete persona", true);
+                toast.error("Failed to delete persona");
             }
         }
     };
@@ -217,10 +233,10 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
             }
 
             await refreshProfile(); // Refresh context to sync UI
-            showToast(t('profile.toast_updated'));
+            toast.success(t('profile.toast_updated'));
         } catch (error) {
             console.error('Error updating the data!', error);
-            showToast('Error updating profile.', true);
+            toast.error('Error updating profile.');
         } finally {
             setLoading(false);
         }
@@ -255,11 +271,24 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
 
         try {
             let saved;
+            let webhookFailed = false;
+
             if (cleanData.id) {
-                await updateUserPersona(cleanData);
+                const result = await updateUserPersona(cleanData);
+                // @ts-ignore
+                webhookFailed = result.webhookFailed;
                 saved = cleanData;
             } else {
-                saved = await saveUserPersona(cleanData);
+                const result = await saveUserPersona(cleanData);
+                // @ts-ignore
+                webhookFailed = result.webhookFailed;
+                saved = result;
+            }
+
+            if (webhookFailed) {
+                toast.warning(t('profile.saved_local_webhook_failed') || "Persona saved locally, but AI sync failed.");
+            } else {
+                toast.success(t('profile.persona_saved') || "Persona saved successfully!");
             }
 
             // Refresh list
@@ -278,10 +307,10 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                 loadPersonas();
             }
 
-            showToast(t('profile.toast_saved'));
+
         } catch (error: any) {
             console.error(error);
-            showToast(error.message || 'Failed to save persona. Please try again.', true);
+            toast.error(error.message || 'Failed to save persona. Please try again.');
         } finally {
             setSavingPersona(false);
         }
@@ -308,7 +337,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
             // Note: We don't save to DB immediately here to allow user to confirm with "Save Changes", 
             // but for UX it might be better to show preview. Current implementation shows preview via avatarUrl state.
         } catch (error) {
-            showToast('Error uploading avatar!', true);
+            toast.error('Error uploading avatar!');
         } finally {
             setUploading(false);
         }
@@ -374,12 +403,13 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
         <div className="flex flex-col h-screen w-full items-center bg-[#F2F2F2] p-4 overflow-y-auto custom-scrollbar">
             {/* Header / Nav */}
             <div className="w-full max-w-6xl mb-4 flex items-center justify-between flex-shrink-0">
-                <button
+                <Button
+                    variant="outline"
                     onClick={onBack}
-                    className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-gray-600 shadow-sm hover:text-[#1A1A1A] hover:shadow-md transition-all"
+                    className="flex items-center gap-2"
                 >
                     <ArrowLeft size={16} /> {t('profile.back_calendar')}
-                </button>
+                </Button>
             </div>
 
             {/* Main Content Stack */}
@@ -420,42 +450,41 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                         {/* Inputs */}
                         <div className="w-full grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <label className="pl-3 text-xs font-bold uppercase tracking-wider text-gray-400">{t('auth.first_name')}</label>
-                                <input
+                                <Label className="pl-3 text-xs font-bold uppercase tracking-wider text-gray-400">{t('auth.first_name')}</Label>
+                                <Input
                                     type="text"
                                     value={firstName}
                                     onChange={(e) => setFirstName(e.target.value)}
-                                    className="w-full rounded-2xl bg-gray-50 px-5 py-3 text-sm font-bold text-[#1A1A1A] placeholder-gray-300 outline-none focus:ring-2 focus:ring-[#FFDA47] transition-all"
                                     placeholder={t('auth.name_placeholder')}
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="pl-3 text-xs font-bold uppercase tracking-wider text-gray-400">{t('auth.last_name')}</label>
-                                <input
+                                <Label className="pl-3 text-xs font-bold uppercase tracking-wider text-gray-400">{t('auth.last_name')}</Label>
+                                <Input
                                     type="text"
                                     value={lastName}
                                     onChange={(e) => setLastName(e.target.value)}
-                                    className="w-full rounded-2xl bg-gray-50 px-5 py-3 text-sm font-bold text-[#1A1A1A] placeholder-gray-300 outline-none focus:ring-2 focus:ring-[#FFDA47] transition-all"
                                     placeholder={t('auth.surname_placeholder')}
                                 />
                             </div>
                         </div>
 
                         <div className="flex items-center justify-between w-full mt-8 pt-6 border-t border-gray-100">
-                            <button
+                            <Button
+                                variant="ghost"
                                 onClick={signOut}
-                                className="text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors"
+                                className="text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-50"
                             >
                                 {t('profile.sign_out')}
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 onClick={updateProfile}
                                 disabled={loading}
-                                className="flex items-center justify-center gap-2 rounded-xl bg-[#1A1A1A] px-6 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-black hover:shadow-lg disabled:opacity-70 hover:scale-105"
+                                className="flex items-center justify-center gap-2 font-bold"
                             >
                                 {loading ? <Loader2 className="animate-spin" size={16} /> : null}
                                 {t('profile.save_changes')}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -471,11 +500,11 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                         </div>
 
                         {/* Persona Selector */}
-                        <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-100">
-                            <select
+                        <div className="flex items-center gap-2">
+                            <Select
                                 value={selectedPersonaId}
-                                onChange={(e) => {
-                                    if (e.target.value === 'new') {
+                                onValueChange={(val) => {
+                                    if (val === 'new') {
                                         // Check restrictions before switching
                                         const isPro = profile?.tier === 'pro';
                                         if (!isPro && personas.length >= 1) {
@@ -484,254 +513,276 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                         }
                                         handleCreateNew();
                                     } else {
-                                        const p = personas.find(per => per.id === e.target.value);
+                                        const p = personas.find(per => per.id === val);
                                         if (p) selectPersona(p);
                                     }
                                 }}
-                                className="bg-transparent text-sm font-bold text-[#1A1A1A] outline-none px-2 py-1 min-w-[150px] cursor-pointer"
                             >
-                                <option value="new">+ {t('profile.create_new_persona')}</option>
-                                {personas.map(p => (
-                                    <option key={p.id} value={p.id}>{p.name || 'Untitled'}</option>
-                                ))}
-                            </select>
+                                <SelectTrigger className="w-[200px]">
+                                    <SelectValue placeholder={t('profile.create_new_persona')} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="new">+ {t('profile.create_new_persona')}</SelectItem>
+                                    {personas.map(p => (
+                                        <SelectItem key={p.id} value={p.id || 'err'}>{p.name || 'Untitled'}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
                             {selectedPersonaId !== 'new' && (
-                                <button
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
                                     onClick={handleDeletePersona}
-                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                    className="text-gray-400 hover:text-red-500 hover:bg-red-50"
                                     title={t('profile.delete_persona')}
                                 >
                                     <Trash2 size={14} />
-                                </button>
+                                </Button>
                             )}
                         </div>
                     </div>
 
-                    {/* Tab Navigation */}
-                    <div className="mt-6 px-6 border-b border-gray-100 flex gap-6 overflow-x-auto custom-scrollbar">
-                        {tabs.map((tab) => {
-                            const Icon = tab.icon;
-                            const isActive = activeTab === tab.id;
-                            return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`
-                                        flex items-center gap-2 pb-4 text-sm font-medium transition-all whitespace-nowrap
-                                        ${isActive
-                                            ? 'text-[#1A1A1A] font-bold border-b-2 border-[#FFDA47]'
-                                            : 'text-gray-400 hover:text-gray-600'}
-                                    `}
-                                >
-                                    <Icon size={16} />
-                                    {tab.label}
-                                </button>
-                            )
-                        })}
-                    </div>
+                    {/* Tabs */}
+                    <Tabs value={String(activeTab)} onValueChange={(v) => setActiveTab(Number(v))} className="w-full">
+                        <div className="px-6 border-b border-gray-100">
+                            <TabsList className="bg-transparent h-auto p-0 gap-6">
+                                {tabs.map((tab) => {
+                                    const Icon = tab.icon;
+                                    return (
+                                        <TabsTrigger
+                                            key={tab.id}
+                                            value={String(tab.id)}
+                                            className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#FFDA47] rounded-none pb-4 pt-2 px-1"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <Icon size={16} />
+                                                {tab.label}
+                                            </div>
+                                        </TabsTrigger>
+                                    )
+                                })}
+                            </TabsList>
+                        </div>
 
-                    <div className="p-8 pt-6 min-h-[400px]">
-                        {personaLoading ? (
-                            <div className="flex justify-center py-12">
-                                <Loader2 className="animate-spin text-gray-300 w-8 h-8" />
-                            </div>
-                        ) : (
-                            <>
-                                {/* --- TAB 1: IDENTITY --- */}
-                                {activeTab === 0 && (
-                                    <div className="space-y-8 animate-fade-in">
-                                        {/* Persona Name Input (Only show if editing specific logic or strict mode, but nice to expose) */}
-                                        <div className="space-y-2">
-                                            <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.persona_name')}</label>
-                                            <input
-                                                type="text"
-                                                value={personaData.name || ''}
-                                                onChange={(e) => handlePersonaChange('name', e.target.value)}
-                                                placeholder="e.g. Corporate Execs, Busy Moms..."
-                                                className="w-full rounded-xl bg-gray-50 px-4 py-3 text-sm font-bold text-[#1A1A1A] placeholder-gray-300 outline-none focus:ring-2 focus:ring-[#FFDA47] transition-all"
+                        <div className="p-8 pt-6 min-h-[400px]">
+                            {personaLoading ? (
+                                <div className="flex justify-center py-12">
+                                    <Loader2 className="animate-spin text-gray-300 w-8 h-8" />
+                                </div>
+                            ) : (
+                                <>
+                                    <TabsContent value="0" className="mt-0">
+                                        <div className="space-y-8 animate-fade-in">
+                                            {/* Persona Name Input */}
+                                            <div className="space-y-2">
+                                                <Label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.persona_name')}</Label>
+                                                <Input
+                                                    type="text"
+                                                    value={personaData.name || ''}
+                                                    onChange={(e) => handlePersonaChange('name', e.target.value)}
+                                                    placeholder="e.g. Corporate Execs, Busy Moms..."
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                                                {/* Gender */}
+                                                <div className="space-y-2">
+                                                    <Label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.gender')}</Label>
+                                                    <Select
+                                                        value={personaData.gender || ''}
+                                                        onValueChange={(val) => handlePersonaChange('gender', val)}
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder={t('common.select')} />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {genderOptions.map(opt => (
+                                                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                {/* Age Range */}
+                                                <div className="space-y-2">
+                                                    <Label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.age_range')}</Label>
+                                                    <Input
+                                                        type="text"
+                                                        value={personaData.age_range}
+                                                        onChange={(e) => handlePersonaChange('age_range', e.target.value)}
+                                                        placeholder={t('placeholders.age')}
+                                                    />
+                                                </div>
+
+                                                {/* Occupation */}
+                                                <div className="space-y-2">
+                                                    <Label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.occupation')}</Label>
+                                                    <Input
+                                                        type="text"
+                                                        value={personaData.occupation}
+                                                        onChange={(e) => handlePersonaChange('occupation', e.target.value)}
+                                                        placeholder={t('placeholders.marketing')}
+                                                    />
+                                                </div>
+
+                                                {/* Education */}
+                                                <div className="space-y-2">
+                                                    <Label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.education')}</Label>
+                                                    <Select
+                                                        value={personaData.education || ''}
+                                                        onValueChange={(val) => handlePersonaChange('education', val)}
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder={t('common.select')} />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {eduOptions.map(opt => (
+                                                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                {/* Marital Status */}
+                                                <div className="space-y-2">
+                                                    <Label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.marital_status')}</Label>
+                                                    <Select
+                                                        value={personaData.marital_status || ''}
+                                                        onValueChange={(val) => handlePersonaChange('marital_status', val)}
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder={t('common.select')} />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {maritalOptions.map(opt => (
+                                                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                {/* Income Level */}
+                                                <div className="space-y-2">
+                                                    <Label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.income_level')}</Label>
+                                                    <Select
+                                                        value={personaData.income_level || ''}
+                                                        onValueChange={(val) => handlePersonaChange('income_level', val)}
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder={t('common.select')} />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {incomeOptions.map(opt => (
+                                                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                {/* Social Networks */}
+                                                <div className="space-y-2 md:col-span-2">
+                                                    <Label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.social_networks')}</Label>
+                                                    <ToggleGroup
+                                                        type="multiple"
+                                                        variant="outline"
+                                                        value={personaData.social_networks ? personaData.social_networks.split(',') : []}
+                                                        onValueChange={(val) => handlePersonaChange('social_networks', val.join(','))}
+                                                        className="justify-start flex-wrap gap-2"
+                                                    >
+                                                        {SOCIAL_PLATFORMS.map((platform) => (
+                                                            <ToggleGroupItem
+                                                                key={platform}
+                                                                value={platform}
+                                                                aria-label={`Toggle ${platform}`}
+                                                                className="data-[state=on]:bg-[#FFDA47] data-[state=on]:text-[#1A1A1A] data-[state=on]:font-bold border-gray-200"
+                                                            >
+                                                                {platform}
+                                                            </ToggleGroupItem>
+                                                        ))}
+                                                    </ToggleGroup>
+                                                </div>
+
+                                                {/* Has Children Toggle */}
+                                                <div className="md:col-span-2 flex items-center gap-3 pl-2 py-1">
+                                                    <Switch
+                                                        checked={personaData.has_children}
+                                                        onCheckedChange={(checked) => handlePersonaChange('has_children', checked)}
+                                                    />
+                                                    <span className="text-sm font-bold text-[#1A1A1A]">{t('profile.has_children')}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </TabsContent>
+
+                                    <TabsContent value="1" className="mt-0">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="text-sm font-bold text-[#1A1A1A]">{t('profile.tabs.pains')}</h3>
+                                                <HelperTooltip text={t('profile.pains_desc')} />
+                                            </div>
+                                            <DynamicList
+                                                items={personaData.pains_list}
+                                                onChange={(idx, val) => updateList('pains_list', idx, val)}
+                                                onAdd={() => addListItem('pains_list')}
+                                                onRemove={(idx) => removeListItem('pains_list', idx)}
+                                                placeholder={t('placeholders.pains')}
                                             />
                                         </div>
+                                    </TabsContent>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-                                            {/* Gender */}
-                                            <div className="space-y-2">
-                                                <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.gender')}</label>
-                                                <CustomSelect
-                                                    value={personaData.gender || t('common.select')}
-                                                    onChange={(val) => handlePersonaChange('gender', val)}
-                                                    options={genderOptions}
-                                                    className="bg-gray-50 rounded-xl px-4 py-3 text-sm font-bold text-[#1A1A1A] focus:ring-2 focus:ring-[#FFDA47]"
-                                                />
+                                    <TabsContent value="2" className="mt-0">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="text-sm font-bold text-[#1A1A1A]">{t('profile.tabs.goals')}</h3>
+                                                <HelperTooltip text={t('profile.goals_desc')} />
                                             </div>
-
-                                            {/* Age Range */}
-                                            <div className="space-y-2">
-                                                <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.age_range')}</label>
-                                                <input
-                                                    type="text"
-                                                    value={personaData.age_range}
-                                                    onChange={(e) => handlePersonaChange('age_range', e.target.value)}
-                                                    placeholder={t('placeholders.age')}
-                                                    className="w-full rounded-xl bg-gray-50 px-4 py-3 text-sm font-bold text-[#1A1A1A] placeholder-gray-300 outline-none focus:ring-2 focus:ring-[#FFDA47] transition-all"
-                                                />
-                                            </div>
-
-                                            {/* Occupation */}
-                                            <div className="space-y-2">
-                                                <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.occupation')}</label>
-                                                <input
-                                                    type="text"
-                                                    value={personaData.occupation}
-                                                    onChange={(e) => handlePersonaChange('occupation', e.target.value)}
-                                                    placeholder={t('placeholders.marketing')}
-                                                    className="w-full rounded-xl bg-gray-50 px-4 py-3 text-sm font-bold text-[#1A1A1A] placeholder-gray-300 outline-none focus:ring-2 focus:ring-[#FFDA47] transition-all"
-                                                />
-                                            </div>
-
-                                            {/* Education */}
-                                            <div className="space-y-2">
-                                                <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.education')}</label>
-                                                <CustomSelect
-                                                    value={personaData.education || t('common.select')}
-                                                    onChange={(val) => handlePersonaChange('education', val)}
-                                                    options={eduOptions}
-                                                    className="bg-gray-50 rounded-xl px-4 py-3 text-sm font-bold text-[#1A1A1A] focus:ring-2 focus:ring-[#FFDA47]"
-                                                />
-                                            </div>
-
-                                            {/* Marital Status */}
-                                            <div className="space-y-2">
-                                                <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.marital_status')}</label>
-                                                <CustomSelect
-                                                    value={personaData.marital_status || t('common.select')}
-                                                    onChange={(val) => handlePersonaChange('marital_status', val)}
-                                                    options={maritalOptions}
-                                                    className="bg-gray-50 rounded-xl px-4 py-3 text-sm font-bold text-[#1A1A1A] focus:ring-2 focus:ring-[#FFDA47]"
-                                                />
-                                            </div>
-
-                                            {/* Income Level */}
-                                            <div className="space-y-2">
-                                                <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.income_level')}</label>
-                                                <CustomSelect
-                                                    value={personaData.income_level || t('common.select')}
-                                                    onChange={(val) => handlePersonaChange('income_level', val)}
-                                                    options={incomeOptions}
-                                                    className="bg-gray-50 rounded-xl px-4 py-3 text-sm font-bold text-[#1A1A1A] focus:ring-2 focus:ring-[#FFDA47]"
-                                                />
-                                            </div>
-
-                                            {/* Social Networks */}
-                                            <div className="space-y-2 md:col-span-2">
-                                                <label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.social_networks')}</label>
-                                                <input
-                                                    type="text"
-                                                    value={personaData.social_networks}
-                                                    onChange={(e) => handlePersonaChange('social_networks', e.target.value)}
-                                                    placeholder={t('placeholders.networks')}
-                                                    className="w-full rounded-xl bg-gray-50 px-4 py-3 text-sm font-bold text-[#1A1A1A] placeholder-gray-300 outline-none focus:ring-2 focus:ring-[#FFDA47] transition-all"
-                                                />
-                                            </div>
-
-                                            {/* Has Children Toggle */}
-                                            <div className="md:col-span-2 flex items-center gap-3 pl-2 py-1">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handlePersonaChange('has_children', !personaData.has_children)}
-                                                    className={`
-                                                    relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#FFDA47] focus:ring-offset-2
-                                                    ${personaData.has_children ? 'bg-[#FFDA47]' : 'bg-gray-200'}
-                                                `}
-                                                >
-                                                    <span
-                                                        className={`
-                                                        pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out
-                                                        ${personaData.has_children ? 'translate-x-5' : 'translate-x-0'}
-                                                    `}
-                                                    />
-                                                </button>
-                                                <span className="text-sm font-bold text-[#1A1A1A]">{t('profile.has_children')}</span>
-                                            </div>
+                                            <DynamicList
+                                                items={personaData.goals_list}
+                                                onChange={(idx, val) => updateList('goals_list', idx, val)}
+                                                onAdd={() => addListItem('goals_list')}
+                                                onRemove={(idx) => removeListItem('goals_list', idx)}
+                                                placeholder={t('placeholders.goals')}
+                                            />
                                         </div>
-                                    </div>
-                                )}
+                                    </TabsContent>
 
-                                {/* --- TAB 2: PAINS & FRUSTRATIONS --- */}
-                                {activeTab === 1 && (
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="text-sm font-bold text-[#1A1A1A]">{t('profile.tabs.pains')}</h3>
-                                            <Tooltip text={t('profile.pains_desc')} />
+                                    <TabsContent value="3" className="mt-0">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="text-sm font-bold text-[#1A1A1A]">{t('profile.tabs.questions')}</h3>
+                                                <HelperTooltip text={t('profile.questions_desc')} />
+                                            </div>
+                                            <DynamicList
+                                                items={personaData.questions_list}
+                                                onChange={(idx, val) => updateList('questions_list', idx, val)}
+                                                onAdd={() => addListItem('questions_list')}
+                                                onRemove={(idx) => removeListItem('questions_list', idx)}
+                                                placeholder={t('placeholders.questions')}
+                                            />
                                         </div>
-                                        <DynamicList
-                                            items={personaData.pains_list}
-                                            onChange={(idx, val) => updateList('pains_list', idx, val)}
-                                            onAdd={() => addListItem('pains_list')}
-                                            onRemove={(idx) => removeListItem('pains_list', idx)}
-                                            placeholder={t('placeholders.pains')}
-                                        />
-                                    </div>
-                                )}
+                                    </TabsContent>
 
-                                {/* --- TAB 3: DREAMS & GOALS --- */}
-                                {activeTab === 2 && (
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="text-sm font-bold text-[#1A1A1A]">{t('profile.tabs.goals')}</h3>
-                                            <Tooltip text={t('profile.goals_desc')} />
-                                        </div>
-                                        <DynamicList
-                                            items={personaData.goals_list}
-                                            onChange={(idx, val) => updateList('goals_list', idx, val)}
-                                            onAdd={() => addListItem('goals_list')}
-                                            onRemove={(idx) => removeListItem('goals_list', idx)}
-                                            placeholder={t('placeholders.goals')}
-                                        />
+                                    {/* Save Button */}
+                                    <div className="flex justify-end pt-8 mt-4 border-t border-gray-100">
+                                        <Button
+                                            onClick={handleSavePersona}
+                                            disabled={savingPersona}
+                                            className="font-bold text-[#1A1A1A] bg-[#FFDA47] hover:bg-[#FFC040] hover:text-[#1A1A1A]"
+                                            size="lg"
+                                        >
+                                            {savingPersona ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                                            {t('profile.save_strategy')}
+                                        </Button>
                                     </div>
-                                )}
-
-                                {/* --- TAB 4: BURNING QUESTIONS --- */}
-                                {activeTab === 3 && (
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="text-sm font-bold text-[#1A1A1A]">{t('profile.tabs.questions')}</h3>
-                                            <Tooltip text={t('profile.questions_desc')} />
-                                        </div>
-                                        <DynamicList
-                                            items={personaData.questions_list}
-                                            onChange={(idx, val) => updateList('questions_list', idx, val)}
-                                            onAdd={() => addListItem('questions_list')}
-                                            onRemove={(idx) => removeListItem('questions_list', idx)}
-                                            placeholder={t('placeholders.questions')}
-                                        />
-                                    </div>
-                                )}
-
-                                {/* Save Button (Always Visible) */}
-                                <div className="flex justify-end pt-8 mt-4 border-t border-gray-100">
-                                    <button
-                                        onClick={handleSavePersona}
-                                        disabled={savingPersona}
-                                        className="flex items-center gap-2 bg-[#FFDA47] text-[#1A1A1A] px-8 py-3.5 rounded-xl text-base font-bold shadow-md hover:shadow-xl hover:bg-[#FFC040] hover:scale-[1.02] transition-all disabled:opacity-70 disabled:hover:scale-100"
-                                    >
-                                        {savingPersona ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                                        {t('profile.save_strategy')}
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                    </div>
+                                </>
+                            )}
+                        </div>
+                    </Tabs>
                 </div>
 
             </div>
-
-            {/* Toast */}
-            {toast && (
-                <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-2xl px-6 py-3 text-sm font-bold text-white shadow-2xl animate-fade-in z-50 ${toast.isError ? 'bg-red-500' : 'bg-[#1A1A1A]'}`}>
-                    {toast.isError ? <AlertCircle size={18} /> : <CheckCircle2 size={18} className={toast.isError ? 'text-white' : 'text-[#FFDA47]'} />}
-                    {toast.message}
-                </div>
-            )}
+            {/* Manual Toast Removed */}
         </div>
     );
 }

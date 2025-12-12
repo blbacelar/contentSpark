@@ -4,7 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { ContentIdea, IdeaStatus } from '../types';
 import { GripVertical, Plus, Zap, Search, Filter, FileText, PlusCircle, Calendar, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import CustomSelect from './CustomSelect';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { cn } from '../utils';
 
 // Draggable Chip
 interface DraggableChipProps {
@@ -178,15 +182,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                     </span>
                 </div>
 
-                <button
+                <Button
                     onClick={hasCredits ? onGenerateClick : undefined}
                     disabled={!hasCredits}
-                    className={`
-                        w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg
-                        ${hasCredits
-                            ? 'bg-[#1A1A1A] text-white hover:bg-black shadow-black/5 hover:scale-[1.02]'
-                            : 'bg-gray-200 text-gray-500 cursor-not-allowed shadow-none'}
-                    `}
+                    className={cn(
+                        "w-full h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg",
+                        hasCredits
+                            ? "bg-[#1A1A1A] text-white hover:bg-black shadow-black/5 hover:scale-[1.02]"
+                            : "bg-gray-200 text-gray-500 cursor-not-allowed shadow-none"
+                    )}
                     title={hasCredits ? t('sidebar.new_strategy') : t('sidebar.out_of_credits')}
                 >
                     {hasCredits ? (
@@ -198,7 +202,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                             <Zap size={16} className="text-gray-500 fill-gray-500" /> {t('sidebar.out_of_credits')}
                         </>
                     )}
-                </button>
+                </Button>
             </div>
 
             {/* Backlog / List Area */}
@@ -210,13 +214,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                         </h3>
                         <div className="flex items-center gap-2">
                             {onManualCreate && (
-                                <button
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
                                     onClick={onManualCreate}
-                                    className="text-gray-400 hover:text-[#1A1A1A] p-1 rounded hover:bg-gray-200 transition-colors"
+                                    className="h-6 w-6 text-gray-400 hover:text-[#1A1A1A] hover:bg-gray-200"
                                     title={t('sidebar.add_manual')}
                                 >
                                     <PlusCircle size={16} />
-                                </button>
+                                </Button>
                             )}
                             <span className="bg-gray-200 text-gray-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                                 {isLoading ? '...' : filteredIdeas.length}
@@ -227,33 +233,41 @@ const Sidebar: React.FC<SidebarProps> = ({
                     {/* Search Input */}
                     <div className="relative group">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#1A1A1A] transition-colors" />
-                        <input
+                        <Input
                             type="text"
                             placeholder={t('sidebar.search_placeholder')}
                             value={searchQuery}
                             onChange={handleSearchChange}
-                            className="w-full bg-white border border-gray-200 rounded-lg pl-9 pr-8 py-2 text-xs font-medium placeholder-gray-400 outline-none focus:border-[#FFDA47] focus:ring-1 focus:ring-[#FFDA47] transition-all"
+                            className="w-full bg-white border-gray-200 rounded-lg pl-9 pr-8 h-9 text-xs font-medium placeholder:text-gray-400 focus-visible:ring-[#FFDA47] transition-all"
                         />
                         {searchQuery && (
-                            <button
+                            <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={handleClearSearch}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
                                 title={t('common.close')}
                             >
                                 <X size={12} />
-                            </button>
+                            </Button>
                         )}
                     </div>
 
                     {/* Status Filter */}
                     <div className="relative group">
                         <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within:text-[#1A1A1A] transition-colors pointer-events-none z-10" />
-                        <CustomSelect
-                            value={statusFilter}
-                            onChange={(val) => setStatusFilter(val as IdeaStatus | 'All')}
-                            options={statusOptions}
-                            className="bg-white border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-xs font-medium text-gray-600 focus:border-[#FFDA47] focus:ring-1 focus:ring-[#FFDA47]"
-                        />
+                        <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val as IdeaStatus | 'All')}>
+                            <SelectTrigger className="w-full bg-white border-gray-200 rounded-lg pl-9 pr-3 h-9 text-xs font-medium text-gray-600 focus:ring-[#FFDA47]">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {statusOptions.map((option) => (
+                                    <SelectItem key={option.value} value={option.value} className="text-xs">
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
 
@@ -293,24 +307,24 @@ const Sidebar: React.FC<SidebarProps> = ({
 
             {/* User Profile */}
             <div className="p-4 border-t border-gray-200">
-                <button
+                <Button
+                    variant="ghost"
                     onClick={onProfileClick}
-                    className="flex items-center gap-3 w-full p-2 rounded-xl hover:bg-gray-100 transition-colors text-left group"
+                    className="flex items-center gap-3 w-full h-auto p-2 rounded-xl hover:bg-gray-100 transition-colors text-left justify-start"
                 >
-                    <div className="w-8 h-8 rounded-full bg-[#FFDA47] flex items-center justify-center font-bold text-xs text-[#1A1A1A] ring-2 ring-white group-hover:ring-[#FFDA47] transition-all overflow-hidden">
-                        {profile?.avatar_url ? (
-                            <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                        ) : (
-                            userInitial
-                        )}
-                    </div>
-                    <div className="flex-1 min-w-0">
+                    <Avatar className="h-8 w-8 ring-2 ring-white group-hover:ring-[#FFDA47] transition-all">
+                        <AvatarImage src={profile?.avatar_url} className="object-cover" />
+                        <AvatarFallback className="bg-[#FFDA47] text-[#1A1A1A] text-xs font-bold">
+                            {userInitial}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0 flex flex-col items-start">
                         <p className="font-bold text-[#1A1A1A] text-xs truncate group-hover:text-[#000]">
                             {displayName}
                         </p>
                         <p className="text-gray-400 text-[10px] truncate group-hover:text-gray-600">{tierDisplay} • {t('common.settings')}</p>
                     </div>
-                </button>
+                </Button>
             </div>
         </div>
     );

@@ -1,8 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormData, Tone, PersonaData } from '../types';
-import { Sparkles, Users, Target, Mic, ZapOff, UserCheck } from 'lucide-react';
-import CustomSelect from './CustomSelect';
+import { Sparkles, Users, Target, Mic, ZapOff, UserCheck, Loader2 } from 'lucide-react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { cn } from '../utils';
 
 interface SparkFormProps {
   formData: FormData;
@@ -37,84 +41,90 @@ const SparkForm: React.FC<SparkFormProps> = ({ formData, setFormData, onSubmit, 
 
       {/* Persona Select */}
       <div className="space-y-2">
-        <label className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider pl-2">
+        <Label className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider pl-2">
           <UserCheck className="w-3.5 h-3.5" /> {t('form.persona')}
-        </label>
-        <select
-          value={formData.persona_id || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, persona_id: e.target.value }))}
-          className="w-full bg-gray-50 border-2 border-transparent focus:border-[#FFDA47] focus:bg-white rounded-xl px-5 py-3 text-[#1A1A1A] font-medium outline-none transition-all appearance-none cursor-pointer"
+        </Label>
+        <Select
+          value={formData.persona_id || undefined}
+          onValueChange={(val) => setFormData(prev => ({ ...prev, persona_id: val }))}
         >
-          <option value="" disabled>{t('common.select')}</option>
-          {personas.map(p => (
-            <option key={p.id} value={p.id}>{p.name || 'Untitled Persona'}</option>
-          ))}
-        </select>
+          <SelectTrigger className="w-full bg-gray-50 border-transparent focus:bg-white rounded-xl h-12 text-base font-medium text-[#1A1A1A]">
+            <SelectValue placeholder={t('common.select')} />
+          </SelectTrigger>
+          <SelectContent>
+            {personas.map(p => (
+              <SelectItem key={p.id} value={p.id}>{p.name || 'Untitled Persona'}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Niche/Topic */}
       <div className="space-y-2">
-        <label className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider pl-2">
+        <Label htmlFor="tour-generator-input" className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider pl-2">
           <Target className="w-3.5 h-3.5" /> {t('form.topic')}
-        </label>
-        <input
+        </Label>
+        <Input
           id="tour-generator-input"
           type="text"
           name="topic"
           value={formData.topic}
           onChange={handleChange}
           placeholder={t('form.topic_placeholder')}
-          className="w-full bg-gray-50 border-2 border-transparent focus:border-[#FFDA47] focus:bg-white rounded-xl px-5 py-3 text-[#1A1A1A] font-medium placeholder-gray-400 outline-none transition-all"
+          className="w-full bg-gray-50 border-transparent focus-visible:bg-white focus-visible:ring-[#FFDA47] rounded-xl h-12 px-5 text-base font-medium placeholder:text-gray-400 transition-all shadow-none"
         />
       </div>
 
       {/* Target Audience */}
       <div className="space-y-2">
-        <label className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider pl-2">
+        <Label className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider pl-2">
           <Users className="w-3.5 h-3.5" /> {t('form.audience')}
-        </label>
-        <input
+        </Label>
+        <Input
           type="text"
           name="audience"
           value={formData.audience}
           onChange={handleChange}
           placeholder={t('form.audience_placeholder')}
-          className="w-full bg-gray-50 border-2 border-transparent focus:border-[#FFDA47] focus:bg-white rounded-xl px-5 py-3 text-[#1A1A1A] font-medium placeholder-gray-400 outline-none transition-all"
+          className="w-full bg-gray-50 border-transparent focus-visible:bg-white focus-visible:ring-[#FFDA47] rounded-xl h-12 px-5 text-base font-medium placeholder:text-gray-400 transition-all shadow-none"
         />
       </div>
 
       {/* Tone */}
       <div className="space-y-2">
-        <label className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider pl-2">
+        <Label className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider pl-2">
           <Mic className="w-3.5 h-3.5" /> {t('form.tone')}
-        </label>
-        <CustomSelect
+        </Label>
+        <Select
           value={formData.tone}
-          onChange={(val) => setFormData(prev => ({ ...prev, tone: val as Tone }))}
-          options={toneOptions}
-          className="bg-gray-50 border-2 border-transparent focus:border-[#FFDA47] focus:bg-white rounded-xl px-5 py-3 text-[#1A1A1A] font-medium"
-        />
+          onValueChange={(val) => setFormData(prev => ({ ...prev, tone: val as Tone }))}
+        >
+          <SelectTrigger className="w-full bg-gray-50 border-transparent focus:bg-white rounded-xl h-12 text-base font-medium text-[#1A1A1A]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {toneOptions.map(option => (
+              <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Action Button */}
       <div className="space-y-2">
-        <button
+        <Button
           onClick={onSubmit}
           disabled={isLoading || !formData.topic || !formData.audience || !hasCredits}
-          className={`
-                w-full mt-2 py-4 rounded-xl font-bold text-base tracking-wide
-                flex items-center justify-center gap-3 transition-all duration-300 transform
-                ${isLoading
-              ? 'bg-[#1A1A1A] text-white cursor-not-allowed opacity-80'
-              : !hasCredits
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-[#FFDA47] text-[#1A1A1A] hover:bg-[#FFC040] hover:scale-[1.02] hover:shadow-lg hover:shadow-yellow-400/20 active:scale-[0.98]'
-            }
-            `}
+          className={cn(
+            "w-full mt-2 h-14 rounded-xl font-bold text-base tracking-wide flex items-center justify-center gap-3 transition-all duration-300 transform shadow-none",
+            isLoading ? "bg-[#1A1A1A] text-white opacity-80" :
+              !hasCredits ? "bg-gray-100 text-gray-400" :
+                "bg-[#FFDA47] text-[#1A1A1A] hover:bg-[#FFC040] hover:scale-[1.02] hover:shadow-lg hover:shadow-yellow-400/20"
+          )}
         >
           {isLoading ? (
             <>
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" />
               <span>{t('form.consulting_ai')}</span>
             </>
           ) : !hasCredits ? (
@@ -128,7 +138,7 @@ const SparkForm: React.FC<SparkFormProps> = ({ formData, setFormData, onSubmit, 
               {t('form.generate_btn')}
             </>
           )}
-        </button>
+        </Button>
         {!hasCredits && (
           <p className="text-center text-xs font-bold text-red-500">{t('form.upgrade_text')}</p>
         )}

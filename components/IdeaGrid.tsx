@@ -13,6 +13,13 @@ import {
 import { ContentIdea, STATUS_COLORS } from '../types';
 import { FileText, Download, FileJson, Table } from 'lucide-react';
 import { exportToCSV, exportToICS } from '../utils/export';
+import { Button } from './ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 
 interface CalendarGridProps {
   currentDate: Date;
@@ -143,7 +150,7 @@ const DayCell: React.FC<DayCellProps> = ({ day, currentMonth, ideas, onEventClic
 
 const CalendarGrid: React.FC<CalendarGridProps> = ({ currentDate, ideas, onEventClick }) => {
   const { t } = useTranslation();
-  const [showExportMenu, setShowExportMenu] = useState(false);
+  // showExportMenu is replaced by DropdownMenu
 
   // Native date manipulation to replace missing startOfMonth
   const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -177,40 +184,27 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentDate, ideas, onEvent
 
       {/* Export Button (Floating) */}
       <div className="absolute top-4 right-4 z-20">
-        <div className="relative">
-          <button
-            onClick={() => setShowExportMenu(!showExportMenu)}
-            className="p-2 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all text-gray-500 hover:text-[#1A1A1A]"
-            title="Export Calendar"
-          >
-            <Download size={18} />
-          </button>
-
-          {showExportMenu && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden animate-fade-in z-30">
-              <button
-                onClick={() => {
-                  const scheduled = ideas.filter(i => !!i.date);
-                  exportToCSV(scheduled);
-                  setShowExportMenu(false);
-                }}
-                className="w-full text-left px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-              >
-                <Table size={16} /> Export to CSV
-              </button>
-              <button
-                onClick={() => {
-                  const scheduled = ideas.filter(i => !!i.date);
-                  exportToICS(scheduled);
-                  setShowExportMenu(false);
-                }}
-                className="w-full text-left px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-              >
-                <FileJson size={16} /> Export to iCal
-              </button>
-            </div>
-          )}
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" className="h-9 w-9 bg-white border-gray-200 hover:shadow-md text-gray-500 hover:text-[#1A1A1A]">
+              <Download size={18} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={() => {
+              const scheduled = ideas.filter(i => !!i.date);
+              exportToCSV(scheduled);
+            }}>
+              <Table className="mr-2 h-4 w-4" /> Export to CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => {
+              const scheduled = ideas.filter(i => !!i.date);
+              exportToICS(scheduled);
+            }}>
+              <FileJson className="mr-2 h-4 w-4" /> Export to iCal
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Weekday Headers */}

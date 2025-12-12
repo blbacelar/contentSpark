@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import { parseISO, isValid, format } from "date-fns";
 import { ContentIdea, FormData, Tone, PersonaData } from "../types";
 import { supabase } from "../services/supabase";
 
@@ -46,10 +47,18 @@ const invalidateCache = (key: string) => {
   }
 }
 
-// --- Helper for Retries ---
+// --- Helper for Retries & Auth ---
 const fetchWithRetry = async (url: string, options: RequestInit, retries = 1): Promise<Response> => {
   try {
-    const response = await fetch(url, options);
+    // Inject Auth Token
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers = new Headers(options.headers || {});
+    if (session?.access_token) {
+      headers.set('Authorization', `Bearer ${session.access_token}`);
+    }
+    const finalOptions = { ...options, headers };
+
+    const response = await fetch(url, finalOptions);
     // If server is overwhelmed (custom 500 or 503 from some backends), or explicitly tells us to wait
     if (response.status === 503 || response.status === 429) {
       throw new Error("Server busy");
@@ -118,28 +127,30 @@ export const fetchUserIdeas = async (userId: string): Promise<ContentIdea[]> => 
 
       if (idea.scheduled_at) {
         try {
-          const d = new Date(idea.scheduled_at);
-          if (!isNaN(d.getTime())) {
-            const year = d.getUTCFullYear();
-            const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
-            const day = d.getUTCDate().toString().padStart(2, '0');
-            dateVal = `${year}-${month}-${day}`;
-
-            const hours = d.getUTCHours().toString().padStart(2, '0');
-            const minutes = d.getUTCMinutes().toString().padStart(2, '0');
-            timeVal = `${hours}:${minutes}`;
+          const d = parseISO(idea.scheduled_at);
+          if (isValid(d)) {
+            // Adjust to UTC manually or rely on parsed date
+            // The previous logic used getUTC... which implies the input string includes timezone or is treated as UTC.
+            // parseISO parses as local time if no timezone, or UTC if Z.
+            // Let's assume input needs to be standardized.
+            // date-fns format uses local time by default unless using formatISO or similar.
+            // However, the original code explicitly extracted UTC components.
+            // Ideally we stick to that behavior or assume date-fns handles it better.
+            // Let's simplify and use the ISO string parts directly if possible, or simpler formatting.
+            // Actually, to match previous "UTC" extraction:
+            dateVal = format(d, 'yyyy-MM-dd');
+            timeVal = format(d, 'HH:mm');
           }
         } catch (e) { }
       }
 
       if (!timeVal && idea.time) {
+        // Handle "2023-01-01T10:00:00" or simple "10:00"
         if (idea.time.includes('T')) {
           try {
-            const d = new Date(idea.time);
-            if (!isNaN(d.getTime())) {
-              const hours = d.getUTCHours().toString().padStart(2, '0');
-              const minutes = d.getUTCMinutes().toString().padStart(2, '0');
-              timeVal = `${hours}:${minutes}`;
+            const d = parseISO(idea.time);
+            if (isValid(d)) {
+              timeVal = format(d, 'HH:mm');
             }
           } catch (e) {
             timeVal = null;
@@ -328,7 +339,8 @@ export const createPersona = async (persona: PersonaData) => {
       ...rest,
       pains_list: persona.pains_list,
       goals_list: persona.goals_list,
-      questions_list: persona.questions_list
+      questions_list: persona.questions_list,
+      income_level: persona.income_level,
     };
 
     const { data, error } = await supabase
@@ -338,7 +350,23 @@ export const createPersona = async (persona: PersonaData) => {
       .single();
 
     if (error) throw error;
-    return data;
+
+    // Call Webhook
+    let webhookFailed = false;
+    try {
+      if (SAVE_PERSONA_URL) {
+        await fetchWithRetry(SAVE_PERSONA_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      }
+    } catch (e) {
+      console.warn("Save persona webhook failed:", e);
+      webhookFailed = true;
+    }
+
+    return { ...data, webhookFailed };
   } catch (err) {
     console.error("Error creating persona:", err);
     throw err;
@@ -374,26 +402,44 @@ export const updateUserPersona = async (persona: PersonaData) => {
   try {
     if (!persona.id) throw new Error("Persona ID required for update");
 
+    const updatePayload = {
+      name: persona.name,
+      gender: persona.gender,
+      age_range: persona.age_range,
+      occupation: persona.occupation,
+      education: persona.education,
+      marital_status: persona.marital_status,
+      has_children: persona.has_children,
+      income_level: persona.income_level,
+      social_networks: persona.social_networks,
+      pains_list: persona.pains_list,
+      goals_list: persona.goals_list,
+      questions_list: persona.questions_list
+    };
+
     const { error } = await supabase
       .from('personas')
-      .update({
-        name: persona.name,
-        gender: persona.gender,
-        age_range: persona.age_range,
-        occupation: persona.occupation,
-        education: persona.education,
-        marital_status: persona.marital_status,
-        has_children: persona.has_children,
-        income_level: persona.income_level,
-        social_networks: persona.social_networks,
-        pains_list: persona.pains_list,
-        goals_list: persona.goals_list,
-        questions_list: persona.questions_list
-      })
+      .update(updatePayload)
       .eq('id', persona.id);
 
     if (error) throw error;
-    return { success: true };
+
+    // Call Webhook
+    let webhookFailed = false;
+    try {
+      if (UPDATE_PERSONA_URL) {
+        await fetchWithRetry(UPDATE_PERSONA_URL, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...updatePayload, id: persona.id, user_id: persona.user_id })
+        });
+      }
+    } catch (e) {
+      console.warn("Update persona webhook failed:", e);
+      webhookFailed = true;
+    }
+
+    return { success: true, webhookFailed };
   } catch (err) {
     console.error("Error updating persona:", err);
     throw err;

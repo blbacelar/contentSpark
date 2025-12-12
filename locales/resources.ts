@@ -141,7 +141,9 @@ export const resources = {
         clear_fields: "Clear all fields",
         create_new_persona: "Create New Persona",
         delete_persona: "Delete Persona",
-        persona_name: "Persona Name"
+        persona_name: "Persona Name",
+        saved_local_webhook_failed: "Persona saved locally, but AI sync failed.",
+        persona_saved: "Persona saved successfully!"
       },
       settings: {
         connection: "Connection",
@@ -344,7 +346,9 @@ export const resources = {
         clear_fields: "Limpar todos os campos",
         create_new_persona: "Criar Nova Persona",
         delete_persona: "Excluir Persona",
-        persona_name: "Nome da Persona"
+        persona_name: "Nome da Persona",
+        saved_local_webhook_failed: "Persona salva localmente, mas a sincronização com IA falhou.",
+        persona_saved: "Persona salva com sucesso!"
       },
       settings: {
         connection: "Conexão",
