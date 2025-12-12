@@ -1,17 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { useTranslation } from 'react-i18next';
-import { 
-  format, 
-  endOfMonth, 
-  endOfWeek, 
-  eachDayOfInterval, 
-  isSameMonth, 
-  isToday, 
+import {
+  format,
+  endOfMonth,
+  endOfWeek,
+  eachDayOfInterval,
+  isSameMonth,
+  isToday,
   isBefore,
 } from 'date-fns';
 import { ContentIdea, STATUS_COLORS } from '../types';
-import { FileText } from 'lucide-react';
+import { FileText, Download, FileJson, Table } from 'lucide-react';
+import { exportToCSV, exportToICS } from '../utils/export';
 
 interface CalendarGridProps {
   currentDate: Date;
@@ -54,8 +55,8 @@ const DraggableEvent: React.FC<DraggableEventProps> = ({ idea, onClick }) => {
       onClick={(e) => {
         // Prevent click when dragging, but allow standard click
         if (!isDragging) {
-            e.stopPropagation();
-            onClick();
+          e.stopPropagation();
+          onClick();
         }
       }}
       className={`
@@ -66,16 +67,15 @@ const DraggableEvent: React.FC<DraggableEventProps> = ({ idea, onClick }) => {
       `}
     >
       <div className="truncate flex items-center gap-1.5">
-        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-             idea.status === 'Pending' ? 'bg-gray-400' : 
-             idea.status === 'In Progress' ? 'bg-blue-400' :
-             idea.status === 'Completed' ? 'bg-green-400' : 
-             idea.status === 'Blocked' ? 'bg-red-400' : 'bg-purple-400'
-        }`} />
+        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${idea.status === 'Pending' ? 'bg-gray-400' :
+          idea.status === 'In Progress' ? 'bg-blue-400' :
+            idea.status === 'Completed' ? 'bg-green-400' :
+              idea.status === 'Blocked' ? 'bg-red-400' : 'bg-purple-400'
+          }`} />
         {idea.time && (
-            <span className="text-[10px] font-bold opacity-70 flex-shrink-0 min-w-[48px]">
-                {formatTime12h(idea.time)}
-            </span>
+          <span className="text-[10px] font-bold opacity-70 flex-shrink-0 min-w-[48px]">
+            {formatTime12h(idea.time)}
+          </span>
         )}
         <span className="truncate flex-1">{idea.title}</span>
         {hasContent && <FileText size={10} className="flex-shrink-0 opacity-70" />}
@@ -94,7 +94,7 @@ interface DayCellProps {
 
 const DayCell: React.FC<DayCellProps> = ({ day, currentMonth, ideas, onEventClick }) => {
   const dateStr = format(day, 'yyyy-MM-dd');
-  
+
   // Create 'today' date object set to midnight
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -123,8 +123,8 @@ const DayCell: React.FC<DayCellProps> = ({ day, currentMonth, ideas, onEventClic
       <div className="flex justify-center mb-2">
         <span className={`
           text-xs font-bold w-7 h-7 flex items-center justify-center rounded-full
-          ${isDayToday 
-            ? 'bg-[#FFDA47] text-[#1A1A1A]' 
+          ${isDayToday
+            ? 'bg-[#FFDA47] text-[#1A1A1A]'
             : isPast ? 'text-gray-300' : !isCurrentMonth ? 'text-gray-300' : 'text-gray-500'}
         `}>
           {format(day, 'd')}
@@ -143,17 +143,18 @@ const DayCell: React.FC<DayCellProps> = ({ day, currentMonth, ideas, onEventClic
 
 const CalendarGrid: React.FC<CalendarGridProps> = ({ currentDate, ideas, onEventClick }) => {
   const { t } = useTranslation();
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   // Native date manipulation to replace missing startOfMonth
   const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
   monthStart.setHours(0, 0, 0, 0);
 
   const monthEnd = endOfMonth(monthStart);
-  
+
   // Native date manipulation to replace missing startOfWeek (defaults to Sunday)
   const startDate = new Date(monthStart);
   startDate.setDate(monthStart.getDate() - monthStart.getDay());
-  
+
   const endDate = endOfWeek(monthEnd);
 
   const calendarDays = eachDayOfInterval({
@@ -162,18 +163,56 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentDate, ideas, onEvent
   });
 
   const weekDays = [
-      t('calendar.sun'), 
-      t('calendar.mon'), 
-      t('calendar.tue'), 
-      t('calendar.wed'), 
-      t('calendar.thu'), 
-      t('calendar.fri'), 
-      t('calendar.sat')
+    t('calendar.sun'),
+    t('calendar.mon'),
+    t('calendar.tue'),
+    t('calendar.wed'),
+    t('calendar.thu'),
+    t('calendar.fri'),
+    t('calendar.sat')
   ];
 
   return (
-    <div id="tour-calendar" className="flex flex-col h-full bg-white rounded-tr-[32px] rounded-br-[32px] shadow-sm overflow-hidden border-l border-gray-200">
-      
+    <div id="tour-calendar" className="flex flex-col h-full bg-white rounded-tr-[32px] rounded-br-[32px] shadow-sm overflow-hidden border-l border-gray-200 relative">
+
+      {/* Export Button (Floating) */}
+      <div className="absolute top-4 right-4 z-20">
+        <div className="relative">
+          <button
+            onClick={() => setShowExportMenu(!showExportMenu)}
+            className="p-2 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all text-gray-500 hover:text-[#1A1A1A]"
+            title="Export Calendar"
+          >
+            <Download size={18} />
+          </button>
+
+          {showExportMenu && (
+            <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden animate-fade-in z-30">
+              <button
+                onClick={() => {
+                  const scheduled = ideas.filter(i => !!i.date);
+                  exportToCSV(scheduled);
+                  setShowExportMenu(false);
+                }}
+                className="w-full text-left px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+              >
+                <Table size={16} /> Export to CSV
+              </button>
+              <button
+                onClick={() => {
+                  const scheduled = ideas.filter(i => !!i.date);
+                  exportToICS(scheduled);
+                  setShowExportMenu(false);
+                }}
+                className="w-full text-left px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+              >
+                <FileJson size={16} /> Export to iCal
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Weekday Headers */}
       <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
         {weekDays.map(day => (
@@ -186,26 +225,26 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentDate, ideas, onEvent
       {/* Calendar Grid */}
       <div className="grid grid-cols-7 flex-1 overflow-y-auto custom-scrollbar bg-white">
         {calendarDays.map(day => {
-            const dateStr = format(day, 'yyyy-MM-dd');
-            // Sort ideas by time (ascending), put items without time at the bottom
-            const dayIdeas = ideas
-                .filter(i => i.date === dateStr)
-                .sort((a, b) => {
-                    if (!a.time && !b.time) return 0;
-                    if (!a.time) return 1;
-                    if (!b.time) return -1;
-                    return a.time!.localeCompare(b.time!);
-                });
+          const dateStr = format(day, 'yyyy-MM-dd');
+          // Sort ideas by time (ascending), put items without time at the bottom
+          const dayIdeas = ideas
+            .filter(i => i.date === dateStr)
+            .sort((a, b) => {
+              if (!a.time && !b.time) return 0;
+              if (!a.time) return 1;
+              if (!b.time) return -1;
+              return a.time!.localeCompare(b.time!);
+            });
 
-            return (
-                <DayCell 
-                    key={day.toISOString()} 
-                    day={day} 
-                    currentMonth={currentDate} 
-                    ideas={dayIdeas}
-                    onEventClick={onEventClick}
-                />
-            );
+          return (
+            <DayCell
+              key={day.toISOString()}
+              day={day}
+              currentMonth={currentDate}
+              ideas={dayIdeas}
+              onEventClick={onEventClick}
+            />
+          );
         })}
       </div>
     </div>

@@ -9,13 +9,13 @@ import AuthPage from './components/AuthPage';
 // Guard for Protected Routes
 const RequireAuth = ({ children }: { children?: React.ReactNode }) => {
   const { user, loading } = useAuth();
-  
+
   if (loading) {
-     return (
-        <div className="flex h-screen w-screen items-center justify-center bg-[#F2F2F2]">
-            <Loader2 className="w-8 h-8 animate-spin text-[#FFDA47]" />
-        </div>
-     );
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-[#F2F2F2]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#FFDA47]" />
+      </div>
+    );
   }
 
   if (!user) {
@@ -31,10 +31,10 @@ const PublicRoute = ({ children }: { children?: React.ReactNode }) => {
 
   if (loading) {
     return (
-        <div className="flex h-screen w-screen items-center justify-center bg-[#F2F2F2]">
-            <Loader2 className="w-8 h-8 animate-spin text-[#FFDA47]" />
-        </div>
-     );
+      <div className="flex h-screen w-screen items-center justify-center bg-[#F2F2F2]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#FFDA47]" />
+      </div>
+    );
   }
 
   if (user) {
@@ -47,19 +47,19 @@ const PublicRoute = ({ children }: { children?: React.ReactNode }) => {
 export default function App() {
   return (
     <BrowserRouter>
-        <Routes>
-            {/* Landing Page is Public */}
-            <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
-            
-            {/* Login is Public (but redirects if logged in) */}
-            <Route path="/login" element={<PublicRoute><AuthPage /></PublicRoute>} />
-            
-            {/* App is Protected */}
-            <Route path="/app" element={<RequireAuth><Dashboard /></RequireAuth>} />
-            
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+      <Routes>
+        {/* Landing Page is Public (redirects to app if logged in) */}
+        <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
+
+        {/* Login is Public (but redirects if logged in) */}
+        <Route path="/login" element={<PublicRoute><AuthPage /></PublicRoute>} />
+
+        {/* App is Protected */}
+        <Route path="/app" element={<RequireAuth><Dashboard /></RequireAuth>} />
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </BrowserRouter>
   );
 }

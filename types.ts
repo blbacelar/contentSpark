@@ -21,12 +21,15 @@ export interface ContentIdea {
   date: string | null; // ISO Date String YYYY-MM-DD
   time: string | null; // HH:mm 24-hour format
   status: IdeaStatus;
+  persona_id?: string;
+  persona_name?: string;
 }
 
 export interface FormData {
   topic: string;
   audience: string;
   tone: Tone;
+  persona_id?: string;
 }
 
 export interface WebhookConfig {
@@ -41,9 +44,12 @@ export interface UserProfile {
   avatar_url?: string;
   credits: number;
   has_completed_onboarding?: boolean;
+  tier?: 'free' | 'creator' | 'pro';
 }
 
 export interface PersonaData {
+  id?: string;
+  name?: string;
   user_id?: string;
   gender: string;
   age_range: string;

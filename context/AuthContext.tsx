@@ -23,27 +23,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, avatar_url, credits')
-        .eq('id', userId)
-        .single();
-      
-      if (error) {
-        console.error("Error fetching profile:", error);
+      const response = await fetch('https://n8n.bacelardigital.tech/webhook/get-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch profile via webhook');
       }
-      
+
+      const data = await response.json();
+
       if (data) {
+        // Ensure data is mapped correctly from webhook response
+        // n8n might return a single object or an array
+        const profileData = Array.isArray(data) ? data[0] : data;
+
         setProfile({
-            id: data.id,
-            first_name: data.first_name,
-            last_name: data.last_name,
-            avatar_url: data.avatar_url,
-            credits: data.credits ?? 0 // Default to 0 if null
+          id: profileData.id,
+          first_name: profileData.first_name,
+          last_name: profileData.last_name,
+          avatar_url: profileData.avatar_url,
+          credits: profileData.credits ?? 0,
+          has_completed_onboarding: profileData.has_completed_onboarding,
+          tier: profileData.tier || 'free' // Default to free if missing
         });
       }
     } catch (err) {
-      console.error("Unexpected error fetching profile:", err);
+      console.error("Error fetching profile from webhook:", err);
+      // Fallback or retry logic could go here if critical
     }
   };
 
@@ -52,86 +61,93 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check active sessions and sets the user
     const initSession = async () => {
-        try {
-            const { data, error } = await supabase.auth.getSession();
-            if (error) {
-                console.error("Session init error:", error);
-                throw error;
-            }
-            
-            if (mounted) {
-                const session = data?.session ?? null;
-                setSession(session);
-                setUser(session?.user ?? null);
-                
-                if (session?.user) {
-                    await fetchProfile(session.user.id);
-                }
-            }
-        } catch (err) {
-            console.error("Auth initialization failed:", err);
-        } finally {
-            if (mounted) {
-                setLoading(false);
-            }
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error("Session init error:", error);
+          throw error;
         }
+
+        if (mounted) {
+          const session = data?.session ?? null;
+          setSession(session);
+          setUser(session?.user ?? null);
+
+          if (session?.user) {
+            await fetchProfile(session.user.id);
+          }
+        }
+      } catch (err) {
+        console.error("Auth initialization failed:", err);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
     };
 
     initSession();
+
+    // Safety timeout to prevent infinite loading
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 4000);
 
     // Listen for changes on auth state (sign in, sign out, etc.)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
-      
+
       // Explicitly handle SIGNED_OUT event
       if (event === 'SIGNED_OUT') {
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-          setLoading(false);
-          return;
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
       }
 
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
-         await fetchProfile(session.user.id);
+        // Don't await this inside the listener to avoid blocking UI updates if it hangs
+        fetchProfile(session.user.id).catch(console.error);
       } else {
-         setProfile(null);
+        setProfile(null);
       }
       setLoading(false);
     });
 
     return () => {
-        mounted = false;
-        subscription.unsubscribe();
+      mounted = false;
+      clearTimeout(timer);
+      subscription.unsubscribe();
     };
   }, []);
 
   const signOut = async () => {
     try {
-        await supabase.auth.signOut();
+      await supabase.auth.signOut();
     } catch (error) {
-        console.error("Error during supabase signOut:", error);
+      console.error("Error during supabase signOut:", error);
     } finally {
-        // Force clear state to ensure UI updates
-        setSession(null);
-        setUser(null);
-        setProfile(null);
+      // Force clear state to ensure UI updates
+      setSession(null);
+      setUser(null);
+      setProfile(null);
     }
   };
 
   const refreshProfile = async () => {
-      if (user) {
-          await fetchProfile(user.id);
-      }
+    if (user) {
+      await fetchProfile(user.id);
+    }
   };
 
   const updateCredits = (newCount: number) => {
-      setProfile(prev => prev ? { ...prev, credits: newCount } : null);
+    setProfile(prev => prev ? { ...prev, credits: newCount } : null);
   };
 
   const value = {

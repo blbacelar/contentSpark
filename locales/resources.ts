@@ -54,7 +54,13 @@ export const resources = {
         general: "General",
         add_manual: "Add Manual Idea",
         draft_ready: "Draft Ready",
-        scheduled: "Scheduled"
+        scheduled: "Scheduled",
+        plans: {
+          free: "Free Plan",
+          creator: "Creator Plan",
+          pro: "Pro Plan",
+          unknown: "Free Plan"
+        }
       },
       calendar: {
         today: "Today",
@@ -71,6 +77,7 @@ export const resources = {
       form: {
         title: "Strategy Engine",
         subtitle: "Define parameters for your new content batch.",
+        persona: "Target Persona",
         topic: "Topic",
         topic_placeholder: "e.g., Vegan Cooking",
         audience: "Audience",
@@ -131,7 +138,10 @@ export const resources = {
         toast_updated: "Profile updated successfully!",
         toast_cleared: "Form cleared. Click Save to persist changes.",
         remove_item: "Remove item",
-        clear_fields: "Clear all fields"
+        clear_fields: "Clear all fields",
+        create_new_persona: "Create New Persona",
+        delete_persona: "Delete Persona",
+        persona_name: "Persona Name"
       },
       settings: {
         connection: "Connection",
@@ -159,27 +169,27 @@ export const resources = {
       },
       options: {
         gender: {
-            Male: "Male",
-            Female: "Female",
-            NonBinary: "Non-binary",
-            All: "All"
+          Male: "Male",
+          Female: "Female",
+          NonBinary: "Non-binary",
+          All: "All"
         },
         education: {
-            HighSchool: "High School",
-            Bachelor: "Bachelor's",
-            Master: "Master's",
-            PhD: "PhD"
+          HighSchool: "High School",
+          Bachelor: "Bachelor's",
+          Master: "Master's",
+          PhD: "PhD"
         },
         marital: {
-            Single: "Single",
-            Married: "Married",
-            Divorced: "Divorced"
+          Single: "Single",
+          Married: "Married",
+          Divorced: "Divorced"
         },
         income: {
-            Low: "Low",
-            Middle: "Middle",
-            High: "High",
-            Affluent: "Affluent"
+          Low: "Low",
+          Middle: "Middle",
+          High: "High",
+          Affluent: "Affluent"
         }
       },
       placeholders: {
@@ -247,7 +257,13 @@ export const resources = {
         general: "Geral",
         add_manual: "Adicionar Ideia Manual",
         draft_ready: "Pronto para Rascunho",
-        scheduled: "Agendado"
+        scheduled: "Agendado",
+        plans: {
+          free: "Plano Gratuito",
+          creator: "Plano Creator",
+          pro: "Plano Pro",
+          unknown: "Plano Gratuito"
+        }
       },
       calendar: {
         today: "Hoje",
@@ -264,6 +280,7 @@ export const resources = {
       form: {
         title: "Motor de Estratégia",
         subtitle: "Defina parâmetros para seu novo lote de conteúdo.",
+        persona: "Persona Alvo",
         topic: "Tópico",
         topic_placeholder: "ex: Culinária Vegana",
         audience: "Público",
@@ -324,7 +341,10 @@ export const resources = {
         toast_updated: "Perfil atualizado com sucesso!",
         toast_cleared: "Formulário limpo. Clique em Salvar para persistir.",
         remove_item: "Remover item",
-        clear_fields: "Limpar todos os campos"
+        clear_fields: "Limpar todos os campos",
+        create_new_persona: "Criar Nova Persona",
+        delete_persona: "Excluir Persona",
+        persona_name: "Nome da Persona"
       },
       settings: {
         connection: "Conexão",
@@ -352,27 +372,27 @@ export const resources = {
       },
       options: {
         gender: {
-            Male: "Masculino",
-            Female: "Feminino",
-            NonBinary: "Não-binário",
-            All: "Todos"
+          Male: "Masculino",
+          Female: "Feminino",
+          NonBinary: "Não-binário",
+          All: "Todos"
         },
         education: {
-            HighSchool: "Ensino Médio",
-            Bachelor: "Graduação",
-            Master: "Mestrado",
-            PhD: "Doutorado"
+          HighSchool: "Ensino Médio",
+          Bachelor: "Graduação",
+          Master: "Mestrado",
+          PhD: "Doutorado"
         },
         marital: {
-            Single: "Solteiro(a)",
-            Married: "Casado(a)",
-            Divorced: "Divorciado(a)"
+          Single: "Solteiro(a)",
+          Married: "Casado(a)",
+          Divorced: "Divorciado(a)"
         },
         income: {
-            Low: "Baixa",
-            Middle: "Média",
-            High: "Alta",
-            Affluent: "Muito Alta"
+          Low: "Baixa",
+          Middle: "Média",
+          High: "Alta",
+          Affluent: "Muito Alta"
         }
       },
       placeholders: {

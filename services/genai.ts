@@ -13,8 +13,10 @@ const GET_PERSONA_URL = "https://n8n.bacelardigital.tech/webhook/get-persona";
 const SAVE_PERSONA_URL = "https://n8n.bacelardigital.tech/webhook/save-persona";
 const UPDATE_PERSONA_URL = "https://n8n.bacelardigital.tech/webhook/update-persona";
 const CREATE_IDEA_WEBHOOK_URL = "https://n8n.bacelardigital.tech/webhook/create-idea";
+const CREATE_CHECKOUT_URL = "https://n8n.bacelardigital.tech/webhook/create-checkout";
 
 export const generateId = () => Math.random().toString(36).substr(2, 9);
+
 
 // --- Caching Helpers ---
 const CACHE_PREFIX = 'CS_CACHE_';
@@ -37,129 +39,129 @@ const setCache = (key: string, data: any) => {
 };
 
 const invalidateCache = (key: string) => {
-    try {
-        localStorage.removeItem(key);
-    } catch (e) {
-        console.warn("Cache clear failed", e);
-    }
+  try {
+    localStorage.removeItem(key);
+  } catch (e) {
+    console.warn("Cache clear failed", e);
+  }
 }
 
 // --- Helper for Retries ---
 const fetchWithRetry = async (url: string, options: RequestInit, retries = 1): Promise<Response> => {
-    try {
-        const response = await fetch(url, options);
-        // If server is overwhelmed (custom 500 or 503 from some backends), or explicitly tells us to wait
-        if (response.status === 503 || response.status === 429) {
-             throw new Error("Server busy");
-        }
-        
-        // Check for specific error messages in text if status is error-like
-        if (!response.ok) {
-            const clone = response.clone();
-            const text = await clone.text();
-            if (text.includes("overwhelmed") || text.includes("database is busy")) {
-                throw new Error("Server overwhelmed");
-            }
-        }
-        
-        return response;
-    } catch (err: any) {
-        if (retries > 0 && (err.message.includes("busy") || err.message.includes("overwhelmed"))) {
-            await new Promise(res => setTimeout(res, 2000)); // Wait 2s
-            return fetchWithRetry(url, options, retries - 1);
-        }
-        throw err;
+  try {
+    const response = await fetch(url, options);
+    // If server is overwhelmed (custom 500 or 503 from some backends), or explicitly tells us to wait
+    if (response.status === 503 || response.status === 429) {
+      throw new Error("Server busy");
     }
+
+    // Check for specific error messages in text if status is error-like
+    if (!response.ok) {
+      const clone = response.clone();
+      const text = await clone.text();
+      if (text.includes("overwhelmed") || text.includes("database is busy")) {
+        throw new Error("Server overwhelmed");
+      }
+    }
+
+    return response;
+  } catch (err: any) {
+    if (retries > 0 && (err.message.includes("busy") || err.message.includes("overwhelmed"))) {
+      await new Promise(res => setTimeout(res, 2000)); // Wait 2s
+      return fetchWithRetry(url, options, retries - 1);
+    }
+    throw err;
+  }
 };
 
 // --- Services ---
 
 export const fetchUserIdeas = async (userId: string): Promise<ContentIdea[]> => {
   const cacheKey = `${CACHE_PREFIX}IDEAS_${userId}`;
-  
+
   // Try Cache First
   const cached = getCache<ContentIdea[]>(cacheKey);
   if (cached) {
-      return cached;
+    return cached;
   }
 
   try {
     const url = `${GET_USER_IDEAS_URL}?user_id=${encodeURIComponent(userId)}`;
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch user ideas: ${response.status}`);
     }
 
     const data = await response.json();
-    
+
     let ideas: any[] = [];
     if (Array.isArray(data)) {
       ideas = data;
     } else if (data.ideas && Array.isArray(data.ideas)) {
       ideas = data.ideas;
     } else {
-        return [];
+      return [];
     }
-    
+
     // Normalize data structure
     const normalizedIdeas = ideas.map(idea => {
-        let platforms: string[] = ["General"];
-        if (Array.isArray(idea.platform)) {
-          platforms = idea.platform;
-        } else if (typeof idea.platform === 'string') {
-          platforms = [idea.platform];
+      let platforms: string[] = ["General"];
+      if (Array.isArray(idea.platform)) {
+        platforms = idea.platform;
+      } else if (typeof idea.platform === 'string') {
+        platforms = [idea.platform];
+      }
+
+      let dateVal: string | null = idea.date || null;
+      let timeVal: string | null = null;
+
+      if (idea.scheduled_at) {
+        try {
+          const d = new Date(idea.scheduled_at);
+          if (!isNaN(d.getTime())) {
+            const year = d.getUTCFullYear();
+            const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
+            const day = d.getUTCDate().toString().padStart(2, '0');
+            dateVal = `${year}-${month}-${day}`;
+
+            const hours = d.getUTCHours().toString().padStart(2, '0');
+            const minutes = d.getUTCMinutes().toString().padStart(2, '0');
+            timeVal = `${hours}:${minutes}`;
+          }
+        } catch (e) { }
+      }
+
+      if (!timeVal && idea.time) {
+        if (idea.time.includes('T')) {
+          try {
+            const d = new Date(idea.time);
+            if (!isNaN(d.getTime())) {
+              const hours = d.getUTCHours().toString().padStart(2, '0');
+              const minutes = d.getUTCMinutes().toString().padStart(2, '0');
+              timeVal = `${hours}:${minutes}`;
+            }
+          } catch (e) {
+            timeVal = null;
+          }
+        } else {
+          timeVal = idea.time.substring(0, 5);
         }
+      }
 
-        let dateVal: string | null = idea.date || null;
-        let timeVal: string | null = null;
-
-        if (idea.scheduled_at) {
-            try {
-                const d = new Date(idea.scheduled_at);
-                if (!isNaN(d.getTime())) {
-                    const year = d.getUTCFullYear();
-                    const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
-                    const day = d.getUTCDate().toString().padStart(2, '0');
-                    dateVal = `${year}-${month}-${day}`;
-
-                    const hours = d.getUTCHours().toString().padStart(2, '0');
-                    const minutes = d.getUTCMinutes().toString().padStart(2, '0');
-                    timeVal = `${hours}:${minutes}`;
-                }
-            } catch (e) {}
-        }
-
-        if (!timeVal && idea.time) {
-             if (idea.time.includes('T')) {
-                 try {
-                    const d = new Date(idea.time);
-                    if (!isNaN(d.getTime())) {
-                        const hours = d.getUTCHours().toString().padStart(2, '0');
-                        const minutes = d.getUTCMinutes().toString().padStart(2, '0');
-                        timeVal = `${hours}:${minutes}`;
-                    }
-                 } catch (e) {
-                    timeVal = null;
-                 }
-             } else {
-                 timeVal = idea.time.substring(0, 5);
-             }
-        }
-
-        return {
-            id: idea.id || generateId(),
-            title: idea.title || "Untitled",
-            description: idea.description || "",
-            hook: idea.hook || "",
-            caption: idea.caption || "",
-            cta: idea.cta || "",
-            hashtags: idea.hashtags || "",
-            platform: platforms,
-            date: dateVal,
-            time: timeVal,
-            status: idea.status || 'Pending'
-        };
+      return {
+        id: idea.id || generateId(),
+        title: idea.title || "Untitled",
+        description: idea.description || "",
+        hook: idea.hook || "",
+        caption: idea.caption || "",
+        cta: idea.cta || "",
+        hashtags: idea.hashtags || "",
+        platform: platforms,
+        date: dateVal,
+        time: timeVal,
+        status: idea.status || 'Pending'
+      };
     });
 
     setCache(cacheKey, normalizedIdeas);
@@ -174,25 +176,25 @@ export const fetchUserIdeas = async (userId: string): Promise<ContentIdea[]> => 
 export const updateContent = async (payload: Partial<ContentIdea>, userId?: string) => {
   // Optimistically update cache if userId is present
   if (userId && payload.id) {
-      const cacheKey = `${CACHE_PREFIX}IDEAS_${userId}`;
-      const cached = getCache<ContentIdea[]>(cacheKey);
-      if (cached) {
-          const updated = cached.map(i => i.id === payload.id ? { ...i, ...payload } : i);
-          setCache(cacheKey, updated);
-      }
+    const cacheKey = `${CACHE_PREFIX}IDEAS_${userId}`;
+    const cached = getCache<ContentIdea[]>(cacheKey);
+    if (cached) {
+      const updated = cached.map(i => i.id === payload.id ? { ...i, ...payload } : i);
+      setCache(cacheKey, updated);
+    }
   }
 
   if (!UPDATE_WEBHOOK_URL) return;
-  
+
   try {
     const finalPayload: any = {
-        ...payload,
-        user_id: userId,
-        platform_suggestion: payload.platform
+      ...payload,
+      user_id: userId,
+      platform_suggestion: payload.platform
     };
 
     if (payload.date && payload.time) {
-        finalPayload.time = `${payload.date}T${payload.time}:00`;
+      finalPayload.time = `${payload.date}T${payload.time}:00`;
     }
 
     const response = await fetchWithRetry(UPDATE_WEBHOOK_URL, {
@@ -203,10 +205,10 @@ export const updateContent = async (payload: Partial<ContentIdea>, userId?: stri
 
     const text = await response.text();
     let data: any = {};
-    try { data = JSON.parse(text); } catch (e) {}
+    try { data = JSON.parse(text); } catch (e) { }
 
     if (response.status === 500 || !response.ok || data.error === true) {
-        throw new Error(data.message || data.error || `Update failed: ${response.status}`);
+      throw new Error(data.message || data.error || `Update failed: ${response.status}`);
     }
   } catch (error) {
     console.error("Failed to update content via webhook:", error);
@@ -220,18 +222,18 @@ export const createContentIdea = async (idea: ContentIdea, userId: string) => {
   const cached = getCache<ContentIdea[]>(cacheKey) || [];
   // Avoid duplicates in cache if possible
   if (!cached.some(i => i.id === idea.id)) {
-      setCache(cacheKey, [...cached, idea]);
+    setCache(cacheKey, [...cached, idea]);
   }
 
   try {
     const payload: any = {
-        ...idea,
-        user_id: userId,
-        platform_suggestion: idea.platform
+      ...idea,
+      user_id: userId,
+      platform_suggestion: idea.platform
     };
 
     if (idea.date && idea.time) {
-        payload.time = `${idea.date}T${idea.time}:00`;
+      payload.time = `${idea.date}T${idea.time}:00`;
     }
 
     const response = await fetchWithRetry(CREATE_IDEA_WEBHOOK_URL, {
@@ -242,19 +244,19 @@ export const createContentIdea = async (idea: ContentIdea, userId: string) => {
 
     const text = await response.text();
     let data: any = {};
-    try { data = JSON.parse(text); } catch (e) {}
+    try { data = JSON.parse(text); } catch (e) { }
 
     if (response.status === 500 || !response.ok || data.error === true) {
-        // Handle n8n specific error message "Unused Respond to Webhook..."
-        const msg = data.message || (typeof data.error === 'string' ? data.error : '');
-        if (msg.includes("Unused Respond to Webhook node")) {
-            // This is a configuration error on n8n side but operation likely finished.
-            // We can treat it as a warning and return success.
-            console.warn("Webhook warning:", msg);
-            return { success: true, warning: "Webhook response missing" };
-        }
-        
-        throw new Error(msg || `Create failed: ${response.status}`);
+      // Handle n8n specific error message "Unused Respond to Webhook..."
+      const msg = data.message || (typeof data.error === 'string' ? data.error : '');
+      if (msg.includes("Unused Respond to Webhook node")) {
+        // This is a configuration error on n8n side but operation likely finished.
+        // We can treat it as a warning and return success.
+        console.warn("Webhook warning:", msg);
+        return { success: true, warning: "Webhook response missing" };
+      }
+
+      throw new Error(msg || `Create failed: ${response.status}`);
     }
     return data;
   } catch (error) {
@@ -265,11 +267,11 @@ export const createContentIdea = async (idea: ContentIdea, userId: string) => {
 
 export const deleteContent = async (id: string, userId?: string) => {
   if (userId) {
-      const cacheKey = `${CACHE_PREFIX}IDEAS_${userId}`;
-      const cached = getCache<ContentIdea[]>(cacheKey);
-      if (cached) {
-          setCache(cacheKey, cached.filter(i => i.id !== id));
-      }
+    const cacheKey = `${CACHE_PREFIX}IDEAS_${userId}`;
+    const cached = getCache<ContentIdea[]>(cacheKey);
+    if (cached) {
+      setCache(cacheKey, cached.filter(i => i.id !== id));
+    }
   }
 
   if (!DELETE_WEBHOOK_URL) return;
@@ -289,99 +291,112 @@ export const deleteContent = async (id: string, userId?: string) => {
   }
 };
 
-export const fetchUserPersona = async (userId: string): Promise<PersonaData | null> => {
-  const cacheKey = `${CACHE_PREFIX}PERSONA_${userId}`;
-  const cached = getCache<PersonaData>(cacheKey);
-  if (cached) return cached;
-
+export const fetchPersonas = async (userId: string): Promise<PersonaData[]> => {
   try {
-    const url = `${GET_PERSONA_URL}?user_id=${encodeURIComponent(userId)}`;
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-       console.warn(`Failed to fetch persona: ${response.status}`);
-       return null;
-    }
-    
-    const text = await response.text();
-    if (!text) return null;
-    
-    try {
-        const data = JSON.parse(text);
-        if (Object.keys(data).length === 0) return null;
-        
-        // Ensure arrays are arrays
-        const safeData: PersonaData = {
-            ...data,
-            pains_list: Array.isArray(data.pains_list) ? data.pains_list : [],
-            goals_list: Array.isArray(data.goals_list) ? data.goals_list : [],
-            questions_list: Array.isArray(data.questions_list) ? data.questions_list : [],
-        };
+    const { data, error } = await supabase
+      .from('personas')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-        setCache(cacheKey, safeData);
-        return safeData;
-    } catch (e) {
-        return null;
-    }
-  } catch (error) {
-    console.error("Error fetching persona:", error);
-    return null;
+    if (error) throw error;
+
+    return (data || []).map(p => ({
+      ...p,
+      pains_list: p.pains_list || [],
+      goals_list: p.goals_list || [],
+      questions_list: p.questions_list || []
+    }));
+  } catch (err) {
+    console.error("Error fetching personas:", err);
+    return [];
+  }
+};
+
+export const fetchUserPersona = async (userId: string): Promise<PersonaData | null> => {
+  // Deprecated for direct use, fetches the most recent persona
+  const personas = await fetchPersonas(userId);
+  return personas.length > 0 ? personas[0] : null;
+};
+
+export const createPersona = async (persona: PersonaData) => {
+  try {
+    // Remove id if empty string to allow db generation
+    const { id, ...rest } = persona;
+
+    const payload = {
+      ...rest,
+      pains_list: persona.pains_list,
+      goals_list: persona.goals_list,
+      questions_list: persona.questions_list
+    };
+
+    const { data, error } = await supabase
+      .from('personas')
+      .insert(payload)
+      .select() // Return the created object
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error("Error creating persona:", err);
+    throw err;
   }
 };
 
 export const saveUserPersona = async (persona: PersonaData) => {
-  // Update Cache Immediately
-  if (persona.user_id) {
-     const cacheKey = `${CACHE_PREFIX}PERSONA_${persona.user_id}`;
-     setCache(cacheKey, persona);
-  }
-
-  try {
-    const response = await fetch(SAVE_PERSONA_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(persona),
-    });
-
-    const text = await response.text();
-    let data: any = {};
-    try { data = JSON.parse(text); } catch (e) {}
-
-    if (response.status === 500 || !response.ok || data.error === true) {
-         throw new Error(data.message || (typeof data.error === 'string' ? data.error : `Failed to save persona`));
-    }
-    return data;
-  } catch (error) {
-    console.error("Error saving persona:", error);
-    throw error;
+  // Legacy support: Just create or update based on if we find one? 
+  // actually, let's make this create a new one if it has no ID, or update if it does.
+  if (persona.id) {
+    return updateUserPersona(persona);
+  } else {
+    return createPersona(persona);
   }
 };
 
-export const updateUserPersona = async (persona: PersonaData) => {
-   // Update Cache Immediately
-  if (persona.user_id) {
-     const cacheKey = `${CACHE_PREFIX}PERSONA_${persona.user_id}`;
-     setCache(cacheKey, persona);
-  }
-
+export const deletePersona = async (id: string, userId: string) => {
   try {
-    const response = await fetch(UPDATE_PERSONA_URL, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(persona),
-    });
+    const { error } = await supabase
+      .from('personas')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
 
-    const text = await response.text();
-    let data: any = {};
-    try { data = JSON.parse(text); } catch (e) {}
+    if (error) throw error;
+  } catch (err) {
+    console.error("Error deleting persona:", err);
+    throw err;
+  }
+}
 
-    if (response.status === 500 || !response.ok || data.error === true) {
-         throw new Error(data.message || (typeof data.error === 'string' ? data.error : `Failed to update persona`));
-    }
-    return data;
-  } catch (error) {
-    console.error("Error updating persona:", error);
-    throw error;
+export const updateUserPersona = async (persona: PersonaData) => {
+  try {
+    if (!persona.id) throw new Error("Persona ID required for update");
+
+    const { error } = await supabase
+      .from('personas')
+      .update({
+        name: persona.name,
+        gender: persona.gender,
+        age_range: persona.age_range,
+        occupation: persona.occupation,
+        education: persona.education,
+        marital_status: persona.marital_status,
+        has_children: persona.has_children,
+        income_level: persona.income_level,
+        social_networks: persona.social_networks,
+        pains_list: persona.pains_list,
+        goals_list: persona.goals_list,
+        questions_list: persona.questions_list
+      })
+      .eq('id', persona.id);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (err) {
+    console.error("Error updating persona:", err);
+    throw err;
   }
 };
 
@@ -392,7 +407,7 @@ export const generateContent = async (
   persona?: PersonaData | null,
   language: string = 'en'
 ): Promise<ContentIdea[]> => {
-  
+
   // Construct Persona Payload Object
   const personaPayload = persona ? {
     gender: persona.gender || "",
@@ -417,22 +432,22 @@ export const generateContent = async (
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            ...formData,
-            user_id: userId,
-            persona: personaPayload,
-            language: language // Pass selected language
+          ...formData,
+          user_id: userId,
+          persona: personaPayload,
+          language: language // Pass selected language
         }),
       });
 
       const text = await response.text();
       let data: any = {};
-      
+
       try { data = JSON.parse(text); } catch (e) {
-          if (!response.ok) throw new Error(`Webhook failed: ${response.status}`);
+        if (!response.ok) throw new Error(`Webhook failed: ${response.status}`);
       }
 
       if (response.status === 500 || !response.ok || data.error === true) {
-          throw new Error(data.message || `Server Error: ${response.status}`);
+        throw new Error(data.message || `Server Error: ${response.status}`);
       }
 
       let ideas: any[] = [];
@@ -445,7 +460,7 @@ export const generateContent = async (
         if (Array.isArray(idea.platform)) platforms = idea.platform;
         else if (typeof idea.platform === 'string') platforms = [idea.platform];
 
-        return { 
+        return {
           id: idea.id || generateId(),
           title: idea.title || "Untitled",
           description: idea.description || "",
@@ -456,24 +471,26 @@ export const generateContent = async (
           platform: platforms,
           date: null,
           time: null,
-          status: 'Pending'
+          status: 'Pending',
+          persona_id: persona?.id,
+          persona_name: persona?.name
         };
       });
 
     } catch (error) {
       console.warn("Webhook generation failed:", error);
-      throw error; 
+      throw error;
     }
   } else {
     // Gemini API Implementation
     try {
-        let personaContext = "";
-        if (persona) {
-            const painsStr = (persona.pains_list || []).filter(s => s && s.trim()).map(s => `- ${s}`).join('\n') || persona.pain_points || "N/A";
-            const goalsStr = (persona.goals_list || []).filter(s => s && s.trim()).map(s => `- ${s}`).join('\n') || persona.goals || "N/A";
-            const questionsStr = (persona.questions_list || []).filter(s => s && s.trim()).map(s => `- ${s}`).join('\n') || "N/A";
+      let personaContext = "";
+      if (persona) {
+        const painsStr = (persona.pains_list || []).filter(s => s && s.trim()).map(s => `- ${s}`).join('\n') || persona.pain_points || "N/A";
+        const goalsStr = (persona.goals_list || []).filter(s => s && s.trim()).map(s => `- ${s}`).join('\n') || persona.goals || "N/A";
+        const questionsStr = (persona.questions_list || []).filter(s => s && s.trim()).map(s => `- ${s}`).join('\n') || "N/A";
 
-            personaContext = `
+        personaContext = `
             Target Persona Context:
             - Occupation: ${persona.occupation}
             - Age Range: ${persona.age_range}
@@ -488,9 +505,9 @@ export const generateContent = async (
             Burning Questions:
             ${questionsStr}
             `;
-        }
+      }
 
-        const prompt = `
+      const prompt = `
         Generate 6 unique, creative, and high-quality content ideas in ${language.startsWith('pt') ? 'Portuguese' : 'English'}.
         
         Context:
@@ -509,16 +526,16 @@ export const generateContent = async (
         7. A list of suitable Social Media Platforms
         `;
 
-        const response = await ai.models.generateContent({
+      const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents: prompt,
         config: {
-            responseMimeType: "application/json",
-            responseSchema: {
+          responseMimeType: "application/json",
+          responseSchema: {
             type: Type.ARRAY,
             items: {
-                type: Type.OBJECT,
-                properties: {
+              type: Type.OBJECT,
+              properties: {
                 title: { type: Type.STRING },
                 description: { type: Type.STRING },
                 hook: { type: Type.STRING },
@@ -526,65 +543,90 @@ export const generateContent = async (
                 cta: { type: Type.STRING },
                 hashtags: { type: Type.STRING },
                 platform: { type: Type.ARRAY, items: { type: Type.STRING } },
-                },
-                required: ["title", "description", "hook", "caption", "cta", "hashtags", "platform"],
+              },
+              required: ["title", "description", "hook", "caption", "cta", "hashtags", "platform"],
             },
-            },
+          },
         },
-        });
+      });
 
-        const text = response.text;
-        if (!text) return [];
-        
-        const rawIdeas = JSON.parse(text) as Omit<ContentIdea, 'id' | 'date' | 'status'>[];
-        generatedIdeas = rawIdeas.map(idea => ({ 
-        ...idea, 
+      const text = response.text;
+      if (!text) return [];
+
+      const rawIdeas = JSON.parse(text) as Omit<ContentIdea, 'id' | 'date' | 'status'>[];
+      generatedIdeas = rawIdeas.map(idea => ({
+        ...idea,
         id: generateId(),
         date: null,
         time: null,
-        status: 'Pending'
-        }));
+        status: 'Pending',
+        persona_id: persona?.id,
+        persona_name: persona?.name
+      }));
 
     } catch (error) {
-        console.error("Gemini generation failed:", error);
-        throw new Error("Failed to generate content via AI Strategy Team.");
+      console.error("Gemini generation failed:", error);
+      throw new Error("Failed to generate content via AI Strategy Team.");
     }
   }
 
   // Update Ideas Cache with new generated items
   if (userId && generatedIdeas.length > 0) {
-      const cacheKey = `${CACHE_PREFIX}IDEAS_${userId}`;
-      const cached = getCache<ContentIdea[]>(cacheKey) || [];
-      // Append new ideas
-      setCache(cacheKey, [...cached, ...generatedIdeas]);
+    const cacheKey = `${CACHE_PREFIX}IDEAS_${userId}`;
+    const cached = getCache<ContentIdea[]>(cacheKey) || [];
+    // Append new ideas
+    setCache(cacheKey, [...cached, ...generatedIdeas]);
   }
 
   return generatedIdeas;
 };
 
 export const completeUserOnboarding = async (userId: string) => {
-    const WEBHOOK_URL = "https://n8n.bacelardigital.tech/webhook/complete-onboarding";
-    
-    // 1. Try Webhook (Log warning on failure but don't stop)
-    try {
-        await fetch(WEBHOOK_URL, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId, has_completed_onboarding: true })
-        });
-    } catch (e) {
-        console.warn("Webhook update failed, trying direct DB update", e);
+  const WEBHOOK_URL = "https://n8n.bacelardigital.tech/webhook/complete-onboarding";
+
+  // 1. Try Webhook (Log warning on failure but don't stop)
+  try {
+    await fetch(WEBHOOK_URL, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, has_completed_onboarding: true })
+    });
+  } catch (e) {
+    console.warn("Webhook update failed, trying direct DB update", e);
+  }
+
+  // 2. Fallback: Update Supabase directly to ensure state is saved
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ has_completed_onboarding: true })
+      .eq('id', userId);
+
+  } catch (e) {
+    console.error("Failed to update onboarding status in DB", e);
+  }
+}
+
+export const createCheckoutSession = async (priceId: string, userId: string, email?: string) => {
+  try {
+    const response = await fetch(CREATE_CHECKOUT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        priceId,
+        userId,
+        email
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Checkout failed: ${response.status}`);
     }
 
-    // 2. Fallback: Update Supabase directly to ensure state is saved
-    try {
-        const { error } = await supabase
-            .from('profiles')
-            .update({ has_completed_onboarding: true })
-            .eq('id', userId);
-        
-        if (error) throw error;
-    } catch (e) {
-        console.error("Failed to update onboarding status in DB", e);
-    }
-}
+    const data = await response.json();
+    return data; // Should contain { checkoutUrl: "..." }
+  } catch (error) {
+    console.error("Create checkout session failed", error);
+    throw error;
+  }
+};
