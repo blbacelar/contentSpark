@@ -17,7 +17,7 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/button';
 
 // Default Webhook URL
-const DEFAULT_WEBHOOK = "https://n8n.bacelardigital.tech/webhook/f7465ddb-c12a-4f30-9917-7720c62876bc";
+const DEFAULT_WEBHOOK = "https://n8n.bacelardigital.tech/webhook/generate-ideas";
 
 type ViewState = 'calendar' | 'profile';
 
@@ -338,6 +338,7 @@ export default function Dashboard() {
             try {
                 if (isNew) {
                     await createContentIdea(updated, user.id);
+                    triggerToast("Idea created successfully!", false);
                 } else {
                     await updateContent({
                         id: updated.id,
@@ -352,6 +353,7 @@ export default function Dashboard() {
                         cta: updated.cta,
                         hashtags: updated.hashtags
                     }, user.id);
+                    triggerToast("Idea updated successfully!", false);
                 }
             } catch (err: any) {
                 console.error("Operation failed", err);
@@ -525,6 +527,7 @@ export default function Dashboard() {
                             onSave={updateIdea}
                             onDelete={deleteIdea}
                             isNew={isNewIdea}
+                            triggerToast={triggerToast}
                         />
 
                         {isFormOpen && (

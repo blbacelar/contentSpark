@@ -15,9 +15,10 @@ interface EventModalProps {
   isOpen: boolean;
   idea: ContentIdea | null;
   onClose: () => void;
-  onSave: (updatedIdea: ContentIdea) => void;
+  onSave: (updatedIdea: ContentIdea) => Promise<void>;
   onDelete: (id: string) => void;
   isNew?: boolean;
+  triggerToast: (message: string, isError?: boolean) => void;
 }
 
 // Helper Component for Header with Copy
@@ -57,12 +58,13 @@ const FieldHeader = ({ label, icon: Icon, text }: { label: string, icon: any, te
   );
 };
 
-const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, onDelete, isNew = false }) => {
+const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, onDelete, isNew = false, triggerToast }) => {
   const { t } = useTranslation();
   const [formData, setFormData] = React.useState<ContentIdea | null>(null);
   const [showCopyFeedback, setShowCopyFeedback] = React.useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [isSaving, setIsSaving] = React.useState(false);
 
   React.useEffect(() => {
     setFormData(idea);
@@ -99,7 +101,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
     return `${year}-${month}-${day}`;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (formData) {
       if (!formData.title.trim()) {
         setError(t('modal.title_required'));
@@ -114,7 +116,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
         }
       }
 
-      onSave(formData);
+      await onSave(formData);
       onClose();
     }
   };
@@ -153,11 +155,6 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
             </div>
             <DialogTitle className="text-lg font-bold text-[#1A1A1A]">{isNew ? t('modal.create_title') : t('modal.edit_title')}</DialogTitle>
           </div>
-          <DialogClose asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-gray-400 hover:text-gray-600">
-              <X size={20} />
-            </Button>
-          </DialogClose>
         </div>
 
         {/* Body */}
@@ -382,10 +379,17 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
                 )}
 
                 <Button
-                  onClick={handleSave}
+                  onClick={async () => {
+                    setIsSaving(true);
+                    await handleSave();
+                    setIsSaving(false);
+                  }}
+                  disabled={isSaving}
                   className="bg-[#FFDA47] text-[#1A1A1A] hover:bg-[#FFC040] px-6 h-10 rounded-xl text-sm font-bold shadow-sm flex items-center gap-2"
                 >
-                  {isNew ? (
+                  {isSaving ? (
+                    <>Saving...</>
+                  ) : isNew ? (
                     <>
                       <Plus size={16} /> {t('common.add_calendar')}
                     </>

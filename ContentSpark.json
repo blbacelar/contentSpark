@@ -214,7 +214,7 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "f7465ddb-c12a-4f30-9917-7720c62876bc",
+        "path": "generate-ideas",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -226,7 +226,7 @@
       ],
       "id": "6e01932d-819a-4fa3-b567-a8e67c9dde93",
       "name": "POST",
-      "webhookId": "f7465ddb-c12a-4f30-9917-7720c62876bc"
+      "webhookId": "generate-ideas"
     },
     {
       "parameters": {

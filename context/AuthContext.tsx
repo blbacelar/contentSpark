@@ -21,11 +21,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const lastFetchedUserId = React.useRef<string | null>(null);
+
   const fetchProfile = async (userId: string) => {
+    // Debounce/De-duplicate identical fetches
+    if (lastFetchedUserId.current === userId) return;
+    lastFetchedUserId.current = userId;
+
     try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const token = currentSession?.access_token;
+
       const response = await fetch('https://n8n.bacelardigital.tech/webhook/get-profile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ user_id: userId })
       });
 
@@ -36,8 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const data = await response.json();
 
       if (data) {
-        // Ensure data is mapped correctly from webhook response
-        // n8n might return a single object or an array
+        // Handle n8n array response or single object
         const profileData = Array.isArray(data) ? data[0] : data;
 
         setProfile({
@@ -47,51 +58,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           avatar_url: profileData.avatar_url,
           credits: profileData.credits ?? 0,
           has_completed_onboarding: profileData.has_completed_onboarding,
-          tier: profileData.tier || 'free' // Default to free if missing
+          tier: profileData.tier || 'free'
         });
       }
     } catch (err) {
       console.error("Error fetching profile from webhook:", err);
-      // Fallback or retry logic could go here if critical
+      // Fallback: clear the debounce ref so we can try again if needed
+      lastFetchedUserId.current = null;
     }
   };
 
+
   useEffect(() => {
     let mounted = true;
-
-    // Check active sessions and sets the user
-    const initSession = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error("Session init error:", error);
-          throw error;
-        }
-
-        if (mounted) {
-          const session = data?.session ?? null;
-          setSession(session);
-          setUser(session?.user ?? null);
-
-          if (session?.user) {
-            await fetchProfile(session.user.id);
-          }
-        }
-      } catch (err) {
-        console.error("Auth initialization failed:", err);
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    initSession();
-
-    // Safety timeout to prevent infinite loading
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 4000);
 
     // Listen for changes on auth state (sign in, sign out, etc.)
     const {
@@ -105,6 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
         setProfile(null);
         setLoading(false);
+        lastFetchedUserId.current = null;
         return;
       }
 
@@ -112,20 +92,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        // Don't await this inside the listener to avoid blocking UI updates if it hangs
+        // Fetch profile if user changed or not fetched yet (handled by ref check in fetchProfile)
         fetchProfile(session.user.id).catch(console.error);
       } else {
         setProfile(null);
+        lastFetchedUserId.current = null;
       }
       setLoading(false);
     });
 
     return () => {
       mounted = false;
-      clearTimeout(timer);
       subscription.unsubscribe();
     };
   }, []);
+
+
 
   const signOut = async () => {
     try {
@@ -142,6 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshProfile = async () => {
     if (user) {
+      lastFetchedUserId.current = null;
       await fetchProfile(user.id);
     }
   };

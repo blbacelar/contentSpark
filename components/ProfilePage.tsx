@@ -181,7 +181,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
         // Plan Restrictions
         const isPro = profile?.tier === 'pro';
         if (!isPro && personas.length >= 1) {
-            alert("Upgrade to Pro to create multiple personas.");
+            toast.error("Upgrade to Pro to create multiple personas.");
             // Reset selection to the first existing persona if available
             if (personas.length > 0 && selectedPersonaId !== personas[0].id) {
                 selectPersona(personas[0]);
@@ -508,7 +508,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                         // Check restrictions before switching
                                         const isPro = profile?.tier === 'pro';
                                         if (!isPro && personas.length >= 1) {
-                                            alert("Upgrade to Pro to create multiple personas.");
+                                            toast.error("Upgrade to Pro to create multiple personas.");
                                             return;
                                         }
                                         handleCreateNew();

@@ -120,7 +120,7 @@ const LandingPage = () => {
               </div>
 
               {/* Floating Element */}
-              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-2xl shadow-xl border border-gray-100 animate-bounce duration-[3000ms]">
+              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-2xl shadow-xl border border-gray-100 animate-[bounce_3s_infinite]">
                 <div className="flex items-center gap-3">
                   <div className="bg-green-100 p-2 rounded-full text-green-600">
                     <CheckCircle2 size={16} />
