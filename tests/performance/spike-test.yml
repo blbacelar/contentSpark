@@ -1,0 +1,37 @@
+config:
+  target: "https://n8n.bacelardigital.tech"
+  phases:
+    - duration: 10
+      arrivalRate: 2
+      name: "Normal load"
+    - duration: 10
+      arrivalRate: 2
+      rampTo: 40
+      name: "Sudden spike!"
+    - duration: 180
+      arrivalRate: 40
+      name: "Sustained spike"
+    - duration: 10
+      arrivalRate: 40
+      rampTo: 2
+      name: "Back to normal"
+    - duration: 60
+      arrivalRate: 2
+      name: "Recovery period"
+  defaults:
+    headers:
+      Authorization: "Bearer YOUR_AUTH_TOKEN_HERE"
+  variables:
+    userId: "5610e481-186e-4ec1-89aa-775c5214bdfc"
+  ensure:
+    p95: 2000  # Should handle spike gracefully
+    maxErrorRate: 0.1  # Max 10% errors
+
+scenarios:
+  - name: "Spike Test - Sudden Traffic Surge"
+    flow:
+      - get:
+          url: "/webhook/get-user-ideas?user_id={{ userId }}"
+          expect:
+            - statusCode: 200
+      - think: 1

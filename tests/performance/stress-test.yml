@@ -1,0 +1,45 @@
+config:
+  target: "https://n8n.bacelardigital.tech"
+  phases:
+    - duration: 120
+      arrivalRate: 10
+      rampTo: 30
+      name: "Ramp to 100"
+    - duration: 120
+      arrivalRate: 30
+      rampTo: 50
+      name: "Ramp to 200"
+    - duration: 120
+      arrivalRate: 50
+      rampTo: 70
+      name: "Ramp to 300"
+    - duration: 120
+      arrivalRate: 70
+      rampTo: 90
+      name: "Ramp to 400"
+    - duration: 120
+      arrivalRate: 90
+      rampTo: 110
+      name: "Ramp to 500"
+    - duration: 300
+      arrivalRate: 110
+      name: "Sustained 500 users"
+    - duration: 120
+      arrivalRate: 110
+      rampTo: 0
+      name: "Ramp down"
+  defaults:
+    headers:
+      Authorization: "Bearer YOUR_AUTH_TOKEN_HERE"
+  variables:
+    userId: "5610e481-186e-4ec1-89aa-775c5214bdfc"
+  ensure:
+    p95: 3000  # More lenient for stress test
+    maxErrorRate: 0.2  # Allow up to 20% errors
+
+scenarios:
+  - name: "Stress Test - Find Breaking Point"
+    flow:
+      - get:
+          url: "/webhook/get-user-ideas?user_id={{ userId }}"
+      - think: 0.5

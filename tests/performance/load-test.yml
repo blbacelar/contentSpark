@@ -1,0 +1,53 @@
+config:
+  target: "https://n8n.bacelardigital.tech"
+  phases:
+    - duration: 120
+      arrivalRate: 5
+      rampTo: 20
+      name: "Ramp up to 100 users"
+    - duration: 300
+      arrivalRate: 20
+      name: "Sustained 100 users"
+    - duration: 60
+      arrivalRate: 20
+      rampTo: 0
+      name: "Ramp down"
+  defaults:
+    headers:
+      Authorization: "Bearer YOUR_AUTH_TOKEN_HERE"
+  variables:
+    userId: "5610e481-186e-4ec1-89aa-775c5214bdfc"
+  ensure:
+    p95: 1000  # 95th percentile < 1 second
+    p99: 2000  # 99th percentile < 2 seconds
+
+scenarios:
+  - name: "Load Test - Realistic Traffic Mix"
+    weight: 70
+    flow:
+      - get:
+          url: "/webhook/get-user-ideas?user_id={{ userId }}"
+          expect:
+            - statusCode: 200
+      - think: 2
+  
+  - name: "Load Test - Persona Fetch"
+    weight: 20
+    flow:
+      - get:
+          url: "/webhook/get-persona?user_id={{ userId }}"
+          expect:
+            - statusCode: 200
+      - think: 2
+  
+  - name: "Load Test - Update Idea"
+    weight: 10
+    flow:
+      - patch:
+          url: "/webhook/update-card"
+          json:
+            id: "load-test-id"
+            user_id: "{{ userId }}"
+            title: "Load Test Update"
+            status: "In Progress"
+      - think: 3
