@@ -76,10 +76,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('AUTH EVENT:', event, session?.user?.email); // DEBUG
       if (!mounted) return;
 
       // Explicitly handle SIGNED_OUT event
       if (event === 'SIGNED_OUT') {
+        console.log('Handling SIGNED_OUT'); // DEBUG
         setSession(null);
         setUser(null);
         setProfile(null);
@@ -90,6 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setSession(session);
       setUser(session?.user ?? null);
+      console.log('Set User:', session?.user?.id); // DEBUG
 
       if (session?.user) {
         // Fetch profile if user changed or not fetched yet (handled by ref check in fetchProfile)

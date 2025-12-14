@@ -380,11 +380,17 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
 
                 <Button
                   onClick={async () => {
-                    setIsSaving(true);
-                    await handleSave();
-                    setIsSaving(false);
+                    try {
+                      setIsSaving(true);
+                      await handleSave();
+                    } catch (e) {
+                      console.error("Save failed in onClick", e);
+                    } finally {
+                      setIsSaving(false);
+                    }
                   }}
                   disabled={isSaving}
+                  data-testid="event-modal-save-btn"
                   className="bg-[#FFDA47] text-[#1A1A1A] hover:bg-[#FFC040] px-6 h-10 rounded-xl text-sm font-bold shadow-sm flex items-center gap-2"
                 >
                   {isSaving ? (
