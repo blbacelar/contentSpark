@@ -23,11 +23,27 @@ export const generateId = () => Math.random().toString(36).substr(2, 9);
 
 // --- Caching Helpers ---
 const CACHE_PREFIX = 'CS_CACHE_';
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+interface CacheItem<T> {
+  data: T;
+  timestamp: number;
+}
 
 const getCache = <T>(key: string): T | null => {
   try {
     const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : null;
+    if (!item) return null;
+
+    const cached: CacheItem<T> = JSON.parse(item);
+
+    // Check if cache is expired
+    if (Date.now() - cached.timestamp > CACHE_TTL) {
+      localStorage.removeItem(key);
+      return null;
+    }
+
+    return cached.data;
   } catch {
     return null;
   }
@@ -35,7 +51,11 @@ const getCache = <T>(key: string): T | null => {
 
 const setCache = (key: string, data: any) => {
   try {
-    localStorage.setItem(key, JSON.stringify(data));
+    const cacheItem: CacheItem<any> = {
+      data,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(key, JSON.stringify(cacheItem));
   } catch (e) {
     console.warn("Cache write failed", e);
   }
@@ -115,15 +135,16 @@ export const fetchUserIdeas = async (userId: string): Promise<ContentIdea[]> => 
       return [];
     }
 
-    // Normalize data structure
+    // Normalize data structure (optimized)
     const normalizedIdeas = ideas.map(idea => {
-      let platforms: string[] = ["General"];
-      if (Array.isArray(idea.platform)) {
-        platforms = idea.platform;
-      } else if (typeof idea.platform === 'string') {
-        platforms = [idea.platform];
-      }
+      // Platform normalization
+      const platforms = Array.isArray(idea.platform)
+        ? idea.platform
+        : typeof idea.platform === 'string'
+          ? [idea.platform]
+          : ["General"];
 
+      // Date/time parsing (simplified)
       let dateVal: string | null = idea.date || null;
       let timeVal: string | null = null;
 
@@ -131,35 +152,15 @@ export const fetchUserIdeas = async (userId: string): Promise<ContentIdea[]> => 
         try {
           const d = parseISO(idea.scheduled_at);
           if (isValid(d)) {
-            // Adjust to UTC manually or rely on parsed date
-            // The previous logic used getUTC... which implies the input string includes timezone or is treated as UTC.
-            // parseISO parses as local time if no timezone, or UTC if Z.
-            // Let's assume input needs to be standardized.
-            // date-fns format uses local time by default unless using formatISO or similar.
-            // However, the original code explicitly extracted UTC components.
-            // Ideally we stick to that behavior or assume date-fns handles it better.
-            // Let's simplify and use the ISO string parts directly if possible, or simpler formatting.
-            // Actually, to match previous "UTC" extraction:
             dateVal = format(d, 'yyyy-MM-dd');
             timeVal = format(d, 'HH:mm');
           }
-        } catch (e) { }
-      }
-
-      if (!timeVal && idea.time) {
-        // Handle "2023-01-01T10:00:00" or simple "10:00"
-        if (idea.time.includes('T')) {
-          try {
-            const d = parseISO(idea.time);
-            if (isValid(d)) {
-              timeVal = format(d, 'HH:mm');
-            }
-          } catch (e) {
-            timeVal = null;
-          }
-        } else {
-          timeVal = idea.time.substring(0, 5);
-        }
+        } catch (e) { /* ignore */ }
+      } else if (idea.time) {
+        // Simple time parsing
+        timeVal = idea.time.includes('T')
+          ? idea.time.substring(11, 16)
+          : idea.time.substring(0, 5);
       }
 
       return {

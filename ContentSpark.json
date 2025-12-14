@@ -4,16 +4,16 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=TOPIC: {{ $('POST').item.json.body.topic }}\nAUDIENCE: {{ $('POST').item.json.body.audience }}\nTONE: {{ $('POST').item.json.body.tone }}\nUSER ID: {{ $('POST').item.json.body.user_id }}\nOUTPUT LANGUAGE: {{ $json.body.language || 'English' }}\n\n---\nTARGET PERSONA PROFILE:\n- Gender/Age: {{ $('POST').item.json.body.persona.gender }} / {{ $('POST').item.json.body.persona.age_range }}\n- Occupation: {{ $('POST').item.json.body.persona.occupation }}\n- Marital/Family Status: {{ $('POST').item.json.body.persona.marital_status }} (Children: {{ $('POST').item.json.body.persona.has_children }})\n- PREFERRED PLATFORMS: {{ $('POST').item.json.body.persona.social_networks }}\n- KEY PAIN POINTS: {{ $('POST').item.json.body.persona.pains_list.join(\", \") }}\n- KEY GOALS: {{ $('POST').item.json.body.persona.goals_list.join(\", \") }}\n- BURNING QUESTIONS: {{ $('POST').item.json.body.persona.questions_list.join(\", \") }}",
+        "text": "=TOPIC: {{ $('Map fields').item.json.data.topic }}\nAUDIENCE: {{ $('Map fields').item.json.data.audience }}\nTONE: {{ $('Map fields').item.json.data.tone }}\nUSER ID: {{ $('Map fields').item.json.data.user_id }}\nOUTPUT LANGUAGE: {{ $('Map fields').item.json.data.language || 'English' }}\n\n---\nTARGET PERSONA PROFILE:\n- Gender/Age: {{ $('Map fields').item.json.data.persona.gender }} / {{ $('Map fields').item.json.data.persona.age_range }}\n- Occupation: {{ $('Map fields').item.json.data.persona.occupation }}\n- Marital/Family Status: {{ $('Map fields').item.json.data.persona.marital_status }} (Children: {{ $('Map fields').item.json.data.persona.has_children }})\n- PREFERRED PLATFORMS: {{ $('Map fields').item.json.data.persona.social_networks }}\n- KEY PAIN POINTS: {{ $('Map fields').item.json.data.persona.pains_list.join(\", \") }}\n- KEY GOALS: {{ $('Map fields').item.json.data.persona.goals_list.join(\", \") }}\n- BURNING QUESTIONS: {{ $('Map fields').item.json.data.persona.questions_list.join(\", \") }}",
         "options": {
-          "systemMessage": "=You are a world-class Social Media Strategist and Content Director. Your goal is to generate high-value, viral-worthy content ideas that are hyper-targeted to a specific user persona.\n\n### INPUTS:\nYou will receive the following variables:\n1. Niche/Topic\n2. Target Audience (General)\n3. Desired Tone\n4. User Id\n5. TARGET PERSONA CONTEXT (Demographics, Pain Points, Goals, etc.)\n\n\n### STRATEGY INSTRUCTIONS (DYNAMIC LISTS):\nYou have been provided with lists of specific Pains, Goals, and Questions.\n**Do NOT try to address everything at once.**\n\nFor each of the 6 content ideas, pick **ONE specific item** from the lists to focus on:\n1.  **Idea 1:** Pick a specific **Pain Point** (e.g., \"{{ $json.body.persona.pains_list[0] }}\") and solve it.\n2.  **Idea 2:** Answer a specific **Burning Question** (e.g., \"{{ $json.body.persona.questions_list[0] }}\").\n3.  **Idea 3:** Focus on a specific **Goal** (e.g., \"{{ $json.body.persona.goals_list[0] }}\").\n4.  **Idea 4-6:** Mix and match remaining items.\n5.  **Demographics:** Adjust the language complexity and cultural references to match their Age and Occupation.\n\n### OUTPUT INSTRUCTIONS:\nGenerate exactly 6 distinct content ideas.\nDo not provide generic advice. Provide specific, actionable frameworks (e.g., \"A 'VS' Reel comparing X and Y\").\n\n### LANGUAGE INSTRUCTIONS:\nThe user has requested the content in: \"{{ $json.body.language }}\".\n\n1. **Content Translation:** You MUST write all generated text (Titles, Descriptions, Hooks, Captions, CTAs) in the requested language.\n   - If Language is 'pt', write in native, natural Brazilian Portuguese.\n   - If Language is 'en', write in native American English.\n\n2. **JSON Structure Protection (CRITICAL):**\n   - Do NOT translate the JSON Keys.\n   - CORRECT: { \"title\": \"O Guia Definitivo\" }\n   - INCORRECT: { \"titulo\": \"O Guia Definitivo\" }\n   - The keys \"title\", \"description\", \"hook\", \"caption\", \"cta\", \"hashtags\", \"platform_suggestion\", \"user_id\" MUST remain in English.\n\n3. **Hashtags:**\n   - Use hashtags relevant to that language (e.g., use #marketingdigital instead of #digitalmarketing if the language is Portuguese).\n\n### RESPONSE FORMAT:\nYou must return ONLY a raw JSON array of objects.\n1. Output ONLY the raw JSON array.\n2. Do NOT use Markdown code blocks (do not use ```json or ```).\n3. Do NOT add any text before or after the array.\n4. Ensure the JSON is valid and parsable.\n5. Do NOT use quotation marks or backslashes INSIDE the text fields. If you need to emphasize a word, use single quotes (e.g., 'word') instead of double quotes.\n\nEach object in the array must follow this exact structure:\n[{\n  \"title\": \"The Post Headline or Title\",\n  \"description\": \"A brief explanation of the concept/angle (for the user to understand the idea).\",\n  \"hook\": \"The first sentence/hook of the post (use single quotes)\",\n  \"caption\": \"The full first draft of the post body/caption. Write this in the user's requested Tone. Keep it engaging.\",\n  \"cta\": \"A specific Call to Action (e.g., 'Save this post', 'Comment X below').\",\n  \"hashtags\": \"List of 10 relevant, high-traffic hashtags separated by spaces (e.g. #marketing #growth).\",\n  \"platform_suggestion\": \"The best platform\",\n  \"user_id\": \"THE_EXACT_USER_ID_PROVIDED_IN_INPUT\"\n}]\n\nIMPORTANT: For the 'user_id' field, you must simply copy and paste the User ID value I provided in the input variables. Do not generate a fake ID. Use the exact string I sent."
+          "systemMessage": "=You are a world-class Social Media Strategist and Content Director. Your goal is to generate high-value, viral-worthy content ideas that are hyper-targeted to a specific user persona.\n\n### INPUTS:\nYou will receive the following variables:\n1. Niche/Topic\n2. Target Audience (General)\n3. Desired Tone\n4. User Id\n5. TARGET PERSONA CONTEXT (Demographics, Pain Points, Goals, etc.)\n\n\n### STRATEGY INSTRUCTIONS (DYNAMIC LISTS):\nYou have been provided with lists of specific Pains, Goals, and Questions.\n**Do NOT try to address everything at once.**\n\nFor each of the 6 content ideas, pick **ONE specific item** from the lists to focus on:\n1.  **Idea 1:** Pick a specific **Pain Point** (e.g., \"{{ $('Map fields').item.json.data.persona.pains_list[0] }}\") and solve it.\n2.  **Idea 2:** Answer a specific **Burning Question** (e.g., \"{{ $('Map fields').item.json.data.persona.questions_list[0] }}\").\n3.  **Idea 3:** Focus on a specific **Goal** (e.g., \"{{ $('Map fields').item.json.data.persona.goals_list[0] }}\").\n4.  **Idea 4-6:** Mix and match remaining items.\n5.  **Demographics:** Adjust the language complexity and cultural references to match their Age and Occupation.\n\n### OUTPUT INSTRUCTIONS:\nGenerate exactly 6 distinct content ideas.\nDo not provide generic advice. Provide specific, actionable frameworks (e.g., \"A 'VS' Reel comparing X and Y\").\n\n### LANGUAGE INSTRUCTIONS:\nThe user has requested the content in: \"{{ $('Map fields').item.json.data.language }}\".\n\n1. **Content Translation:** You MUST write all generated text (Titles, Descriptions, Hooks, Captions, CTAs) in the requested language.\n   - If Language is 'pt', write in native, natural Brazilian Portuguese.\n   - If Language is 'en', write in native American English.\n\n2. **JSON Structure Protection (CRITICAL):**\n   - Do NOT translate the JSON Keys.\n   - CORRECT: { \"title\": \"O Guia Definitivo\" }\n   - INCORRECT: { \"titulo\": \"O Guia Definitivo\" }\n   - The keys \"title\", \"description\", \"hook\", \"caption\", \"cta\", \"hashtags\", \"platform_suggestion\", \"user_id\" MUST remain in English.\n\n3. **Hashtags:**\n   - Use hashtags relevant to that language (e.g., use #marketingdigital instead of #digitalmarketing if the language is Portuguese).\n\n### RESPONSE FORMAT:\nYou must return ONLY a raw JSON array of objects.\n1. Output ONLY the raw JSON array.\n2. Do NOT use Markdown code blocks (do not use ```json or ```).\n3. Do NOT add any text before or after the array.\n4. Ensure the JSON is valid and parsable.\n5. Do NOT use quotation marks or backslashes INSIDE the text fields. If you need to emphasize a word, use single quotes (e.g., 'word') instead of double quotes.\n\nEach object in the array must follow this exact structure:\n[{\n  \"title\": \"The Post Headline or Title\",\n  \"description\": \"A brief explanation of the concept/angle (for the user to understand the idea).\",\n  \"hook\": \"The first sentence/hook of the post (use single quotes)\",\n  \"caption\": \"The full first draft of the post body/caption. Write this in the user's requested Tone. Keep it engaging.\",\n  \"cta\": \"A specific Call to Action (e.g., 'Save this post', 'Comment X below').\",\n  \"hashtags\": \"List of 10 relevant, high-traffic hashtags separated by spaces (e.g. #marketing #growth).\",\n  \"platform_suggestion\": \"The best platform\",\n  \"user_id\": \"THE_EXACT_USER_ID_PROVIDED_IN_INPUT\"\n}]\n\nIMPORTANT: For the 'user_id' field, you must simply copy and paste the User ID value I provided in the input variables. Do not generate a fake ID. Use the exact string I sent."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3,
       "position": [
-        -672,
-        -144
+        -1168,
+        720
       ],
       "id": "3ef34ab9-959b-4d8c-93eb-5196a1180789",
       "name": "AI Agent",
@@ -32,8 +32,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        -656,
-        48
+        -1152,
+        912
       ],
       "id": "aead6301-1054-45b9-a1eb-80908cfa732e",
       "name": "OpenAI Chat Model",
@@ -51,8 +51,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -336,
-        -144
+        -832,
+        720
       ],
       "id": "3e6cdaef-a3cb-4261-ab59-b6e461e5bac8",
       "name": "Code in JavaScript"
@@ -100,77 +100,11 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -128,
-        -144
+        -624,
+        720
       ],
       "id": "edc12956-f39f-4ab2-9793-a85889980efa",
       "name": "Create a row",
-      "credentials": {
-        "supabaseApi": {
-          "id": "dE0cZo2PA3JL8OXB",
-          "name": "Supabase account"
-        }
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "operation": "update",
-        "tableId": "content_ideas",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "condition": "eq",
-              "keyValue": "={{ $json.body.id }})"
-            }
-          ]
-        },
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "scheduled_at",
-              "fieldValue": "={{ $json.body.time }}"
-            },
-            {
-              "fieldId": "status",
-              "fieldValue": "={{ $json.body.status }}"
-            },
-            {
-              "fieldId": "title",
-              "fieldValue": "={{ $json.body.title }}"
-            },
-            {
-              "fieldId": "description",
-              "fieldValue": "={{ $json.body.description }}"
-            },
-            {
-              "fieldId": "platform_suggestion",
-              "fieldValue": "={{ $json.body.platform }}"
-            },
-            {
-              "fieldId": "caption",
-              "fieldValue": "={{ $json.caption }}"
-            },
-            {
-              "fieldId": "cta",
-              "fieldValue": "={{ $json.cta }}"
-            },
-            {
-              "fieldId": "hashtags",
-              "fieldValue": "={{ $json.hashtags }}"
-            }
-          ]
-        }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        -608,
-        832
-      ],
-      "id": "4c037f8a-27b1-455c-8863-d58cef673df8",
-      "name": "Update a row",
       "credentials": {
         "supabaseApi": {
           "id": "dE0cZo2PA3JL8OXB",
@@ -188,213 +122,39 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        -416,
-        832
+        -1504,
+        1504
       ],
       "id": "4b56cdde-a010-4ce1-9dab-efc29e1c8282",
       "name": "PATCH Webhook"
     },
     {
       "parameters": {
-        "httpMethod": "PATCH",
-        "path": "update-card",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        -816,
-        832
-      ],
-      "id": "94e3f43d-6e34-4d36-8400-a15638e2ac26",
-      "name": "PATCH",
-      "webhookId": "0c17f276-a25c-4a15-845d-5319d4724880"
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "generate-ideas",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        -1424,
-        -128
-      ],
-      "id": "6e01932d-819a-4fa3-b567-a8e67c9dde93",
-      "name": "POST",
-      "webhookId": "generate-ideas"
-    },
-    {
-      "parameters": {
-        "content": "## POST WEBHOOK",
-        "height": 416,
-        "width": 2112,
-        "color": 6
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        -1520,
-        -208
-      ],
-      "typeVersion": 1,
-      "id": "e9219933-56ba-4ea9-82a8-407d56e24bfa",
-      "name": "Sticky Note"
-    },
-    {
-      "parameters": {
-        "operation": "getAll",
-        "tableId": "content_ideas",
-        "returnAll": true,
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "user_id",
-              "condition": "eq",
-              "keyValue": "={{ $json.query.user_id }}"
-            }
-          ]
-        }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        -608,
-        1120
-      ],
-      "id": "a7a89f28-c140-4a7a-b179-0443a3e91f59",
-      "name": "Get many rows",
-      "credentials": {
-        "supabaseApi": {
-          "id": "dE0cZo2PA3JL8OXB",
-          "name": "Supabase account"
-        }
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
         "respondWith": "allIncomingItems",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        -400,
-        1120
+        -1520,
+        1776
       ],
       "id": "c33caee9-4693-43a3-b7b0-6d990e66cc6a",
       "name": "Respond to Webhook1"
     },
     {
       "parameters": {
-        "content": "## PATCH WEBHOOK",
-        "height": 240,
-        "width": 816,
-        "color": 4
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        -928,
-        768
-      ],
-      "typeVersion": 1,
-      "id": "58b4c327-ce3c-4a68-ad5f-f95ed41713f6",
-      "name": "Sticky Note1"
-    },
-    {
-      "parameters": {
-        "content": "## GET WEBHOOK",
-        "height": 240,
-        "width": 816,
-        "color": 5
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        -928,
-        1056
-      ],
-      "typeVersion": 1,
-      "id": "7b427f98-f8c6-44ca-81a9-05bdbff32fb1",
-      "name": "Sticky Note2"
-    },
-    {
-      "parameters": {
-        "path": "get-user-ideas",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        -816,
-        1120
-      ],
-      "id": "456f74ca-690c-49c6-9db4-0e98216f084b",
-      "name": "GET",
-      "webhookId": "546ff7b5-a1a0-4a5e-8c2c-ad1194bf652a"
-    },
-    {
-      "parameters": {
-        "operation": "delete",
-        "tableId": "content_ideas",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "condition": "eq",
-              "keyValue": "={{ $json.body.id }})"
-            }
-          ]
-        }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        -624,
-        1408
-      ],
-      "id": "adef3962-41a8-4d15-b333-8df81cce7c21",
-      "name": "Delete a row",
-      "credentials": {
-        "supabaseApi": {
-          "id": "dE0cZo2PA3JL8OXB",
-          "name": "Supabase account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "respondWith": "allIncomingItems",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        -416,
-        1408
+        -1520,
+        2032
       ],
       "id": "672cf35a-793a-4db2-a624-a33a98b0482d",
       "name": "Respond to Webhook2"
-    },
-    {
-      "parameters": {
-        "content": "##DELETE WEBHOOK",
-        "height": 256,
-        "width": 816,
-        "color": 3
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        -928,
-        1328
-      ],
-      "typeVersion": 1,
-      "id": "d8b0654d-58c7-4189-9e89-9ac901d3c154",
-      "name": "Sticky Note3"
     },
     {
       "parameters": {
@@ -424,8 +184,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        64,
-        -128
+        -432,
+        720
       ],
       "id": "ada5f2c5-5aba-4e71-8546-40a94759b191",
       "name": "If"
@@ -441,8 +201,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        368,
-        0
+        -128,
+        864
       ],
       "id": "f7716b8c-fa29-4a60-add6-ab9db7c4fa14",
       "name": "Failed"
@@ -455,281 +215,48 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        368,
-        -160
+        -128,
+        704
       ],
       "id": "1b2cd36f-ec79-42b3-ae6d-25d5fdde5698",
       "name": "Success"
     },
     {
       "parameters": {
-        "tableId": "personas",
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "user_id",
-              "fieldValue": "={{ $json.body.user_id}}"
-            },
-            {
-              "fieldId": "gender",
-              "fieldValue": "={{ $json.body.gender}}"
-            },
-            {
-              "fieldId": "age_range",
-              "fieldValue": "={{ $json.body.age_range}}"
-            },
-            {
-              "fieldId": "occupation",
-              "fieldValue": "={{ $json.body.occupation}}"
-            },
-            {
-              "fieldId": "education",
-              "fieldValue": "={{ $json.body.education}}"
-            },
-            {
-              "fieldId": "marital_status",
-              "fieldValue": "={{ $json.body.marital_status}}"
-            },
-            {
-              "fieldId": "has_children",
-              "fieldValue": "={{ $json.body.has_children}}"
-            },
-            {
-              "fieldId": "social_networks",
-              "fieldValue": "={{ $json.body.social_networks}}"
-            },
-            {
-              "fieldId": "pains_list",
-              "fieldValue": "={{ $json.body.pains_list}}"
-            },
-            {
-              "fieldId": "goals_list",
-              "fieldValue": "={{ $json.body.goals_list}}"
-            },
-            {
-              "fieldId": "questions_list",
-              "fieldValue": "={{ $json.body.questions_list}}"
-            },
-            {
-              "fieldId": "name",
-              "fieldValue": "={{ $json.body.name}}"
-            },
-            {
-              "fieldId": "income_level",
-              "fieldValue": "={{ $json.body.income_level}}"
-            }
-          ]
-        }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        -624,
-        1728
-      ],
-      "id": "372ace33-829c-42f1-91b3-37332bc1a42b",
-      "name": "Create Persona",
-      "credentials": {
-        "supabaseApi": {
-          "id": "dE0cZo2PA3JL8OXB",
-          "name": "Supabase account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        -416,
-        1728
+        -1568,
+        2720
       ],
       "id": "8b1d1aba-531f-41da-af8e-a2aa16132b0f",
       "name": "Respond to Webhook"
     },
     {
       "parameters": {
-        "httpMethod": "DELETE",
-        "path": "delete-user-ideas",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        -832,
-        1408
-      ],
-      "id": "005b463d-6d40-420d-b107-e78736bf138a",
-      "name": "DELETE",
-      "webhookId": "f8ec5079-ee99-40c8-9390-c7c97d3a912c"
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "/save-persona",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        -832,
-        1728
-      ],
-      "id": "fe6e40c9-d10c-4308-8c59-d04c4dfc23e1",
-      "name": "POST1",
-      "webhookId": "8b6bb04a-2ce7-4a94-b2d9-fb9d018bbc59"
-    },
-    {
-      "parameters": {
-        "path": "/get-persona",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        -832,
-        1920
-      ],
-      "id": "5700f86a-f246-494a-9a88-7a7f4e6f1ddf",
-      "name": "GET PERSONA",
-      "webhookId": "cb6614d6-6e93-49cb-9be1-48889c13b36d"
-    },
-    {
-      "parameters": {
-        "operation": "get",
-        "tableId": "personas",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "user_id",
-              "keyValue": "={{ $json.query.user_id }}"
-            }
-          ]
-        }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        -624,
-        1920
-      ],
-      "id": "d820e6f7-d8aa-4b29-8870-bf738476f35b",
-      "name": "Get a row",
-      "credentials": {
-        "supabaseApi": {
-          "id": "dE0cZo2PA3JL8OXB",
-          "name": "Supabase account"
-        }
-      }
-    },
-    {
-      "parameters": {
+        "respondWith": "allIncomingItems",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        -416,
-        1920
+        -1568,
+        2912
       ],
       "id": "65cf29e1-0fac-48b6-a392-6ecb0d4bb413",
       "name": "Respond to Webhook3"
     },
     {
       "parameters": {
-        "operation": "update",
-        "tableId": "personas",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "user_id",
-              "condition": "eq",
-              "keyValue": "={{ $('PATCH Persona').item.json.body.user_id }}"
-            }
-          ]
-        },
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "user_id",
-              "fieldValue": "={{ $('PATCH Persona').item.json.body.user_id}}"
-            },
-            {
-              "fieldId": "gender",
-              "fieldValue": "={{ $('PATCH Persona').item.json.body.gender}}"
-            },
-            {
-              "fieldId": "age_range",
-              "fieldValue": "={{ $('PATCH Persona').item.json.body.age_range}}"
-            },
-            {
-              "fieldId": "occupation",
-              "fieldValue": "={{ $('PATCH Persona').item.json.body.occupation}}"
-            },
-            {
-              "fieldId": "education",
-              "fieldValue": "={{ $('PATCH Persona').item.json.body.education}}"
-            },
-            {
-              "fieldId": "marital_status",
-              "fieldValue": "={{ $('PATCH Persona').item.json.body.marital_status}}"
-            },
-            {
-              "fieldId": "has_children",
-              "fieldValue": "={{ $('PATCH Persona').item.json.body.has_children}}"
-            },
-            {
-              "fieldId": "social_networks",
-              "fieldValue": "={{ $('PATCH Persona').item.json.body.social_networks}}"
-            },
-            {
-              "fieldId": "pains_list",
-              "fieldValue": "={{ $('PATCH Persona').item.json.body.pains_list}}"
-            },
-            {
-              "fieldId": "goals_list",
-              "fieldValue": "={{ $('PATCH Persona').item.json.body.goals_list}}"
-            },
-            {
-              "fieldId": "questions_list",
-              "fieldValue": "={{ $('PATCH Persona').item.json.body.questions_list}}"
-            },
-            {
-              "fieldId": "income_level",
-              "fieldValue": "={{ $('PATCH Persona').item.json.body.income_level}}"
-            }
-          ]
-        }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        -224,
-        2096
-      ],
-      "id": "649aa064-2df7-4982-b44a-ca492382a4e4",
-      "name": "Update Persona",
-      "credentials": {
-        "supabaseApi": {
-          "id": "dE0cZo2PA3JL8OXB",
-          "name": "Supabase account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        -32,
-        2096
+        -1520,
+        1072
       ],
       "id": "bb4dff09-b55f-4c23-88d1-fe7f20164b68",
       "name": "Respond to Webhook4"
@@ -742,14 +269,14 @@
         "nodeCredentialType": "supabaseApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n   \"target_user_id\": \"{{ $json.body.user_id }}\"\n}",
+        "jsonBody": "={\n   \"target_user_id\": \"{{ $('Map fields').item.json.data.user_id }}\"\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        -1216,
-        -128
+        -1760,
+        736
       ],
       "id": "cecfd50b-afec-47fe-b12f-7a57f7630cb7",
       "name": "Check Credit",
@@ -789,8 +316,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -1024,
-        -128
+        -1520,
+        736
       ],
       "id": "540a72bb-3b53-4141-a2a6-f5b26e5c2d4a",
       "name": "If1"
@@ -806,28 +333,11 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        -848,
-        32
+        -1344,
+        896
       ],
       "id": "ede5cd57-a0cc-4405-88a1-e05a42531dc1",
       "name": "No Credits"
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "create-idea",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        -848,
-        352
-      ],
-      "id": "6f40f7d1-ccaa-4afd-b89a-1c9d7d93dc8d",
-      "name": "POST Manual",
-      "webhookId": "38f91984-6a85-4931-844d-46e64aa6f9f8"
     },
     {
       "parameters": {
@@ -857,8 +367,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -432,
-        352
+        -1504,
+        1264
       ],
       "id": "34ca13cd-6fa4-4718-b6e2-75a50149992c",
       "name": "If2"
@@ -874,8 +384,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        -128,
-        480
+        -1200,
+        1408
       ],
       "id": "afaa5e01-af0e-49f9-8133-05a9b546d377",
       "name": "Failed1"
@@ -883,7 +393,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Idea created successfully\",\n  \"data\": {{ $json }} \n}",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Idea created successfully\"\n}",
         "options": {
           "responseCode": 200
         }
@@ -891,284 +401,52 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        -128,
-        320
+        -1200,
+        1248
       ],
       "id": "40dfc5b3-8540-40fc-acf0-b912f5bdb8bb",
       "name": "Success1"
     },
     {
       "parameters": {
-        "tableId": "content_ideas",
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "title",
-              "fieldValue": "={{ $json.body.title }}"
-            },
-            {
-              "fieldId": "description",
-              "fieldValue": "={{ $json.body.description }}"
-            },
-            {
-              "fieldId": "hook",
-              "fieldValue": "={{ $json.body.hook }}"
-            },
-            {
-              "fieldId": "platform_suggestion",
-              "fieldValue": "={{ $json.body.platform_suggestion }}"
-            },
-            {
-              "fieldId": "user_id",
-              "fieldValue": "={{ $json.body.user_id }}"
-            },
-            {
-              "fieldId": "cta",
-              "fieldValue": "={{ $json.body.cta }}"
-            },
-            {
-              "fieldId": "caption",
-              "fieldValue": "={{ $json.body.caption }}"
-            },
-            {
-              "fieldId": "hashtags",
-              "fieldValue": "={{ $json.body.hashtags }}"
-            }
-          ]
-        }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        -640,
-        352
-      ],
-      "id": "27aa3119-c6eb-452a-89cd-c0faf46ff154",
-      "name": "Manual Create",
-      "credentials": {
-        "supabaseApi": {
-          "id": "dE0cZo2PA3JL8OXB",
-          "name": "Supabase account"
-        }
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "complete-onboarding",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        240,
-        832
-      ],
-      "id": "8d1cd27a-101f-4975-bbf7-c9fdbbb72c74",
-      "name": "PATCH Onboarding",
-      "webhookId": "6f4c65c4-d3e9-47d7-b988-ef8d5e72251b"
-    },
-    {
-      "parameters": {
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        688,
-        832
+        -1520,
+        2256
       ],
       "id": "97ce70a5-f4d9-4391-a522-fec8daa627f3",
       "name": "Respond to Webhook5"
     },
     {
       "parameters": {
-        "operation": "update",
-        "tableId": "profiles",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "user_id",
-              "condition": "eq",
-              "keyValue": "={{ $json.body.user_id}}"
-            }
-          ]
-        },
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "has_completed_onboarding",
-              "fieldValue": "true"
-            }
-          ]
-        }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        464,
-        832
-      ],
-      "id": "eaa1250e-c925-4c7c-a7e5-4d28fff02fc5",
-      "name": "Update Onboarding",
-      "credentials": {
-        "supabaseApi": {
-          "id": "dE0cZo2PA3JL8OXB",
-          "name": "Supabase account"
-        }
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "content": "## PROFILE",
-        "height": 464,
-        "width": 816,
-        "color": 7
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        144,
-        768
-      ],
-      "typeVersion": 1,
-      "id": "6e8703f4-dc2e-41a7-9078-90b0f854e894",
-      "name": "Sticky Note4"
-    },
-    {
-      "parameters": {
-        "content": "## PERSONA",
-        "height": 800,
-        "width": 1184
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        -928,
-        1680
-      ],
-      "typeVersion": 1,
-      "id": "0d262ea0-2c6b-419e-a92b-e55c2df545c8",
-      "name": "Sticky Note5"
-    },
-    {
-      "parameters": {
-        "content": "## MANUAL POSTING",
-        "height": 352,
-        "width": 1008,
-        "color": 2
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        -928,
-        272
-      ],
-      "typeVersion": 1,
-      "id": "936ee3cd-8050-4420-8e60-17f21f7b817a",
-      "name": "Sticky Note6"
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "get-profile",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        240,
-        1056
-      ],
-      "id": "ddc77b87-9675-4f77-91aa-bafe06fd51e5",
-      "name": "GET Profile",
-      "webhookId": "1f1489de-efbd-42cc-986f-e27dfb51d00c"
-    },
-    {
-      "parameters": {
-        "operation": "get",
-        "tableId": "profiles",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "keyValue": "={{ $json.body.user_id}}"
-            }
-          ]
-        }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        464,
-        1056
-      ],
-      "id": "913b6a13-c84f-41b4-a57b-f22d3dab920e",
-      "name": "Get Profile",
-      "credentials": {
-        "supabaseApi": {
-          "id": "dE0cZo2PA3JL8OXB",
-          "name": "Supabase account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        688,
-        1056
+        -1520,
+        2480
       ],
       "id": "d67df1cf-1cb0-4cc0-944a-922a85d8d4e5",
       "name": "Respond to Webhook6"
     },
     {
       "parameters": {
-        "httpMethod": "PATCH",
-        "path": "update-persona",
-        "responseMode": "responseNode",
+        "respondWith": "json",
+        "responseBody": "{\n  \"error\": true,\n  \"status\": 403,\n  \"message\": \"Unauthorized: Invalid or missing authentication token.\",\n  \"code\": \"AUTH_FAILED\"\n}",
         "options": {}
       },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
       "position": [
-        -832,
-        2144
+        -2816,
+        1504
       ],
-      "id": "17a9c13f-29a7-43e6-9cff-1f0425e4217b",
-      "name": "PATCH Persona",
-      "webhookId": "66ddbe36-d50e-4a03-8cd1-5907c99a0bf9"
-    },
-    {
-      "parameters": {
-        "url": "https://tciqwxkdukfbflhiziql.supabase.co/auth/v1/user",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6ImZJZzltbGVNSi9wV0plUXAiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3RjaXF3eGtkdWtmYmZsaGl6aXFsLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI5OWM2NzZmZC0zYzY2LTRiMjYtYTllMy1hMGM0MWMyNzFjYTQiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzY1NTY0MjMzLCJpYXQiOjE3NjU1NjA2MzMsImVtYWlsIjoiYmxiYWNlbGFyQGdtYWlsLmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXX0sInVzZXJfbWV0YWRhdGEiOnsiZW1haWwiOiJibGJhY2VsYXJAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBob25lX3ZlcmlmaWVkIjpmYWxzZSwic3ViIjoiOTljNjc2ZmQtM2M2Ni00YjI2LWE5ZTMtYTBjNDFjMjcxY2E0In0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoicGFzc3dvcmQiLCJ0aW1lc3RhbXAiOjE3NjU1NTY2NDB9XSwic2Vzc2lvbl9pZCI6IjVmMzM1MDk0LTUxOWEtNDRhNS05YzU1LTFmMzlhNWJmZjE1MyIsImlzX2Fub255bW91cyI6ZmFsc2V9.Ld-0b1D7dkGvVph7mJeAsDUBtc0C3GFILDPxM1B6AHY"
-            },
-            {
-              "name": "apikey",
-              "value": "sb_publishable_kp4l5uKw4iMU7FnGE9ibIQ_JF2CwYbN"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        -640,
-        2144
-      ],
-      "id": "77569945-aaa9-48cb-a0fd-c187d361d576",
-      "name": "HTTP Request"
+      "id": "8bc07435-0db8-4a07-8b95-8dd1d1369ce2",
+      "name": "Respond to Webhook7"
     },
     {
       "parameters": {
@@ -1198,87 +476,934 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -464,
-        2144
+        -3104,
+        1200
       ],
       "id": "2450b25c-8e63-4fe7-b9e4-f1112e5b063e",
-      "name": "If3"
+      "name": "isAuthenticated"
     },
     {
       "parameters": {
-        "respondWith": "json",
-        "responseBody": "{\n  \"error\": true,\n  \"status\": 403,\n  \"message\": \"Unauthorized: Invalid or missing authentication token.\",\n  \"code\": \"AUTH_FAILED\"\n}",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "acf09ea3-06f2-44c9-afe6-59a9072bc48d",
+                    "leftValue": "={{ $('Map fields').item.json.path }}",
+                    "rightValue": "/generate-ideas",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Map fields').item.json.path }}",
+                    "rightValue": "/update-persona",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "ce875d80-c33f-49cd-835f-5aa4cb70fa36"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "062a2b76-b073-4912-9e09-e669734906dc",
+                    "leftValue": "={{ $('Map fields').item.json.path }}",
+                    "rightValue": "/create-idea",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "0c59c8e5-166c-4a88-a12a-8d5c4ea0d046",
+                    "leftValue": "={{ $('Map fields').item.json.path }}",
+                    "rightValue": "/update-card",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c17d223b-5ebe-431b-b922-e13d052b1aed",
+                    "leftValue": "={{ $('Map fields').item.json.path }}",
+                    "rightValue": "/get-user-ideas",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "22532c62-858b-49e0-b014-989d8e4ef471",
+                    "leftValue": "={{ $('Map fields').item.json.path }}",
+                    "rightValue": "/delete-user-ideas",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "aed22d10-268e-457c-86ea-69b4684cbb35",
+                    "leftValue": "={{ $('Map fields').item.json.path }}",
+                    "rightValue": "/complete-onboarding",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "33ea8c06-2f5c-45a0-b1b1-5508aaab6a68",
+                    "leftValue": "={{ $('Map fields').item.json.path }}",
+                    "rightValue": "/get-profile",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "f8c8d140-b17a-45c5-ba7b-d91c0efae664",
+                    "leftValue": "={{ $('Map fields').item.json.path }}",
+                    "rightValue": "/save-persona",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3c1f1ee4-81c0-47ff-a01c-c46b7ee44929",
+                    "leftValue": "={{ $('Map fields').item.json.path }}",
+                    "rightValue": "/get-persona",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
         "options": {}
       },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.4,
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
       "position": [
-        -224,
-        2320
+        -2448,
+        1056
       ],
-      "id": "8bc07435-0db8-4a07-8b95-8dd1d1369ce2",
-      "name": "Respond to Webhook7"
-    }
-  ],
-  "pinData": {
-    "PATCH Persona": [
-      {
-        "json": {
-          "headers": {
-            "host": "n8n.bacelardigital.tech",
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
-            "content-length": "437",
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate, br, zstd",
-            "accept-language": "en-US,en;q=0.9",
-            "authorization": "Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6ImZJZzltbGVNSi9wV0plUXAiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3RjaXF3eGtkdWtmYmZsaGl6aXFsLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI5OWM2NzZmZC0zYzY2LTRiMjYtYTllMy1hMGM0MWMyNzFjYTQiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzY1NTY0MjMzLCJpYXQiOjE3NjU1NjA2MzMsImVtYWlsIjoiYmxiYWNlbGFyQGdtYWlsLmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXX0sInVzZXJfbWV0YWRhdGEiOnsiZW1haWwiOiJibGJhY2VsYXJAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBob25lX3ZlcmlmaWVkIjpmYWxzZSwic3ViIjoiOTljNjc2ZmQtM2M2Ni00YjI2LWE5ZTMtYTBjNDFjMjcxY2E0In0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoicGFzc3dvcmQiLCJ0aW1lc3RhbXAiOjE3NjU1NTY2NDB9XSwic2Vzc2lvbl9pZCI6IjVmMzM1MDk0LTUxOWEtNDRhNS05YzU1LTFmMzlhNWJmZjE1MyIsImlzX2Fub255bW91cyI6ZmFsc2V9.Ld-0b1D7dkGvVph7mJeAsDUBtc0C3GFILDPxM1B6AHY",
-            "content-type": "application/json",
-            "origin": "http://localhost:3001",
-            "priority": "u=1, i",
-            "referer": "http://localhost:3001/",
-            "sec-ch-ua": "\"Google Chrome\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"",
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": "\"Windows\"",
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "cross-site",
-            "x-forwarded-for": "198.53.130.58",
-            "x-forwarded-host": "n8n.bacelardigital.tech",
-            "x-forwarded-port": "443",
-            "x-forwarded-proto": "https",
-            "x-forwarded-server": "a7a8386374f5",
-            "x-real-ip": "198.53.130.58"
-          },
-          "params": {},
-          "query": {},
-          "body": {
-            "name": "Teste",
-            "gender": "Male",
-            "age_range": "25-34",
-            "occupation": "Marketing",
-            "education": "Master's",
-            "marital_status": "Married",
-            "has_children": true,
-            "income_level": "Middle",
-            "social_networks": "Instagram,TikTok,LinkedIn",
-            "pains_list": [
-              "How can I monetize my knowledge?"
-            ],
-            "goals_list": [
-              "Buy my house"
-            ],
-            "questions_list": [
-              "How to make money online?"
-            ],
-            "id": "d7a14abd-26ca-489c-b87b-6bb5521ab611",
-            "user_id": "99c676fd-3c66-4b26-a9e3-a0c41c271ca4"
-          },
-          "webhookUrl": "https://n8n.bacelardigital.tech/webhook/update-persona",
-          "executionMode": "production"
+      "id": "4a35469e-0a4a-4960-8f20-87aad137ef50",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "url": "https://tciqwxkdukfbflhiziql.supabase.co/auth/v1/user",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $json.authorization }}"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_kp4l5uKw4iMU7FnGE9ibIQ_JF2CwYbN"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -3488,
+        1216
+      ],
+      "id": "77569945-aaa9-48cb-a0fd-c187d361d576",
+      "name": "Verify Token",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "numberInputs": 10
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -4016,
+        1088
+      ],
+      "id": "fe91ddec-b5a6-4789-ac7e-0c2073e5ebf4",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "08a2b3bd-b804-45f7-87d1-9bb5b53777b6",
+              "name": "data",
+              "value": "={{ $json.body }}",
+              "type": "object"
+            },
+            {
+              "id": "c01b9764-1911-49c1-b5ee-c312e30dba80",
+              "name": "path",
+              "value": "={{ $json.webhookUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "383eb439-57c0-45bb-886e-4e1537176feb",
+              "name": "authorization",
+              "value": "={{ $json.headers.authorization }}",
+              "type": "string"
+            },
+            {
+              "id": "5e49c5d9-76b4-411c-8134-af848e7690dd",
+              "name": "query",
+              "value": "={{ $json.query }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3712,
+        1216
+      ],
+      "id": "218c4e85-5d39-4953-a349-b343da78d617",
+      "name": "Map fields"
+    },
+    {
+      "parameters": {
+        "httpMethod": "PATCH",
+        "path": "update-card",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -4704,
+        1248
+      ],
+      "id": "94e3f43d-6e34-4d36-8400-a15638e2ac26",
+      "name": "update-card",
+      "webhookId": "0c17f276-a25c-4a15-845d-5319d4724880"
+    },
+    {
+      "parameters": {
+        "httpMethod": "PATCH",
+        "path": "update-persona",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -4704,
+        1056
+      ],
+      "id": "17a9c13f-29a7-43e6-9cff-1f0425e4217b",
+      "name": "update-persona",
+      "webhookId": "66ddbe36-d50e-4a03-8cd1-5907c99a0bf9"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "create-idea",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -4704,
+        864
+      ],
+      "id": "6f40f7d1-ccaa-4afd-b89a-1c9d7d93dc8d",
+      "name": "create-idea",
+      "webhookId": "38f91984-6a85-4931-844d-46e64aa6f9f8"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-ideas",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -4704,
+        688
+      ],
+      "id": "6e01932d-819a-4fa3-b567-a8e67c9dde93",
+      "name": "generate-ideas",
+      "webhookId": "f7465ddb-c12a-4f30-9917-7720c62876bc"
+    },
+    {
+      "parameters": {
+        "path": "get-user-ideas",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -4704,
+        1440
+      ],
+      "id": "456f74ca-690c-49c6-9db4-0e98216f084b",
+      "name": "get-user-ideas",
+      "webhookId": "546ff7b5-a1a0-4a5e-8c2c-ad1194bf652a"
+    },
+    {
+      "parameters": {
+        "httpMethod": "DELETE",
+        "path": "delete-user-ideas",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -4704,
+        1632
+      ],
+      "id": "005b463d-6d40-420d-b107-e78736bf138a",
+      "name": "delete-user-ideas",
+      "webhookId": "f8ec5079-ee99-40c8-9390-c7c97d3a912c"
+    },
+    {
+      "parameters": {
+        "httpMethod": "PATCH",
+        "path": "complete-onboarding",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -4704,
+        1824
+      ],
+      "id": "8d1cd27a-101f-4975-bbf7-c9fdbbb72c74",
+      "name": "complete-onboarding",
+      "webhookId": "6f4c65c4-d3e9-47d7-b988-ef8d5e72251b"
+    },
+    {
+      "parameters": {
+        "tableId": "content_ideas",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "title",
+              "fieldValue": "={{ $('Map fields').item.json.data.title }}"
+            },
+            {
+              "fieldId": "description",
+              "fieldValue": "={{ $('Map fields').item.json.data.description }}"
+            },
+            {
+              "fieldId": "hook",
+              "fieldValue": "={{ $('Map fields').item.json.data.hook }}"
+            },
+            {
+              "fieldId": "platform_suggestion",
+              "fieldValue": "={{ $('Map fields').item.json.data.platform_suggestion }}"
+            },
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $('Map fields').item.json.data.user_id }}"
+            },
+            {
+              "fieldId": "cta",
+              "fieldValue": "={{ $('Map fields').item.json.data.cta }}"
+            },
+            {
+              "fieldId": "caption",
+              "fieldValue": "={{ $('Map fields').item.json.data.caption }}"
+            },
+            {
+              "fieldId": "hashtags",
+              "fieldValue": "={{ $('Map fields').item.json.data.hashtags }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1776,
+        1264
+      ],
+      "id": "27aa3119-c6eb-452a-89cd-c0faf46ff154",
+      "name": "create_ideas",
+      "credentials": {
+        "supabaseApi": {
+          "id": "dE0cZo2PA3JL8OXB",
+          "name": "Supabase account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "personas",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Map fields').item.json.data.user_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $('Map fields').item.json.data.user_id}}"
+            },
+            {
+              "fieldId": "gender",
+              "fieldValue": "={{ $('Map fields').item.json.data.gender}}"
+            },
+            {
+              "fieldId": "age_range",
+              "fieldValue": "={{ $('Map fields').item.json.data.age_range}}"
+            },
+            {
+              "fieldId": "occupation",
+              "fieldValue": "={{ $('Map fields').item.json.data.occupation}}"
+            },
+            {
+              "fieldId": "education",
+              "fieldValue": "={{ $('Map fields').item.json.data.education}}"
+            },
+            {
+              "fieldId": "marital_status",
+              "fieldValue": "={{ $('Map fields').item.json.data.marital_status}}"
+            },
+            {
+              "fieldId": "has_children",
+              "fieldValue": "={{ $('Map fields').item.json.data.has_children}}"
+            },
+            {
+              "fieldId": "social_networks",
+              "fieldValue": "={{ $('Map fields').item.json.data.social_networks}}"
+            },
+            {
+              "fieldId": "pains_list",
+              "fieldValue": "={{ $('Map fields').item.json.data.pains_list}}"
+            },
+            {
+              "fieldId": "goals_list",
+              "fieldValue": "={{ $('Map fields').item.json.data.goals_list}}"
+            },
+            {
+              "fieldId": "questions_list",
+              "fieldValue": "={{ $('Map fields').item.json.data.questions_list}}"
+            },
+            {
+              "fieldId": "income_level",
+              "fieldValue": "={{ $('Map fields').item.json.data.income_level}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1776,
+        1072
+      ],
+      "id": "649aa064-2df7-4982-b44a-ca492382a4e4",
+      "name": "update_personas",
+      "credentials": {
+        "supabaseApi": {
+          "id": "dE0cZo2PA3JL8OXB",
+          "name": "Supabase account"
         }
       }
-    ]
-  },
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "content_ideas",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Map fields').item.json.data.id }})"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "scheduled_at",
+              "fieldValue": "={{ $('Map fields').item.json.data.time }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ $('Map fields').item.json.data.status }}"
+            },
+            {
+              "fieldId": "title",
+              "fieldValue": "={{ $('Map fields').item.json.data.title }}"
+            },
+            {
+              "fieldId": "description",
+              "fieldValue": "={{ $('Map fields').item.json.data.description }}"
+            },
+            {
+              "fieldId": "platform_suggestion",
+              "fieldValue": "={{ $('Map fields').item.json.data.platform }}"
+            },
+            {
+              "fieldId": "caption",
+              "fieldValue": "={{ $('Map fields').item.json.datacaption }}"
+            },
+            {
+              "fieldId": "cta",
+              "fieldValue": "={{ $('Map fields').item.json.data.cta }}"
+            },
+            {
+              "fieldId": "hashtags",
+              "fieldValue": "={{ $('Map fields').item.json.data.hashtags }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1776,
+        1504
+      ],
+      "id": "4c037f8a-27b1-455c-8863-d58cef673df8",
+      "name": "update_content_ideas",
+      "credentials": {
+        "supabaseApi": {
+          "id": "dE0cZo2PA3JL8OXB",
+          "name": "Supabase account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "content_ideas",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Map fields').item.json.data.user_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1792,
+        1776
+      ],
+      "id": "a7a89f28-c140-4a7a-b179-0443a3e91f59",
+      "name": "get_content_ideas",
+      "credentials": {
+        "supabaseApi": {
+          "id": "dE0cZo2PA3JL8OXB",
+          "name": "Supabase account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "tableId": "content_ideas",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Map fields').item.json.data.id }})"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1792,
+        2032
+      ],
+      "id": "adef3962-41a8-4d15-b333-8df81cce7c21",
+      "name": "delete_content_ideas",
+      "credentials": {
+        "supabaseApi": {
+          "id": "dE0cZo2PA3JL8OXB",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "profiles",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Map fields').item.json.data.user_id}}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "has_completed_onboarding",
+              "fieldValue": "true"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1792,
+        2256
+      ],
+      "id": "eaa1250e-c925-4c7c-a7e5-4d28fff02fc5",
+      "name": "update_onboarding",
+      "credentials": {
+        "supabaseApi": {
+          "id": "dE0cZo2PA3JL8OXB",
+          "name": "Supabase account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "profiles",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $('Map fields').item.json.data.user_id}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1792,
+        2480
+      ],
+      "id": "913b6a13-c84f-41b4-a57b-f22d3dab920e",
+      "name": "get_profile_supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "dE0cZo2PA3JL8OXB",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "get-profile",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -4704,
+        2000
+      ],
+      "id": "ddc77b87-9675-4f77-91aa-bafe06fd51e5",
+      "name": "get_profile",
+      "webhookId": "1f1489de-efbd-42cc-986f-e27dfb51d00c"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/save-persona",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -4704,
+        2192
+      ],
+      "id": "fe6e40c9-d10c-4308-8c59-d04c4dfc23e1",
+      "name": "save-persona",
+      "webhookId": "8b6bb04a-2ce7-4a94-b2d9-fb9d018bbc59"
+    },
+    {
+      "parameters": {
+        "tableId": "personas",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $('Map fields').item.json.data.user_id}}"
+            },
+            {
+              "fieldId": "gender",
+              "fieldValue": "={{ $('Map fields').item.json.data.gender}}"
+            },
+            {
+              "fieldId": "age_range",
+              "fieldValue": "={{ $('Map fields').item.json.data.age_range}}"
+            },
+            {
+              "fieldId": "occupation",
+              "fieldValue": "={{ $('Map fields').item.json.data.occupation}}"
+            },
+            {
+              "fieldId": "education",
+              "fieldValue": "={{ $('Map fields').item.json.data.education}}"
+            },
+            {
+              "fieldId": "marital_status",
+              "fieldValue": "={{ $('Map fields').item.json.data.marital_status}}"
+            },
+            {
+              "fieldId": "has_children",
+              "fieldValue": "={{ $('Map fields').item.json.data.has_children}}"
+            },
+            {
+              "fieldId": "social_networks",
+              "fieldValue": "={{ $('Map fields').item.json.data.social_networks}}"
+            },
+            {
+              "fieldId": "pains_list",
+              "fieldValue": "={{ $('Map fields').item.json.data.pains_list}}"
+            },
+            {
+              "fieldId": "goals_list",
+              "fieldValue": "={{ $('Map fields').item.json.data.goals_list}}"
+            },
+            {
+              "fieldId": "questions_list",
+              "fieldValue": "={{ $('Map fields').item.json.data.questions_list}}"
+            },
+            {
+              "fieldId": "name",
+              "fieldValue": "={{ $('Map fields').item.json.data.name}}"
+            },
+            {
+              "fieldId": "income_level",
+              "fieldValue": "={{ $('Map fields').item.json.data.income_level}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1776,
+        2720
+      ],
+      "id": "372ace33-829c-42f1-91b3-37332bc1a42b",
+      "name": "create_persona",
+      "credentials": {
+        "supabaseApi": {
+          "id": "dE0cZo2PA3JL8OXB",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "/get-persona",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -4704,
+        2384
+      ],
+      "id": "5700f86a-f246-494a-9a88-7a7f4e6f1ddf",
+      "name": "get-persona",
+      "webhookId": "cb6614d6-6e93-49cb-9be1-48889c13b36d"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "personas",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Map fields').item.json.query.user_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1776,
+        2912
+      ],
+      "id": "d820e6f7-d8aa-4b29-8870-bf738476f35b",
+      "name": "get_personas",
+      "credentials": {
+        "supabaseApi": {
+          "id": "dE0cZo2PA3JL8OXB",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
   "connections": {
     "OpenAI Chat Model": {
       "ai_languageModel": [
@@ -1324,72 +1449,6 @@
         ]
       ]
     },
-    "Update a row": {
-      "main": [
-        [
-          {
-            "node": "PATCH Webhook",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "PATCH": {
-      "main": [
-        [
-          {
-            "node": "Update a row",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "POST": {
-      "main": [
-        [
-          {
-            "node": "Check Credit",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get many rows": {
-      "main": [
-        [
-          {
-            "node": "Respond to Webhook1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "GET": {
-      "main": [
-        [
-          {
-            "node": "Get many rows",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Delete a row": {
-      "main": [
-        [
-          {
-            "node": "Respond to Webhook2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "If": {
       "main": [
         [
@@ -1411,72 +1470,6 @@
     "Success": {
       "main": [
         []
-      ]
-    },
-    "Create Persona": {
-      "main": [
-        [
-          {
-            "node": "Respond to Webhook",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DELETE": {
-      "main": [
-        [
-          {
-            "node": "Delete a row",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "POST1": {
-      "main": [
-        [
-          {
-            "node": "Create Persona",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "GET PERSONA": {
-      "main": [
-        [
-          {
-            "node": "Get a row",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get a row": {
-      "main": [
-        [
-          {
-            "node": "Respond to Webhook3",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Update Persona": {
-      "main": [
-        [
-          {
-            "node": "Respond to Webhook4",
-            "type": "main",
-            "index": 0
-          }
-        ]
       ]
     },
     "Check Credit": {
@@ -1508,17 +1501,6 @@
         ]
       ]
     },
-    "POST Manual": {
-      "main": [
-        [
-          {
-            "node": "Manual Create",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "If2": {
       "main": [
         [
@@ -1537,88 +1519,11 @@
         ]
       ]
     },
-    "Manual Create": {
+    "isAuthenticated": {
       "main": [
         [
           {
-            "node": "If2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "PATCH Onboarding": {
-      "main": [
-        [
-          {
-            "node": "Update Onboarding",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Update Onboarding": {
-      "main": [
-        [
-          {
-            "node": "Respond to Webhook5",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "GET Profile": {
-      "main": [
-        [
-          {
-            "node": "Get Profile",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Profile": {
-      "main": [
-        [
-          {
-            "node": "Respond to Webhook6",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "PATCH Persona": {
-      "main": [
-        [
-          {
-            "node": "HTTP Request",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "HTTP Request": {
-      "main": [
-        [
-          {
-            "node": "If3",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "If3": {
-      "main": [
-        [
-          {
-            "node": "Update Persona",
+            "node": "Switch",
             "type": "main",
             "index": 0
           }
@@ -1631,13 +1536,336 @@
           }
         ]
       ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Check Credit",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "update_personas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "create_ideas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "update_content_ideas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "get_content_ideas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "delete_content_ideas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "update_onboarding",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "get_profile_supabase",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "create_persona",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "get_personas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Token": {
+      "main": [
+        [
+          {
+            "node": "isAuthenticated",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Map fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map fields": {
+      "main": [
+        [
+          {
+            "node": "Verify Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update-card": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "update-persona": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "create-idea": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "generate-ideas": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get-user-ideas": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "delete-user-ideas": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "complete-onboarding": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 6
+          }
+        ]
+      ]
+    },
+    "create_ideas": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update_personas": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update_content_ideas": {
+      "main": [
+        [
+          {
+            "node": "PATCH Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_content_ideas": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "delete_content_ideas": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update_onboarding": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_profile_supabase": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_profile": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 7
+          }
+        ]
+      ]
+    },
+    "save-persona": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 8
+          }
+        ]
+      ]
+    },
+    "create_persona": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get-persona": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 9
+          }
+        ]
+      ]
+    },
+    "get_personas": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "65a70d83-95ce-4e21-a7b1-4dd9d4ce63ee",
+  "versionId": "503e51ff-eb47-427f-9c87-f6970ae8b812",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b9ec77acaa8460b052222b9fec6cee8fb6e12a11641989419183ce0e2a680f6a"
