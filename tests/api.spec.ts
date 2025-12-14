@@ -12,6 +12,8 @@ const TEST_PASSWORD = 'A123#456a';
 
 let authToken: string;
 let testUserId: string;
+let testIdeaIds: string[] = [];
+let testPersonaId: string;
 
 test.beforeAll(async () => {
     // Authenticate test user
@@ -28,7 +30,123 @@ test.beforeAll(async () => {
     authToken = data.session.access_token;
     testUserId = data.user.id;
     console.log('Test user authenticated:', testUserId);
+
+    // Clean up existing test data
+    console.log('Cleaning up existing test data...');
+    await cleanupTestData(testUserId, authToken);
+
+    // Seed test data for consistent performance testing
+    console.log('Seeding test data...');
+    await seedTestData(testUserId, authToken);
 });
+
+test.afterAll(async () => {
+    // Clean up test data after all tests complete
+    console.log('Cleaning up test data after tests...');
+    await cleanupTestData(testUserId, authToken);
+});
+
+// Helper: Seed test data
+async function seedTestData(userId: string, token: string) {
+    // Create 10 test ideas for consistent performance testing
+    // (Reduced from 50 to prevent timeout issues)
+    const ideaPromises = Array.from({ length: 10 }, async (_, i) => {
+        const idea = {
+            user_id: userId,
+            title: `Test Idea ${i + 1}`,
+            description: `Description for test idea ${i + 1}`,
+            hook: `Hook ${i + 1}`,
+            caption: `Caption for idea ${i + 1}`,
+            cta: 'Test CTA',
+            hashtags: '#test #api',
+            platform_suggestion: ['Instagram'],
+            status: 'Pending'
+        };
+
+        try {
+            const response = await fetch(`${BASE_URL}/create-idea`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(idea)
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.id) testIdeaIds.push(data.id);
+            }
+        } catch (error) {
+            console.warn(`Failed to seed idea ${i + 1}:`, error);
+        }
+    });
+
+    await Promise.all(ideaPromises);
+    console.log(`Seeded ${testIdeaIds.length} test ideas`);
+
+    // Create a test persona
+    const persona = {
+        user_id: userId,
+        name: 'Test Persona',
+        occupation: 'Software Developer',
+        age_range: '25-34',
+        gender: 'All',
+        pains_list: ['Time management', 'Work-life balance'],
+        goals_list: ['Career growth', 'Learn new skills'],
+        questions_list: ['How to improve productivity?']
+    };
+
+    try {
+        const personaResponse = await fetch(`${BASE_URL}/save-persona`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(persona)
+        });
+
+        if (personaResponse.ok) {
+            const data = await personaResponse.json();
+            if (data.id) testPersonaId = data.id;
+            console.log('Seeded test persona');
+        }
+    } catch (error) {
+        console.warn('Failed to seed persona:', error);
+    }
+}
+
+// Helper: Clean up test data
+async function cleanupTestData(userId: string, token: string) {
+    // Fetch all user ideas
+    const response = await fetch(`${BASE_URL}/get-user-ideas?user_id=${userId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+        const data = await response.json();
+        const ideas = Array.isArray(data) ? data : data.ideas || [];
+
+        // Delete all ideas
+        const deletePromises = ideas.map((idea: any) =>
+            fetch(`${BASE_URL}/delete-user-ideas`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: idea.id, user_id: userId })
+            })
+        );
+
+        await Promise.all(deletePromises);
+        console.log(`Cleaned up ${ideas.length} ideas`);
+    }
+
+    testIdeaIds = [];
+}
+
 
 test.describe('API Endpoint Validation', () => {
 
