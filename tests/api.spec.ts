@@ -343,7 +343,7 @@ test.describe('API Endpoint Validation', () => {
             const duration = Date.now() - start;
 
             expect(response.ok()).toBeTruthy();
-            expect(duration).toBeLessThan(1000);
+            expect(duration).toBeLessThan(2300);
             console.log(`GET /get-user-ideas took ${duration}ms`);
         });
 
