@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react';
 import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
 import AuthPage from './components/AuthPage';
+import UpdatePassword from './components/UpdatePassword';
 
 // Guard for Protected Routes
 const RequireAuth = ({ children }: { children?: React.ReactNode }) => {
@@ -56,6 +57,9 @@ export default function App() {
 
         {/* App is Protected */}
         <Route path="/app" element={<RequireAuth><Dashboard /></RequireAuth>} />
+
+        {/* Password Update (Protected - user is logged in via link) */}
+        <Route path="/update-password" element={<UpdatePassword />} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

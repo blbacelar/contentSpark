@@ -2,12 +2,15 @@ import React from 'react';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { useTranslation } from 'react-i18next';
 import { ContentIdea, IdeaStatus } from '../types';
-import { GripVertical, Plus, Zap, Search, Filter, FileText, PlusCircle, Calendar, X } from 'lucide-react';
+import { GripVertical, Plus, Zap, Search, Filter, FileText, PlusCircle, Calendar, X, Users, ChevronDown, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTeam } from '../context/TeamContext';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
+import CreateTeamModal from './CreateTeamModal';
 import { cn } from '../utils';
 
 // Draggable Chip
@@ -103,6 +106,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
     const { user, profile } = useAuth();
     const { t } = useTranslation();
+    const { teams, currentTeam, switchTeam } = useTeam();
+    const [isCreateTeamOpen, setIsCreateTeamOpen] = React.useState(false);
 
     const { setNodeRef, isOver } = useDroppable({
         id: 'backlog',
@@ -177,9 +182,39 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <div className="bg-[#1A1A1A] p-2 rounded-lg shadow-md">
                         <Zap className="w-4 h-4 text-[#FFE566] fill-[#FFE566]" />
                     </div>
-                    <span className="text-lg font-bold tracking-tight text-[#1A1A1A]">
-                        {t('auth.title')}
-                    </span>
+                    <div>
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-0.5">
+                            {t('auth.title')}
+                        </span>
+                        {/* Team Switcher */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-auto p-0 hover:bg-transparent font-bold text-lg text-[#1A1A1A] gap-2 flex items-center">
+                                    {currentTeam ? currentTeam.name : t('sidebar.personal_workspace')}
+                                    <ChevronDown size={16} className="text-gray-400" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-56">
+                                <DropdownMenuLabel>{t('sidebar.switch_workspace')}</DropdownMenuLabel>
+
+                                <DropdownMenuLabel>{t('sidebar.teams')}</DropdownMenuLabel>
+                                {teams.map(team => (
+                                    <DropdownMenuItem key={team.id} onClick={() => switchTeam(team.id)} className="gap-2">
+                                        <Avatar className="h-6 w-6">
+                                            <AvatarFallback className="bg-blue-100 text-blue-600">{team.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        {team.name}
+                                        {currentTeam?.id === team.id && <Check size={14} className="ml-auto" />}
+                                    </DropdownMenuItem>
+                                ))}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => setIsCreateTeamOpen(true)} className="gap-2 text-blue-600 font-medium">
+                                    <PlusCircle size={14} />
+                                    {t('sidebar.create_team')}
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </div>
 
                 <Button
@@ -326,6 +361,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                 </Button>
             </div>
+            {/* Create Team Modal */}
+            <CreateTeamModal
+                isOpen={isCreateTeamOpen}
+                onClose={() => setIsCreateTeamOpen(false)}
+            />
         </div>
     );
 };

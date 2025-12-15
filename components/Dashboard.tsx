@@ -12,8 +12,10 @@ import EventModal from './EventModal';
 import SparkForm from './SparkForm';
 import SettingsModal from './SettingsModal';
 import ProfilePage from './ProfilePage';
-import { generateContent, updateContent, fetchUserIdeas, deleteContent, fetchUserPersona, fetchPersonas, generateId, createContentIdea, completeUserOnboarding } from '../services/genai';
+import { generateContent, updateContent, fetchUserIdeas, deleteContent, fetchUserPersona, fetchPersonas, generateId, createContentIdea, completeUserOnboarding, getCachedIdeas } from '../services/genai';
+import { getCachedTeamIdeas } from '../services/teams';
 import { useAuth } from '../context/AuthContext';
+import { useTeam } from '../context/TeamContext';
 import { Button } from './ui/button';
 
 // Default Webhook URL
@@ -102,16 +104,46 @@ export default function Dashboard() {
         setTimeout(() => setToast(null), 4000);
     };
 
+    const { currentTeam } = useTeam();
+
+    // ...
+
     const refreshData = async () => {
         if (user) {
-            setIsFetching(true);
+            // Check cache FIRST to prevent UI flicker
+            let hasCache = false;
+
+            if (currentTeam) {
+                const cached = getCachedTeamIdeas(currentTeam.id);
+                if (cached) hasCache = true;
+            } else {
+                const cached = getCachedIdeas(user.id);
+                if (cached) hasCache = true;
+            }
+
+            // Only show loader if we don't have cached data
+            if (!hasCache) setIsFetching(true);
+
             try {
-                const [ideasData, personasList] = await Promise.all([
-                    fetchUserIdeas(user.id),
-                    fetchPersonas(user.id)
-                ]);
+                let ideasData: ContentIdea[] = [];
+                let personasList: PersonaData[] = [];
+
+                if (currentTeam) {
+                    // Fetch Team Data
+                    ideasData = await fetchUserIdeas(user.id, currentTeam.id);
+                    // Personas might still be personal for now, or we can add team personas later
+                    personasList = await fetchPersonas(user.id);
+                } else {
+                    // Fetch Personal Data
+                    [ideasData, personasList] = await Promise.all([
+                        fetchUserIdeas(user.id),
+                        fetchPersonas(user.id)
+                    ]);
+                }
+
                 setIdeas(ideasData);
                 setAllPersonas(personasList);
+
                 // Default active persona to first one if not set
                 if (!userPersona && personasList.length > 0) {
                     setUserPersona(personasList[0]);
@@ -120,15 +152,16 @@ export default function Dashboard() {
             } catch (err) {
                 console.error(err);
             } finally {
+                // Always ensure loader is off
                 setIsFetching(false);
             }
         }
     };
 
-    // Load User Data
+    // Reload when Team Changes
     useEffect(() => {
         refreshData();
-    }, [user]);
+    }, [user, currentTeam]);
 
     // Check for onboarding status
     useEffect(() => {
@@ -241,7 +274,8 @@ export default function Dashboard() {
                 webhookConfig.useWebhook ? webhookConfig.url : undefined,
                 user.id,
                 targetPersona,
-                isPt ? 'pt' : 'en'
+                isPt ? 'pt' : 'en',
+                currentTeam?.id
             );
 
             setIdeas(prev => [...prev, ...newIdeas]);
@@ -275,7 +309,8 @@ export default function Dashboard() {
             hook: '',
             caption: '',
             cta: '',
-            hashtags: ''
+            hashtags: '',
+            team_id: currentTeam?.id
         };
         setEditingIdea(newIdea);
     };
@@ -464,14 +499,14 @@ export default function Dashboard() {
 
                                 <div className="flex items-center gap-3">
                                     <Button
-                                        variant="outline"
-                                        size="icon"
+                                        variant="ghost"
+                                        size="sm"
                                         onClick={toggleLanguage}
-                                        className="w-10 h-10 rounded-xl"
+                                        className="text-gray-400 hover:text-gray-600 transition-colors gap-2"
                                         title={t('common.switch_language')}
                                     >
-                                        <Globe size={18} />
-                                        <span className="sr-only">{isPt ? 'PT' : 'EN'}</span>
+                                        <Globe className="w-4 h-4" />
+                                        <span className="text-sm font-medium">{isPt ? 'PT' : 'EN'}</span>
                                     </Button>
 
                                     <div className={`

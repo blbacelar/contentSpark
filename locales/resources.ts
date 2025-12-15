@@ -60,7 +60,11 @@ export const resources = {
           creator: "Creator Plan",
           pro: "Pro Plan",
           unknown: "Free Plan"
-        }
+        },
+        personal_workspace: "Personal Workspace",
+        switch_workspace: "Switch Workspace",
+        teams: "Teams",
+        create_team: "Create New Team"
       },
       calendar: {
         today: "Today",
@@ -265,7 +269,11 @@ export const resources = {
           creator: "Plano Creator",
           pro: "Plano Pro",
           unknown: "Plano Gratuito"
-        }
+        },
+        personal_workspace: "Workspace Pessoal",
+        switch_workspace: "Alternar Workspace",
+        teams: "Equipes",
+        create_team: "Criar Nova Equipe"
       },
       calendar: {
         today: "Hoje",

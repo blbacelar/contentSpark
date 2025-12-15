@@ -23,6 +23,7 @@ export interface ContentIdea {
   status: IdeaStatus;
   persona_id?: string;
   persona_name?: string;
+  team_id?: string;
 }
 
 export interface FormData {
@@ -75,3 +76,42 @@ export const STATUS_COLORS: Record<IdeaStatus, string> = {
   'Completed': 'bg-green-50 text-green-600 border-green-100',
   'Posted': 'bg-purple-50 text-purple-600 border-purple-100',
 };
+
+export type TeamRole = 'owner' | 'admin' | 'member';
+
+export interface Team {
+  id: string;
+  name: string;
+  owner_id: string;
+  created_at: string;
+}
+
+export interface TeamMember {
+  team_id: string;
+  user_id: string;
+  role: TeamRole;
+  joined_at: string;
+  user?: {
+    first_name?: string;
+    last_name?: string;
+    avatar_url?: string;
+    email?: string;
+  };
+}
+
+export interface ContentIdea {
+  id: string;
+  title: string;
+  description: string; // Used for short summary
+  hook?: string; // First sentence/attention grabber
+  caption?: string; // Full post body
+  cta?: string; // Call to Action
+  hashtags?: string; // e.g. "#design #tips"
+  platform: string[]; // Changed to support multi-select
+  date: string | null; // ISO Date String YYYY-MM-DD
+  time: string | null; // HH:mm 24-hour format
+  status: IdeaStatus;
+  persona_id?: string;
+  persona_name?: string;
+  team_id?: string;
+}

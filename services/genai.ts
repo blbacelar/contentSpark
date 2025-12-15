@@ -5,18 +5,18 @@ import { supabase } from "../services/supabase";
 
 // Initialize Gemini Client
 // Initialize Gemini Client
-const apiKey = process.env.API_KEY;
+const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
 const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 // Update Webhook URL
-const UPDATE_WEBHOOK_URL = "https://n8n.bacelardigital.tech/webhook/update-card";
-const GET_USER_IDEAS_URL = "https://n8n.bacelardigital.tech/webhook/get-user-ideas";
-const DELETE_WEBHOOK_URL = "https://n8n.bacelardigital.tech/webhook/delete-user-ideas";
-const GET_PERSONA_URL = "https://n8n.bacelardigital.tech/webhook/get-persona";
-const SAVE_PERSONA_URL = "https://n8n.bacelardigital.tech/webhook/save-persona";
-const UPDATE_PERSONA_URL = "https://n8n.bacelardigital.tech/webhook-test/update-persona";
-const CREATE_IDEA_WEBHOOK_URL = "https://n8n.bacelardigital.tech/webhook/create-idea";
-const CREATE_CHECKOUT_URL = "https://n8n.bacelardigital.tech/webhook/create-checkout";
+const UPDATE_WEBHOOK_URL = import.meta.env.VITE_UPDATE_WEBHOOK_URL;
+export const GET_USER_IDEAS_URL = import.meta.env.VITE_GET_USER_IDEAS_URL;
+const DELETE_WEBHOOK_URL = import.meta.env.VITE_DELETE_WEBHOOK_URL;
+const GET_PERSONA_URL = import.meta.env.VITE_GET_PERSONA_URL;
+const SAVE_PERSONA_URL = import.meta.env.VITE_SAVE_PERSONA_URL;
+const UPDATE_PERSONA_URL = import.meta.env.VITE_UPDATE_PERSONA_URL;
+const CREATE_IDEA_WEBHOOK_URL = import.meta.env.VITE_CREATE_IDEA_WEBHOOK_URL;
+const CREATE_CHECKOUT_URL = import.meta.env.VITE_CREATE_CHECKOUT_URL;
 
 export const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -29,6 +29,11 @@ interface CacheItem<T> {
   data: T;
   timestamp: number;
 }
+
+// Export a safe helper to check cache
+export const getCachedIdeas = (userId: string): ContentIdea[] | null => {
+  return getCache<ContentIdea[]>(`${CACHE_PREFIX}IDEAS_${userId}`);
+};
 
 const getCache = <T>(key: string): T | null => {
   try {
@@ -70,7 +75,7 @@ const invalidateCache = (key: string) => {
 }
 
 // --- Helper for Retries & Auth ---
-const fetchWithRetry = async (url: string, options: RequestInit, retries = 1): Promise<Response> => {
+export const fetchWithRetry = async (url: string, options: RequestInit, retries = 1): Promise<Response> => {
   try {
     // Inject Auth Token
     const { data: { session } } = await supabase.auth.getSession();
@@ -107,8 +112,8 @@ const fetchWithRetry = async (url: string, options: RequestInit, retries = 1): P
 
 // --- Services ---
 
-export const fetchUserIdeas = async (userId: string): Promise<ContentIdea[]> => {
-  const cacheKey = `${CACHE_PREFIX}IDEAS_${userId}`;
+export const fetchUserIdeas = async (userId: string, teamId?: string): Promise<ContentIdea[]> => {
+  const cacheKey = teamId ? `${CACHE_PREFIX}IDEAS_${teamId}` : `${CACHE_PREFIX}IDEAS_${userId}`;
 
   // Try Cache First
   const cached = getCache<ContentIdea[]>(cacheKey);
@@ -117,8 +122,11 @@ export const fetchUserIdeas = async (userId: string): Promise<ContentIdea[]> => 
   }
 
   try {
-    const url = `${GET_USER_IDEAS_URL}?user_id=${encodeURIComponent(userId)}`;
-    const response = await fetch(url);
+    const url = `${GET_USER_IDEAS_URL}?user_id=${encodeURIComponent(userId)}&team_id=${encodeURIComponent(teamId || '')}`;
+    const response = await fetchWithRetry(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to fetch user ideas: ${response.status}`);
@@ -134,6 +142,9 @@ export const fetchUserIdeas = async (userId: string): Promise<ContentIdea[]> => 
     } else {
       return [];
     }
+
+    // Filter out potential empty objects returned by n8n
+    ideas = ideas.filter(i => i && typeof i === 'object' && (i.id || i.title || i.topic));
 
     // Normalize data structure (optimized)
     const normalizedIdeas = ideas.map(idea => {
@@ -188,12 +199,14 @@ export const fetchUserIdeas = async (userId: string): Promise<ContentIdea[]> => 
 };
 
 export const updateContent = async (payload: Partial<ContentIdea>, userId?: string) => {
+  let previousCache: ContentIdea[] | null = null;
+  const cacheKey = userId ? `${CACHE_PREFIX}IDEAS_${userId}` : "";
+
   // Optimistically update cache if userId is present
   if (userId && payload.id) {
-    const cacheKey = `${CACHE_PREFIX}IDEAS_${userId}`;
-    const cached = getCache<ContentIdea[]>(cacheKey);
-    if (cached) {
-      const updated = cached.map(i => i.id === payload.id ? { ...i, ...payload } : i);
+    previousCache = getCache<ContentIdea[]>(cacheKey);
+    if (previousCache) {
+      const updated = previousCache.map(i => i.id === payload.id ? { ...i, ...payload } : i);
       setCache(cacheKey, updated);
     }
   }
@@ -226,6 +239,10 @@ export const updateContent = async (payload: Partial<ContentIdea>, userId?: stri
     }
   } catch (error) {
     console.error("Failed to update content via webhook:", error);
+    // Rollback cache
+    if (userId && previousCache) {
+      setCache(`${CACHE_PREFIX}IDEAS_${userId}`, previousCache);
+    }
     throw error;
   }
 };
@@ -234,8 +251,12 @@ export const createContentIdea = async (idea: ContentIdea, userId: string) => {
   // Optimistically update cache
   const cacheKey = `${CACHE_PREFIX}IDEAS_${userId}`;
   const cached = getCache<ContentIdea[]>(cacheKey) || [];
+
+  // Save specific ID added for rollback
+  const optimisticId = idea.id;
+
   // Avoid duplicates in cache if possible
-  if (!cached.some(i => i.id === idea.id)) {
+  if (!cached.some(i => i.id === optimisticId)) {
     setCache(cacheKey, [...cached, idea]);
   }
 
@@ -243,6 +264,7 @@ export const createContentIdea = async (idea: ContentIdea, userId: string) => {
     const payload: any = {
       ...idea,
       user_id: userId,
+      team_id: idea.team_id,
       platform_suggestion: idea.platform
     };
 
@@ -275,6 +297,13 @@ export const createContentIdea = async (idea: ContentIdea, userId: string) => {
     return data;
   } catch (error) {
     console.error("Failed to create content via webhook:", error);
+
+    // Rollback: Remove the optimistically added idea
+    const currentCache = getCache<ContentIdea[]>(cacheKey);
+    if (currentCache) {
+      setCache(cacheKey, currentCache.filter(i => i.id !== optimisticId));
+    }
+
     throw error;
   }
 };
@@ -291,7 +320,7 @@ export const deleteContent = async (id: string, userId?: string) => {
   if (!DELETE_WEBHOOK_URL) return;
 
   try {
-    const response = await fetch(DELETE_WEBHOOK_URL, {
+    const response = await fetchWithRetry(DELETE_WEBHOOK_URL, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, user_id: userId }),
@@ -306,6 +335,12 @@ export const deleteContent = async (id: string, userId?: string) => {
 };
 
 export const fetchPersonas = async (userId: string): Promise<PersonaData[]> => {
+  const cacheKey = `${CACHE_PREFIX}PERSONAS_${userId}`;
+
+  // Try Cache First
+  const cached = getCache<PersonaData[]>(cacheKey);
+  if (cached) return cached;
+
   try {
     const url = `${GET_PERSONA_URL}?user_id=${encodeURIComponent(userId)}`;
 
@@ -334,7 +369,7 @@ export const fetchPersonas = async (userId: string): Promise<PersonaData[]> => {
       personas = [data];
     }
 
-    return personas.map(p => {
+    const normalized = personas.map(p => {
       // Handle n8n raw "json" wrapper if present
       const item = p.json ? p.json : p;
       return {
@@ -344,6 +379,9 @@ export const fetchPersonas = async (userId: string): Promise<PersonaData[]> => {
         questions_list: item.questions_list || []
       };
     });
+
+    setCache(cacheKey, normalized);
+    return normalized;
   } catch (err) {
     console.error("Error fetching personas via webhook:", err);
     return [];
@@ -394,37 +432,26 @@ export const saveUserPersona = async (persona: PersonaData) => {
 
 export const deletePersona = async (id: string, userId: string) => {
   try {
-    // Note: User might not have a dedicated delete persona webhook configured in the file constants yet?
-    // The instructions say "never insert using supabase, always use n8n".
-    // I see `DELETE_WEBHOOK_URL` constant but it points to `delete-user-ideas`.
-    // I should check if there is a specific persona deletion webhook or if I should use a generic one.
-    // The Constants list `DELETE_WEBHOOK_URL` but that seems for ideas.
-    // However, I see `UPDATE_PERSONA_URL` and `SAVE_PERSONA_URL`. There is no `DELETE_PERSONA_URL`.
-    // I will implement a fetch to a hypothetical `delete-persona` endpoint or just fail if not present?
-    // Waiting... strict instruction "always use n8n".
-    // The user previously said "delete content" uses `DELETE_WEBHOOK_URL`.
-    // For persona, I will assume a new webhook or the user hasn't provided it.
-    // BUT the existing code had a Supabase delete.
-    // I will construct a `DELETE_PERSONA_URL` assuming standard naming or ask user?
-    // I'll stick to the pattern: `https://n8n.bacelardigital.tech/webhook/delete-persona`
+    const { error } = await supabase
+      .from('personas')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
 
-    // START EDIT: I will define the URL locally if not global, or just use a literal for now to match the pattern.
-    const DELETE_PERSONA_URL = "https://n8n.bacelardigital.tech/webhook/delete-persona";
+    if (error) throw error;
 
-    const response = await fetchWithRetry(DELETE_PERSONA_URL, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, user_id: userId }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Delete persona webhook failed: ${response.status}`);
+    // Optimistic Cache Update: Remove from cache
+    const cacheKey = `${CACHE_PREFIX}PERSONAS_${userId}`;
+    const cached = getCache<PersonaData[]>(cacheKey);
+    if (cached) {
+      setCache(cacheKey, cached.filter(p => p.id !== id));
     }
+
   } catch (err) {
-    console.error("Error deleting persona via webhook:", err);
+    console.error("Error deleting persona via Supabase:", err);
     throw err;
   }
-}
+};
 
 export const updateUserPersona = async (persona: PersonaData) => {
   try {
@@ -473,10 +500,12 @@ export const generateContent = async (
   webhookUrl?: string,
   userId?: string,
   persona?: PersonaData | null,
-  language: string = 'en'
+  language: string = 'en',
+  teamId?: string
 ): Promise<ContentIdea[]> => {
 
-  // Construct Persona Payload Object
+  // ... (personaPayload construction unchanged)
+
   const personaPayload = persona ? {
     gender: persona.gender || "",
     age_range: persona.age_range || "",
@@ -502,8 +531,9 @@ export const generateContent = async (
         body: JSON.stringify({
           ...formData,
           user_id: userId,
+          team_id: teamId, // Add team_id
           persona: personaPayload,
-          language: language // Pass selected language
+          language: language
         }),
       });
 
@@ -575,13 +605,17 @@ export const generateContent = async (
             `;
       }
 
+      const safeTopic = (formData.topic || "").replace(/`/g, "'");
+      const safeAudience = (formData.audience || "").replace(/`/g, "'");
+      const safeTone = (formData.tone || "").replace(/`/g, "'");
+
       const prompt = `
         Generate 6 unique, creative, and high-quality content ideas in ${language.startsWith('pt') ? 'Portuguese' : 'English'}.
         
         Context:
-        - Niche/Topic: ${formData.topic}
-        - Target Audience: ${formData.audience}
-        - Tone: ${formData.tone}
+        - Niche/Topic: ${safeTopic}
+        - Target Audience: ${safeAudience}
+        - Tone: ${safeTone}
         ${personaContext}
         
         For each idea, provide:
@@ -644,7 +678,7 @@ export const generateContent = async (
 
   // Update Ideas Cache with new generated items
   if (userId && generatedIdeas.length > 0) {
-    const cacheKey = `${CACHE_PREFIX}IDEAS_${userId}`;
+    const cacheKey = teamId ? `${CACHE_PREFIX}IDEAS_${teamId}` : `${CACHE_PREFIX}IDEAS_${userId}`;
     const cached = getCache<ContentIdea[]>(cacheKey) || [];
     // Append new ideas
     setCache(cacheKey, [...cached, ...generatedIdeas]);
@@ -658,7 +692,7 @@ export const completeUserOnboarding = async (userId: string) => {
 
   // 1. Try Webhook (Log warning on failure but don't stop)
   try {
-    await fetch(WEBHOOK_URL, {
+    await fetchWithRetry(WEBHOOK_URL, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userId, has_completed_onboarding: true })
@@ -681,7 +715,7 @@ export const completeUserOnboarding = async (userId: string) => {
 
 export const createCheckoutSession = async (priceId: string, userId: string, email?: string) => {
   try {
-    const response = await fetch(CREATE_CHECKOUT_URL, {
+    const response = await fetchWithRetry(CREATE_CHECKOUT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

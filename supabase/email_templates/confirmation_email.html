@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your Email</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f4f5;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .header {
+            background-color: #1A1A1A;
+            padding: 32px;
+            text-align: center;
+        }
+
+        .logo-text {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 700;
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+
+        .accent {
+            color: #FFE566;
+        }
+
+        .content {
+            padding: 40px 32px;
+            text-align: center;
+        }
+
+        .title {
+            color: #1A1A1A;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .text {
+            color: #52525b;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #1A1A1A;
+            color: #FFE566;
+            font-weight: 700;
+            padding: 14px 32px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 16px;
+            transition: opacity 0.2s;
+        }
+
+        .button:hover {
+            opacity: 0.9;
+        }
+
+        .footer {
+            background-color: #fafafa;
+            padding: 24px;
+            text-align: center;
+            color: #a1a1aa;
+            font-size: 12px;
+            border-top: 1px solid #f4f4f5;
+        }
+
+        .link-footer {
+            color: #a1a1aa;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="{{ .SiteURL }}" class="logo-text">
+                Content<span class="accent">Spark</span>
+                <span style="font-size: 20px;">⚡</span>
+            </a>
+        </div>
+
+        <div class="content">
+            <h1 class="title">Verify your email address</h1>
+            <p class="text">
+                You're almost ready to start generating amazing content! <br>
+                Please confirm your email address to activate your account.
+            </p>
+
+            <a href="{{ .ConfirmationURL }}" class="button">Confirm Email</a>
+
+            <p class="text" style="font-size: 14px; margin-top: 32px; color: #71717a;">
+                If you didn't create an account with ContentSpark, you can safely ignore this email.
+            </p>
+        </div>
+
+        <div class="footer">
+            &copy; 2025 ContentSpark. All rights reserved.<br>
+            <a href="{{ .SiteURL }}" class="link-footer">Bacelar Digital</a>
+        </div>
+    </div>
+</body>
+
+</html>
