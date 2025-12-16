@@ -64,7 +64,8 @@ export const resources = {
         personal_workspace: "Personal Workspace",
         switch_workspace: "Switch Workspace",
         teams: "Teams",
-        create_team: "Create New Team"
+        create_team: "Create New Team",
+        invite_members: "Invite Members"
       },
       calendar: {
         today: "Today",
@@ -113,6 +114,20 @@ export const resources = {
         date_past_error: "Date cannot be in the past.",
         title_required: "Title is required."
       },
+      invite: {
+        title: "Invite to Team",
+        subtitle: "Share this link to invite people to {{teamName}}",
+        desc: "Share this code or link with your team members to let them join this workspace.",
+        code_label: "Invitation Code",
+        copy_btn: "Copy Code",
+        regenerate_btn: "Regenerate Code",
+        link_label: "Direct Link",
+        join_title: "Join Team",
+        join_desc: "You have been invited to join",
+        join_btn: "Join Now",
+        success: "Code copied!",
+        error: "Failed to copy"
+      },
       profile: {
         back_calendar: "Back to Calendar",
         sign_out: "Sign Out",
@@ -146,13 +161,22 @@ export const resources = {
         create_new_persona: "Create New Persona",
         delete_persona: "Delete Persona",
         persona_name: "Persona Name",
+        name_required: "Persona Name is required.",
+        persona_deleted: "Persona deleted",
+        delete_failed: "Failed to delete persona",
         saved_local_webhook_failed: "Persona saved locally, but AI sync failed.",
         persona_saved: "Persona saved successfully!"
       },
       settings: {
         connection: "Connection",
         description: "Configure external processing via n8n. Leaving this empty defaults to the internal AI Engine.",
-        webhook_url: "n8n Webhook URL"
+        webhook_url: "n8n Webhook URL",
+        notifications_tab: "Notifications",
+        general_tab: "General",
+        notify_team_join: "Notify when someone joins a team",
+        notify_idea_due: "Notify when an idea is due soon",
+        idea_due_threshold: "Hours before due date to notify",
+        save_success: "Settings saved successfully"
       },
       tones: {
         Professional: "Professional",
@@ -273,7 +297,8 @@ export const resources = {
         personal_workspace: "Workspace Pessoal",
         switch_workspace: "Alternar Workspace",
         teams: "Equipes",
-        create_team: "Criar Nova Equipe"
+        create_team: "Criar Nova Equipe",
+        invite_members: "Convidar Membros"
       },
       calendar: {
         today: "Hoje",
@@ -322,6 +347,20 @@ export const resources = {
         date_past_error: "A data não pode ser no passado.",
         title_required: "O título é obrigatório."
       },
+      invite: {
+        title: "Convidar para Equipe",
+        subtitle: "Compartilhe este link para convidar pessoas para {{teamName}}",
+        desc: "Compartilhe este código ou link com sua equipe para que eles entrem neste workspace.",
+        code_label: "Código de Convite",
+        copy_btn: "Copiar Código",
+        regenerate_btn: "Gerar Novo Código",
+        link_label: "Link Direto",
+        join_title: "Entrar na Equipe",
+        join_desc: "Você foi convidado para entrar",
+        join_btn: "Entrar Agora",
+        success: "Código copiado!",
+        error: "Erro ao copiar"
+      },
       profile: {
         back_calendar: "Voltar ao Calendário",
         sign_out: "Sair",
@@ -355,13 +394,22 @@ export const resources = {
         create_new_persona: "Criar Nova Persona",
         delete_persona: "Excluir Persona",
         persona_name: "Nome da Persona",
+        name_required: "O nome da Persona é obrigatório.",
+        persona_deleted: "Persona excluída",
+        delete_failed: "Falha ao excluir persona",
         saved_local_webhook_failed: "Persona salva localmente, mas a sincronização com IA falhou.",
         persona_saved: "Persona salva com sucesso!"
       },
       settings: {
         connection: "Conexão",
         description: "Configure processamento externo via n8n. Deixar vazio usa o motor de IA interno.",
-        webhook_url: "URL do Webhook n8n"
+        webhook_url: "URL do Webhook n8n",
+        notifications_tab: "Notificações",
+        general_tab: "Geral",
+        notify_team_join: "Notificar quando alguém entrar na equipe",
+        notify_idea_due: "Notificar quando uma ideia vencer em breve",
+        idea_due_threshold: "Horas antes do vencimento",
+        save_success: "Configurações salvas com sucesso"
       },
       tones: {
         Professional: "Profissional",

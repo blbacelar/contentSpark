@@ -1,0 +1,4 @@
+id,updated_at,first_name,last_name,avatar_url,credits,has_completed_onboarding,tier
+5610e481-186e-4ec1-89aa-775c5214bdfc,2025-12-14 17:52:24.576+00,Bruno,Bacelar,,0,true,free
+93698e00-bc8f-4966-aacd-5fd34a8bc3f7,,,,,10,true,free
+99c676fd-3c66-4b26-a9e3-a0c41c271ca4,2025-12-12 18:19:21.553+00,Bruno,Bacelar,https://tciqwxkdukfbflhiziql.supabase.co/storage/v1/object/public/avatars/99c676fd-3c66-4b26-a9e3-a0c41c271ca4/0.7377240010134316.jpg,2,true,pro

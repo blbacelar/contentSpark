@@ -7,6 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function AuthPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const location = useLocation();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
@@ -67,6 +68,9 @@ export default function AuthPage() {
         // If immediate sign-in fails, it means verification is strictly enforced by Supabase settings.
         if (data.user && !data.session) {
           setSuccessMessage(t('auth.account_created'));
+          setTimeout(() => {
+            navigate('/');
+          }, 2000);
           return;
         }
       } else {

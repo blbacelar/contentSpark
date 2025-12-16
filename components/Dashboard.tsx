@@ -14,9 +14,13 @@ import SettingsModal from './SettingsModal';
 import ProfilePage from './ProfilePage';
 import { generateContent, updateContent, fetchUserIdeas, deleteContent, fetchUserPersona, fetchPersonas, generateId, createContentIdea, completeUserOnboarding, getCachedIdeas } from '../services/genai';
 import { getCachedTeamIdeas } from '../services/teams';
+import { fetchNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../services/notifications';
+import { fetchUserSettings } from '../services/user';
 import { useAuth } from '../context/AuthContext';
 import { useTeam } from '../context/TeamContext';
 import { Button } from './ui/button';
+import NotificationList from './NotificationList';
+import { Bell } from 'lucide-react';
 
 // Default Webhook URL
 const DEFAULT_WEBHOOK = "https://n8n.bacelardigital.tech/webhook/generate-ideas";
@@ -32,24 +36,33 @@ const TOUR_STEPS: Step[] = [
         disableBeacon: true,
     },
     {
+        target: '#tour-team-switcher',
+        content: "Manage your teams here. You can switch between workspaces or create a new team to collaborate.",
+        placement: 'bottom',
+        disableBeacon: true,
+    },
+    {
         target: '#tour-persona-card',
         content: "First, define your Audience here. The more details (Pains, Goals) you add, the better your AI ideas will be.",
         placement: 'left',
+        disableBeacon: true,
     },
     {
         target: '#tour-generator-input',
         content: "Enter a topic here (e.g., 'Vegan Diet') and click Generate to see the magic happen.",
         placement: 'bottom',
+        disableBeacon: true,
     },
     {
         target: '#tour-calendar',
         content: "Drag and drop your generated ideas onto the calendar to schedule your week.",
         placement: 'center',
+        disableBeacon: true,
     }
 ];
 
 export default function Dashboard() {
-    const { user, profile, refreshProfile, updateCredits, signOut } = useAuth();
+    const { user, session, profile, refreshProfile, updateCredits, signOut } = useAuth();
     const { t, i18n } = useTranslation();
 
     // --- State ---
@@ -59,6 +72,11 @@ export default function Dashboard() {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
+
+    // Notifications State
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+    const [hasCheckedDue, setHasCheckedDue] = useState(false);
 
     // Filter State
     const [searchQuery, setSearchQuery] = useState('');
@@ -104,7 +122,14 @@ export default function Dashboard() {
         setTimeout(() => setToast(null), 4000);
     };
 
-    const { currentTeam } = useTeam();
+    const { currentTeam, error: teamError } = useTeam();
+
+    useEffect(() => {
+        if (teamError) {
+            triggerToast(`Team Error: ${teamError}`, true);
+        }
+    }, [teamError]);
+
 
     // ...
 
@@ -130,14 +155,14 @@ export default function Dashboard() {
 
                 if (currentTeam) {
                     // Fetch Team Data
-                    ideasData = await fetchUserIdeas(user.id, currentTeam.id);
+                    ideasData = await fetchUserIdeas(user.id, currentTeam.id, session?.access_token);
                     // Personas might still be personal for now, or we can add team personas later
-                    personasList = await fetchPersonas(user.id);
+                    personasList = await fetchPersonas(user.id, session?.access_token);
                 } else {
                     // Fetch Personal Data
                     [ideasData, personasList] = await Promise.all([
-                        fetchUserIdeas(user.id),
-                        fetchPersonas(user.id)
+                        fetchUserIdeas(user.id, undefined, session?.access_token),
+                        fetchPersonas(user.id, session?.access_token)
                     ]);
                 }
 
@@ -164,11 +189,50 @@ export default function Dashboard() {
     }, [user, currentTeam]);
 
     // Check for onboarding status
+    // Check for onboarding status
     useEffect(() => {
         if (profile && !profile.has_completed_onboarding) {
             setRunTour(true);
         }
     }, [profile]);
+
+    // Fetch Notifications
+    useEffect(() => {
+        if (user) {
+            fetchNotifications(user.id).then(setNotifications);
+        }
+    }, [user]);
+
+    // Check Upcoming Ideas (once per session/mount)
+    useEffect(() => {
+        if (user && ideas.length > 0 && !hasCheckedDue) {
+            const checkUpcoming = async () => {
+                const settings = await fetchUserSettings(user.id);
+                // Default to true/24h if no settings
+                const notify = settings?.notify_on_idea_due ?? true;
+                const threshold = settings?.idea_due_threshold_hours ?? 24;
+
+                if (!notify) return;
+
+                const now = new Date();
+                const dueLimit = new Date(now.getTime() + threshold * 60 * 60 * 1000);
+
+                const upcoming = ideas.filter(idea => {
+                    if (!idea.date || idea.status === 'Completed' || idea.status === 'Posted') return false;
+                    const ideaDate = new Date(`${idea.date}T${idea.time || '09:00'}`);
+                    return ideaDate > now && ideaDate <= dueLimit;
+                });
+
+                if (upcoming.length > 0) {
+                    triggerToast(`You have ${upcoming.length} ideas due soon!`, false);
+                    // setHasCheckedDue(true); // Uncomment if we want to limit checks, but for now re-checks on reload is fine.
+                }
+            };
+
+            checkUpcoming();
+            setHasCheckedDue(true);
+        }
+    }, [user, ideas, hasCheckedDue]);
 
     const handleJoyrideCallback = async (data: CallBackProps) => {
         const { status, type, index, action } = data;
@@ -178,20 +242,29 @@ export default function Dashboard() {
             setIsFormOpen(false);
             if (user) {
                 await completeUserOnboarding(user.id);
+                // Ensure profile is updated so we don't trigger tour again
                 await refreshProfile();
             }
         } else if (type === EVENTS.STEP_AFTER && action === 'next') {
             const nextIndex = index + 1;
 
             if (index === 0) {
+                // Step 0 -> Step 1: Both in Calendar View, just advance.
+                setStepIndex(nextIndex);
+            }
+            else if (index === 1) {
+                // Step 1 (Team Switcher) -> Step 2 (Persona).
+                // Persona is in Profile Page, so switch view.
                 setRunTour(false);
                 setView('profile');
                 setTimeout(() => {
                     setStepIndex(nextIndex);
                     setRunTour(true);
-                }, 200);
+                }, 500);
             }
-            else if (index === 1) {
+            else if (index === 2) {
+                // Step 2 (Persona) -> Step 3 (Generator).
+                // Generator Input is in SparkForm (Calendar View).
                 setRunTour(false);
                 setView('calendar');
                 setTimeout(() => {
@@ -201,14 +274,6 @@ export default function Dashboard() {
                         setRunTour(true);
                     }, 500);
                 }, 100);
-            }
-            else if (index === 2) {
-                setRunTour(false);
-                setIsFormOpen(false);
-                setTimeout(() => {
-                    setStepIndex(nextIndex);
-                    setRunTour(true);
-                }, 500);
             }
             else {
                 setStepIndex(nextIndex);
@@ -275,7 +340,8 @@ export default function Dashboard() {
                 user.id,
                 targetPersona,
                 isPt ? 'pt' : 'en',
-                currentTeam?.id
+                currentTeam?.id,
+                session?.access_token // Pass token explicitly
             );
 
             setIdeas(prev => [...prev, ...newIdeas]);
@@ -349,7 +415,7 @@ export default function Dashboard() {
                     time: updatedIdea.time,
                     status: updatedIdea.status,
                     platform: updatedIdea.platform
-                }, user.id).catch(err => {
+                }, user.id, session?.access_token).catch(err => {
                     console.error("Drag update failed", err);
                     triggerToast(err.message || "Failed to update idea", true);
                 });
@@ -387,7 +453,7 @@ export default function Dashboard() {
                         caption: updated.caption,
                         cta: updated.cta,
                         hashtags: updated.hashtags
-                    }, user.id);
+                    }, user.id, session?.access_token);
                     triggerToast("Idea updated successfully!", false);
                 }
             } catch (err: any) {
@@ -400,7 +466,7 @@ export default function Dashboard() {
     const deleteIdea = (id: string) => {
         setIdeas(prev => prev.filter(i => i.id !== id));
         if (user) {
-            deleteContent(id, user.id);
+            deleteContent(id, user.id, session?.access_token);
         }
     };
 
@@ -421,11 +487,13 @@ export default function Dashboard() {
                 steps={TOUR_STEPS}
                 run={runTour}
                 stepIndex={stepIndex}
+                debug={true}
                 continuous
                 showSkipButton
                 callback={handleJoyrideCallback}
                 disableOverlayClose={true}
                 spotlightClicks={true}
+                floaterProps={{ disableAnimation: true }}
                 styles={{
                     options: {
                         primaryColor: '#FFDA47',
@@ -515,6 +583,36 @@ export default function Dashboard() {
                                     `}>
                                         <Zap size={14} className={isLowCredits ? 'fill-red-600' : 'fill-gray-400 text-gray-400'} />
                                         {credits} {t('calendar.credits')}
+                                    </div>
+
+                                    <div className="relative">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                                            className="w-10 h-10 rounded-xl hover:bg-gray-100 relative"
+                                            title="Notifications"
+                                        >
+                                            <Bell size={20} className="text-gray-600" />
+                                            {notifications.some(n => !n.read_at) && (
+                                                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+                                            )}
+                                        </Button>
+                                        {isNotificationsOpen && (
+                                            <NotificationList
+                                                notifications={notifications}
+                                                onClose={() => setIsNotificationsOpen(false)}
+                                                onMarkAsRead={async (id) => {
+                                                    await markNotificationAsRead(id);
+                                                    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n));
+                                                }}
+                                                onMarkAllRead={async () => {
+                                                    if (!user) return;
+                                                    await markAllNotificationsAsRead(user.id);
+                                                    setNotifications(prev => prev.map(n => ({ ...n, read_at: new Date().toISOString() })));
+                                                }}
+                                            />
+                                        )}
                                     </div>
 
                                     <Button

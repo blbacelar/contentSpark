@@ -26,6 +26,24 @@ export interface ContentIdea {
   team_id?: string;
 }
 
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: 'team_join' | 'idea_due';
+  title: string;
+  message: string;
+  data?: any;
+  read_at?: string;
+  created_at: string;
+}
+
+export interface UserSettings {
+  user_id: string;
+  notify_on_team_join: boolean;
+  notify_on_idea_due: boolean;
+  idea_due_threshold_hours: number;
+}
+
 export interface FormData {
   topic: string;
   audience: string;
@@ -84,6 +102,7 @@ export interface Team {
   name: string;
   owner_id: string;
   created_at: string;
+  invitation_code?: string;
 }
 
 export interface TeamMember {

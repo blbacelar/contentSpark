@@ -1,0 +1,3 @@
+id,user_id,created_at,gender,age_range,occupation,education,marital_status,has_children,social_networks,pain_points,goals,pains_list,goals_list,questions_list,name,income_level
+d7a14abd-26ca-489c-b87b-6bb5521ab611,99c676fd-3c66-4b26-a9e3-a0c41c271ca4,2025-12-11 02:30:24.121075+00,Male,25-34,Marketing,Master's,Married,true,"Instagram,TikTok,LinkedIn",Tired of not having enough money to pay monthly bills and not having  time for family,Financial freedom,"[""How can I monetize my knowledge?"",""Test"",""Teste 2""]","[""Buy my house""]","[""How to make money online?""]",Teste,Middle
+f608ae56-907d-46fe-95d3-2c00bad40b9f,99c676fd-3c66-4b26-a9e3-a0c41c271ca4,2025-12-12 23:16:33.330913+00,Female,22-55,TESTES,High School,Married,false,Instagram,,,[],[],[],TETETEST,Low

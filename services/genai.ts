@@ -75,36 +75,66 @@ const invalidateCache = (key: string) => {
 }
 
 // --- Helper for Retries & Auth ---
-export const fetchWithRetry = async (url: string, options: RequestInit, retries = 1): Promise<Response> => {
+// --- Helper for Retries & Auth ---
+export const fetchWithRetry = async (url: string, options: RequestInit, retries = 1, token?: string): Promise<Response> => {
+  console.log("DEBUG: fetchWithRetry start", url);
   try {
-    // Inject Auth Token
-    const { data: { session } } = await supabase.auth.getSession();
+    let accessToken = token;
+
+    // Inject Auth Token if not provided
+    if (!accessToken) {
+      console.log("DEBUG: Getting session (fallback)...");
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log("DEBUG: Session retrieved", session?.user?.email);
+      accessToken = session?.access_token;
+    } else {
+      console.log("DEBUG: Using provided token");
+    }
+
     const headers = new Headers(options.headers || {});
-    if (session?.access_token) {
-      headers.set('Authorization', `Bearer ${session.access_token}`);
-    }
-    const finalOptions = { ...options, headers };
-
-    const response = await fetch(url, finalOptions);
-    // If server is overwhelmed (custom 500 or 503 from some backends), or explicitly tells us to wait
-    if (response.status === 503 || response.status === 429) {
-      throw new Error("Server busy");
+    if (accessToken) {
+      headers.set('Authorization', `Bearer ${accessToken}`);
     }
 
-    // Check for specific error messages in text if status is error-like
-    if (!response.ok) {
-      const clone = response.clone();
-      const text = await clone.text();
-      if (text.includes("overwhelmed") || text.includes("database is busy")) {
-        throw new Error("Server overwhelmed");
+    // Add Timeout (60s) for AI content generation which can be slow
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+    const finalOptions = { ...options, headers, signal: controller.signal };
+
+    try {
+      console.log("DEBUG: Executing fetch...");
+      const response = await fetch(url, finalOptions);
+      console.log("DEBUG: Fetch returned", response.status);
+      clearTimeout(timeoutId);
+
+      // If server is overwhelmed (custom 500 or 503 from some backends), or explicitly tells us to wait
+      if (response.status === 503 || response.status === 429) {
+        throw new Error("Server busy");
       }
-    }
 
-    return response;
+      // Check for specific error messages in text if status is error-like
+      if (!response.ok) {
+        const clone = response.clone();
+        const text = await clone.text();
+        if (text.includes("overwhelmed") || text.includes("database is busy")) {
+          throw new Error("Server overwhelmed");
+        }
+      }
+
+      return response;
+    } catch (fetchErr: any) {
+      clearTimeout(timeoutId);
+      console.error("DEBUG: Fetch error", fetchErr.name, fetchErr.message);
+      if (fetchErr.name === 'AbortError') {
+        throw new Error("Request timed out (server slow)");
+      }
+      throw fetchErr;
+    }
   } catch (err: any) {
-    if (retries > 0 && (err.message.includes("busy") || err.message.includes("overwhelmed"))) {
+    console.error("FetchWithRetry failed:", err.message);
+    if (retries > 0 && (err.message.includes("busy") || err.message.includes("overwhelmed") || err.message.includes("timed out"))) {
       await new Promise(res => setTimeout(res, 2000)); // Wait 2s
-      return fetchWithRetry(url, options, retries - 1);
+      return fetchWithRetry(url, options, retries - 1, token);
     }
     throw err;
   }
@@ -112,70 +142,63 @@ export const fetchWithRetry = async (url: string, options: RequestInit, retries 
 
 // --- Services ---
 
-export const fetchUserIdeas = async (userId: string, teamId?: string): Promise<ContentIdea[]> => {
+export const fetchUserIdeas = async (userId: string, teamId?: string, token?: string): Promise<ContentIdea[]> => {
   const cacheKey = teamId ? `${CACHE_PREFIX}IDEAS_${teamId}` : `${CACHE_PREFIX}IDEAS_${userId}`;
 
   // Try Cache First
   const cached = getCache<ContentIdea[]>(cacheKey);
-  if (cached) {
-    return cached;
-  }
+  if (cached) return cached;
 
   try {
-    const url = `${GET_USER_IDEAS_URL}?user_id=${encodeURIComponent(userId)}&team_id=${encodeURIComponent(teamId || '')}`;
-    const response = await fetchWithRetry(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch user ideas: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    let ideas: any[] = [];
-    if (Array.isArray(data)) {
-      ideas = data;
-    } else if (data.ideas && Array.isArray(data.ideas)) {
-      ideas = data.ideas;
-    } else {
+    if (!token) {
+      console.warn("fetchUserIdeas called without token");
       return [];
     }
 
-    // Filter out potential empty objects returned by n8n
-    ideas = ideas.filter(i => i && typeof i === 'object' && (i.id || i.title || i.topic));
+    // Direct Supabase Call
+    let query = `content_ideas?select=*&order=created_at.desc`;
+    if (teamId) {
+      query += `&team_id=eq.${teamId}`;
+    } else {
+      query += `&user_id=eq.${userId}`;
+      // If getting user ideas, maybe filter out team ideas?
+      // Current logic implies "Personal" ideas have team_id IS NULL usually.
+      // But let's stick to simple "user_id" filter for now unless "Personal Team" concept is strict.
+      // Actually, previous webhook logic was: 
+      // if team_id provided -> filter by team_id
+      // if no team_id -> filter by user_id (which might include team ideas if not careful, but usually we filter properly)
+    }
 
-    // Normalize data structure (optimized)
-    const normalizedIdeas = ideas.map(idea => {
-      // Platform normalization
-      const platforms = Array.isArray(idea.platform)
-        ? idea.platform
-        : typeof idea.platform === 'string'
-          ? [idea.platform]
-          : ["General"];
+    const data = await supabaseFetch(query, { method: 'GET' }, token);
+    const ideas: any[] = data || [];
 
-      // Date/time parsing (simplified)
-      let dateVal: string | null = idea.date || null;
-      let timeVal: string | null = null;
+    // Normalize data structure
+    const normalizedIdeas = ideas.map((idea: any) => {
+      // Platform normalization (stored as text array or similar in postgres)
+      // Supabase returns Postgres arrays as JS arrays.
+      // CSV showed column is 'platform_suggestion'.
+      const platforms = Array.isArray(idea.platform_suggestion)
+        ? idea.platform_suggestion
+        : typeof idea.platform_suggestion === 'string'
+          ? [idea.platform_suggestion]
+          : (Array.isArray(idea.platform) ? idea.platform : ["General"]);
+
+      // Parse scheduled_at for date/time
+      let date = idea.date || null;
+      let time = idea.time || null;
 
       if (idea.scheduled_at) {
         try {
-          const d = parseISO(idea.scheduled_at);
-          if (isValid(d)) {
-            dateVal = format(d, 'yyyy-MM-dd');
-            timeVal = format(d, 'HH:mm');
-          }
-        } catch (e) { /* ignore */ }
-      } else if (idea.time) {
-        // Simple time parsing
-        timeVal = idea.time.includes('T')
-          ? idea.time.substring(11, 16)
-          : idea.time.substring(0, 5);
+          // scheduled_at is ISO string e.g. 2025-12-10T02:00:00+00
+          date = format(parseISO(idea.scheduled_at), 'yyyy-MM-dd');
+          time = format(parseISO(idea.scheduled_at), 'HH:mm');
+        } catch (e) {
+          console.warn("Failed to parse scheduled_at", idea.scheduled_at);
+        }
       }
 
       return {
-        id: idea.id || generateId(),
+        id: idea.id,
         title: idea.title || "Untitled",
         description: idea.description || "",
         hook: idea.hook || "",
@@ -183,9 +206,13 @@ export const fetchUserIdeas = async (userId: string, teamId?: string): Promise<C
         cta: idea.cta || "",
         hashtags: idea.hashtags || "",
         platform: platforms,
-        date: dateVal,
-        time: timeVal,
-        status: idea.status || 'Pending'
+        date: date,
+        time: time,
+        status: idea.status || 'Pending',
+        created_at: idea.created_at,
+        team_id: idea.team_id,
+        user_id: idea.user_id,
+        persona_id: idea.persona_id
       };
     });
 
@@ -193,12 +220,12 @@ export const fetchUserIdeas = async (userId: string, teamId?: string): Promise<C
     return normalizedIdeas;
 
   } catch (error) {
-    console.error("Error fetching user ideas:", error);
+    console.error("Error fetching user ideas via Supabase:", error);
     return [];
   }
 };
 
-export const updateContent = async (payload: Partial<ContentIdea>, userId?: string) => {
+export const updateContent = async (payload: Partial<ContentIdea>, userId?: string, token?: string) => {
   let previousCache: ContentIdea[] | null = null;
   const cacheKey = userId ? `${CACHE_PREFIX}IDEAS_${userId}` : "";
 
@@ -211,34 +238,50 @@ export const updateContent = async (payload: Partial<ContentIdea>, userId?: stri
     }
   }
 
-  if (!UPDATE_WEBHOOK_URL) return;
-
   try {
-    const finalPayload: any = {
-      ...payload,
-      user_id: userId,
-      platform_suggestion: payload.platform
+    if (!token) {
+      // We might want to throw or just log warning? 
+      // For drag/drop, if no token, we can't save to DB.
+      throw new Error("Auth required for updateContent");
+    }
+
+    const updatePayload: any = {
+      ...payload
     };
 
-    if (payload.date && payload.time) {
-      finalPayload.time = `${payload.date}T${payload.time}:00`;
+    // Handle Date/Time merger for DB (scheduled_at)
+    if (payload.date) {
+      // If we have a time, combine them. Default to 09:00 if no time.
+      const timePart = payload.time || '09:00';
+      // Construct ISO timestamp for scheduled_at
+      updatePayload.scheduled_at = `${payload.date}T${timePart}:00`;
     }
 
-    const response = await fetchWithRetry(UPDATE_WEBHOOK_URL, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(finalPayload),
-    });
+    // Remove fields that shouldn't be updated or are flattened/invalid for DB
+    delete updatePayload.id;
+    delete updatePayload.user_id;
+    delete updatePayload.date;
+    delete updatePayload.time; // DB column is scheduled_at
+    delete updatePayload.persona_name; // Computed/joined field
 
-    const text = await response.text();
-    let data: any = {};
-    try { data = JSON.parse(text); } catch (e) { }
-
-    if (response.status === 500 || !response.ok || data.error === true) {
-      throw new Error(data.message || data.error || `Update failed: ${response.status}`);
+    // Ensure platform is an array and map to correct DB column
+    if (updatePayload.platform) {
+      if (!Array.isArray(updatePayload.platform)) {
+        updatePayload.platform = [updatePayload.platform];
+      }
+      updatePayload.platform_suggestion = updatePayload.platform;
+      delete updatePayload.platform; // DB column is platform_suggestion
     }
+
+    // PATCH /rest/v1/content_ideas?id=eq.{payload.id}
+    await supabaseFetch(`content_ideas?id=eq.${payload.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updatePayload),
+      headers: { 'Prefer': 'return=representation' } // to confirm update
+    }, token);
+
   } catch (error) {
-    console.error("Failed to update content via webhook:", error);
+    console.error("Failed to update content via Supabase:", error);
     // Rollback cache
     if (userId && previousCache) {
       setCache(`${CACHE_PREFIX}IDEAS_${userId}`, previousCache);
@@ -308,7 +351,7 @@ export const createContentIdea = async (idea: ContentIdea, userId: string) => {
   }
 };
 
-export const deleteContent = async (id: string, userId?: string) => {
+export const deleteContent = async (id: string, userId?: string, token?: string) => {
   if (userId) {
     const cacheKey = `${CACHE_PREFIX}IDEAS_${userId}`;
     const cached = getCache<ContentIdea[]>(cacheKey);
@@ -317,24 +360,21 @@ export const deleteContent = async (id: string, userId?: string) => {
     }
   }
 
-  if (!DELETE_WEBHOOK_URL) return;
-
   try {
-    const response = await fetchWithRetry(DELETE_WEBHOOK_URL, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, user_id: userId }),
-    });
+    if (!token) throw new Error("Auth required for delete");
 
-    if (!response.ok) {
-      console.warn(`Delete webhook failed: ${response.status}`);
-    }
+    await supabaseFetch(`content_ideas?id=eq.${id}`, {
+      method: 'DELETE'
+    }, token);
+
   } catch (error) {
-    console.error("Failed to delete content via webhook:", error);
+    console.error("Failed to delete content via Supabase:", error);
   }
 };
 
-export const fetchPersonas = async (userId: string): Promise<PersonaData[]> => {
+import { supabaseFetch } from "../services/supabase";
+
+export const fetchPersonas = async (userId: string, token?: string): Promise<PersonaData[]> => {
   const cacheKey = `${CACHE_PREFIX}PERSONAS_${userId}`;
 
   // Try Cache First
@@ -342,48 +382,31 @@ export const fetchPersonas = async (userId: string): Promise<PersonaData[]> => {
   if (cached) return cached;
 
   try {
-    const url = `${GET_PERSONA_URL}?user_id=${encodeURIComponent(userId)}`;
-
-    const response = await fetchWithRetry(url, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch personas: ${response.status}`);
+    if (!token) {
+      // Fallback or skip if no token provided (though should be passed)
+      console.warn("fetchPersonas called without token");
+      return [];
     }
 
-    const data = await response.json();
-    console.log("Fetch Personas Webhook Response:", data);
-    let personas: any[] = [];
+    // Direct Supabase REST call
+    // GET /rest/v1/personas?user_id=eq.{userId}&select=*
+    const data = await supabaseFetch(`personas?user_id=eq.${userId}&select=*`, {
+      method: 'GET'
+    }, token);
 
-    // Handle various potential n8n response structures
-    if (Array.isArray(data)) {
-      personas = data;
-    } else if (data && Array.isArray(data.data)) {
-      personas = data.data;
-    } else if (data && Array.isArray(data.personas)) {
-      personas = data.personas;
-    } else if (data) {
-      // Fallback for single object? Or just wrap it
-      personas = [data];
-    }
+    const personas: PersonaData[] = data || [];
 
-    const normalized = personas.map(p => {
-      // Handle n8n raw "json" wrapper if present
-      const item = p.json ? p.json : p;
-      return {
-        ...item,
-        pains_list: item.pains_list || [],
-        goals_list: item.goals_list || [],
-        questions_list: item.questions_list || []
-      };
-    });
+    const normalized = personas.map(p => ({
+      ...p,
+      pains_list: p.pains_list || [],
+      goals_list: p.goals_list || [],
+      questions_list: p.questions_list || []
+    }));
 
     setCache(cacheKey, normalized);
     return normalized;
   } catch (err) {
-    console.error("Error fetching personas via webhook:", err);
+    console.error("Error fetching personas via Supabase:", err);
     return [];
   }
 };
@@ -394,51 +417,54 @@ export const fetchUserPersona = async (userId: string): Promise<PersonaData | nu
   return personas.length > 0 ? personas[0] : null;
 };
 
-export const createPersona = async (persona: PersonaData) => {
+export const createPersona = async (persona: PersonaData, userId?: string, token?: string) => {
   try {
-    if (!SAVE_PERSONA_URL) {
-      throw new Error("Save Persona Webhook URL not configured");
-    }
+    if (!token) throw new Error("Auth required for createPersona");
 
-    // Call Webhook directly
-    const response = await fetchWithRetry(SAVE_PERSONA_URL, {
+    // POST /rest/v1/personas
+    const payload = {
+      ...persona,
+      user_id: userId || persona.user_id, // Ensure user_id is set
+      // Clean up lists to ensure they are arrays
+      pains_list: persona.pains_list || [],
+      goals_list: persona.goals_list || [],
+      questions_list: persona.questions_list || []
+    };
+    delete payload.id; // Ensure no ID is sent for creation
+
+    const data = await supabaseFetch('personas', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(persona)
-    });
+      body: JSON.stringify(payload),
+      headers: { 'Prefer': 'return=representation' }
+    }, token);
 
-    if (!response.ok) {
-      throw new Error(`Webhook failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
+    const created = data?.[0];
+    return created;
 
   } catch (err) {
-    console.error("Error creating persona via webhook:", err);
+    console.error("Error creating persona via Supabase:", err);
     throw err;
   }
 };
 
-export const saveUserPersona = async (persona: PersonaData) => {
+export const saveUserPersona = async (persona: PersonaData, token?: string) => {
   // Legacy support: Just create or update based on if we find one? 
   // actually, let's make this create a new one if it has no ID, or update if it does.
   if (persona.id) {
-    return updateUserPersona(persona);
+    return updateUserPersona(persona, token);
   } else {
-    return createPersona(persona);
+    return createPersona(persona, persona.user_id, token);
   }
 };
 
-export const deletePersona = async (id: string, userId: string) => {
+export const deletePersona = async (id: string, userId: string, token?: string) => {
   try {
-    const { error } = await supabase
-      .from('personas')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', userId);
+    if (!token) throw new Error("Auth required for delete");
 
-    if (error) throw error;
+    // DELETE /rest/v1/personas?id=eq.{id}&user_id=eq.{userId}
+    await supabaseFetch(`personas?id=eq.${id}&user_id=eq.${userId}`, {
+      method: 'DELETE'
+    }, token);
 
     // Optimistic Cache Update: Remove from cache
     const cacheKey = `${CACHE_PREFIX}PERSONAS_${userId}`;
@@ -453,10 +479,10 @@ export const deletePersona = async (id: string, userId: string) => {
   }
 };
 
-export const updateUserPersona = async (persona: PersonaData) => {
+export const updateUserPersona = async (persona: PersonaData, token?: string) => {
   try {
     if (!persona.id) throw new Error("Persona ID required for update");
-    if (!UPDATE_PERSONA_URL) throw new Error("Update Persona Webhook URL not configured");
+    if (!token) throw new Error("Auth required for update");
 
     const updatePayload = {
       name: persona.name,
@@ -468,29 +494,23 @@ export const updateUserPersona = async (persona: PersonaData) => {
       has_children: persona.has_children,
       income_level: persona.income_level,
       social_networks: persona.social_networks,
-      pains_list: persona.pains_list,
-      goals_list: persona.goals_list,
-      questions_list: persona.questions_list
+      pains_list: persona.pains_list || [],
+      goals_list: persona.goals_list || [],
+      questions_list: persona.questions_list || []
     };
 
-    // Call Webhook directly
-    const response = await fetchWithRetry(UPDATE_PERSONA_URL, {
-      method: 'PATCH', // n8n webhook for updates usually PATCH
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...updatePayload, id: persona.id, user_id: persona.user_id })
-    });
+    // PATCH /rest/v1/personas?id=eq.{id}
+    const data = await supabaseFetch(`personas?id=eq.${persona.id}`, {
+      method: 'PATCH',
+      headers: { 'Prefer': 'return=representation' },
+      body: JSON.stringify(updatePayload)
+    }, token);
 
-    if (!response.ok) {
-      throw new Error(`Webhook failed: ${response.status}`);
-    }
-
-    // Expecting the webhook to return the updated object or success status
-    // If n8n returns simple JSON, we pass it along.
-    const data = await response.json();
-    return { success: true, data };
+    const updated = data?.[0];
+    return { success: true, data: updated };
 
   } catch (err) {
-    console.error("Error updating persona via webhook:", err);
+    console.error("Error updating persona via Supabase:", err);
     throw err;
   }
 };
@@ -501,7 +521,8 @@ export const generateContent = async (
   userId?: string,
   persona?: PersonaData | null,
   language: string = 'en',
-  teamId?: string
+  teamId?: string,
+  token?: string
 ): Promise<ContentIdea[]> => {
 
   // ... (personaPayload construction unchanged)
@@ -535,7 +556,7 @@ export const generateContent = async (
           persona: personaPayload,
           language: language
         }),
-      });
+      }, 1, token);
 
       const text = await response.text();
       let data: any = {};

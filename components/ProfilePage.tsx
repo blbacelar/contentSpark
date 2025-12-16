@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../services/supabase';
+import { supabase, supabaseFetch } from '../services/supabase';
 import { fetchUserPersona, saveUserPersona, updateUserPersona, fetchPersonas, deletePersona } from '../services/genai';
 
 import { PersonaData, SOCIAL_PLATFORMS } from '../types';
@@ -101,6 +101,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
     const [selectedPersonaId, setSelectedPersonaId] = useState<string | 'new'>('new');
     const [personaLoading, setPersonaLoading] = useState(false);
     const [savingPersona, setSavingPersona] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [activeTab, setActiveTab] = useState<number>(0);
 
     const defaultPersona: PersonaData = {
@@ -195,48 +196,77 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
 
     const handleDeletePersona = async () => {
         if (!user || selectedPersonaId === 'new') return;
+        setShowDeleteConfirm(true);
+    };
 
-        if (confirm("Are you sure you want to delete this persona? This cannot be undone.")) {
-            try {
-                await deletePersona(selectedPersonaId, user.id);
-                // Remove from local list
-                const updatedList = personas.filter(p => p.id !== selectedPersonaId);
-                setPersonas(updatedList);
+    const confirmDeletePersona = async () => {
+        if (!user || selectedPersonaId === 'new') return;
 
-                if (updatedList.length > 0) {
-                    selectPersona(updatedList[0]);
-                } else {
-                    handleCreateNew();
-                }
-                toast.success("Persona deleted");
-            } catch (e) {
-                toast.error("Failed to delete persona");
+        try {
+            // Get Token
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) throw new Error("No auth session found");
+
+            await deletePersona(selectedPersonaId, user.id, token);
+            // Remove from local list
+            const updatedList = personas.filter(p => p.id !== selectedPersonaId);
+            setPersonas(updatedList);
+
+            if (updatedList.length > 0) {
+                selectPersona(updatedList[0]);
+            } else {
+                handleCreateNew();
             }
+            toast.success(t('profile.persona_deleted') || "Persona deleted");
+            setShowDeleteConfirm(false);
+        } catch (e) {
+            toast.error(t('profile.delete_failed') || "Failed to delete persona");
         }
     };
 
     const updateProfile = async () => {
         try {
+            if (!user) return;
+            // Get session token for REST call
+            // We can get it from useAuth session or trust the cookie? 
+            // REST requires explicit token.
+            // ProfilePage uses useAuth, so we have session theoretically?
+            // AuthContext provides user, session, profile.
+            // But session might be missing from destructuring in line 89.
+            // Let's add session to destructuring.
             setLoading(true);
+
+            // Note: We need the access token for the REST call. 
+            // supabaseFetch handles headers but we need to pass the token.
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+
+            if (!token) throw new Error("No auth session found");
+
             const updates = {
-                id: user!.id,
                 first_name: firstName,
                 last_name: lastName,
                 avatar_url: avatarUrl,
                 updated_at: new Date(),
             };
 
-            const { error } = await supabase.from('profiles').upsert(updates);
+            // Using REST API via supabaseFetch to prevent SDK hangs
+            // PATCH /rest/v1/profiles?id=eq.{user.id}
+            await supabaseFetch(`profiles?id=eq.${user.id}`, {
+                method: 'PATCH',
+                body: JSON.stringify(updates),
+                headers: {
+                    'Prefer': 'return=representation'
+                }
+            }, token);
 
-            if (error) {
-                throw error;
-            }
-
-            await refreshProfile(); // Refresh context to sync UI
+            await refreshProfile(); // Refresh context to sync UI using its own logic
             toast.success(t('profile.toast_updated'));
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error updating the data!', error);
-            toast.error('Error updating profile.');
+            // Show more detailed error
+            toast.error(error.message || 'Error updating profile.');
         } finally {
             setLoading(false);
         }
@@ -245,12 +275,10 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
     const handleSavePersona = async () => {
         if (!user) return;
 
-        if (!personaData.name && selectedPersonaId === 'new') {
-            const name = prompt("Please give this Persona a name (e.g. 'Yoga Moms'):");
-            if (!name) return;
-            personaData.name = name;
-        } else if (!personaData.name) {
-            personaData.name = "Untitled Persona";
+        // Validation: Name is required
+        if (!personaData.name || personaData.name.trim() === '') {
+            toast.error(t('profile.name_required') || "Please enter a name for your Persona.");
+            return;
         }
 
         setSavingPersona(true);
@@ -273,13 +301,18 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
             let saved;
             let webhookFailed = false;
 
+            // Get Token
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) throw new Error("No auth session found");
+
             if (cleanData.id) {
-                const result = await updateUserPersona(cleanData);
+                const result = await updateUserPersona(cleanData, token);
                 // @ts-ignore
                 webhookFailed = result.webhookFailed;
-                saved = cleanData;
+                saved = result.data; // key is 'data' from our new return shape
             } else {
-                const result = await saveUserPersona(cleanData);
+                const result = await saveUserPersona(cleanData, token);
                 // @ts-ignore
                 webhookFailed = result.webhookFailed;
                 saved = result;
@@ -763,17 +796,44 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                         </div>
                                     </TabsContent>
 
-                                    {/* Save Button */}
+                                    {/* Save Button / Delete Confirm */}
                                     <div className="flex justify-end pt-8 mt-4 border-t border-gray-100">
-                                        <Button
-                                            onClick={handleSavePersona}
-                                            disabled={savingPersona}
-                                            className="font-bold text-[#1A1A1A] bg-[#FFDA47] hover:bg-[#FFC040] hover:text-[#1A1A1A]"
-                                            size="lg"
-                                        >
-                                            {savingPersona ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                                            {t('profile.save_strategy')}
-                                        </Button>
+                                        {showDeleteConfirm ? (
+                                            <div className="flex items-center justify-between w-full animate-fade-in bg-red-50 p-2 rounded-xl border border-red-100">
+                                                <div className="flex items-center gap-2 px-2">
+                                                    <AlertCircle className="w-5 h-5 text-red-600" />
+                                                    <span className="text-xs font-bold text-red-700">{t('common.delete_confirm_msg')}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setShowDeleteConfirm(false)}
+                                                        className="text-gray-500 hover:text-gray-700 px-3 h-8 text-xs font-bold"
+                                                    >
+                                                        {t('common.cancel')}
+                                                    </Button>
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        onClick={confirmDeletePersona}
+                                                        className="px-4 h-8 rounded-lg text-xs font-bold shadow-sm"
+                                                    >
+                                                        {t('common.confirm_delete')}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <Button
+                                                onClick={handleSavePersona}
+                                                disabled={savingPersona}
+                                                className="font-bold text-[#1A1A1A] bg-[#FFDA47] hover:bg-[#FFC040] hover:text-[#1A1A1A]"
+                                                size="lg"
+                                            >
+                                                {savingPersona ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                                                {t('profile.save_strategy')}
+                                            </Button>
+                                        )}
                                     </div>
                                 </>
                             )}

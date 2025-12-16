@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '../services/supabase';
+import { supabase, supabaseFetch } from '../services/supabase';
 import { UserProfile } from '../types';
 
 interface AuthContextType {
@@ -21,47 +21,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const lastFetchedUserId = React.useRef<string | null>(null);
-
   /* 
-   * FIX: Added mounted check ref to prevent state updates on unmounted component
-   * FIX: race condition by awaiting fetchProfile
+   * SIMPLIFIED: Direct fetch via Secure RPC
+   * Bypasses RLS issues and removes complex caching
    */
-  const fetchProfile = async (userId: string) => {
-    // Debounce/De-duplicate identical fetches
-    if (lastFetchedUserId.current === userId) return;
-    lastFetchedUserId.current = userId;
-
+  const fetchProfile = async (userId: string, tokenOverride?: string) => {
     try {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const token = currentSession?.access_token;
+      // Use override token if provided, otherwise try to get from state or SDK
+      let token = tokenOverride || session?.access_token;
 
-      // FIX: Fail-open authorization header risk
       if (!token) {
-        console.warn("No auth token available for profile fetch");
-        throw new Error("Missing auth token");
+        const { data } = await supabase.auth.getSession();
+        token = data.session?.access_token;
       }
 
-      // FIX: Hardcoded API endpoint
-      const response = await fetch(import.meta.env.VITE_GET_PROFILE_URL || 'https://n8n.bacelardigital.tech/webhook/get-profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ user_id: userId })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch profile via webhook');
+      if (!token) {
+        return;
       }
 
-      const data = await response.json();
+      // FIX: Use manual fetch to avoid SDK type errors and force headers
+      // This is the "smarter" way: simple, explicit, robust.
+      const data = await supabaseFetch('rpc/get_my_profile', {
+        method: 'POST'
+      }, token);
 
-      if (data) {
-        // Handle n8n array response or single object
-        const profileData = Array.isArray(data) ? data[0] : data;
+      console.log("AUTH DEBUG: fetchProfile RPC data:", data);
 
+      if (data && data.length > 0) {
+        const profileData = data[0];
         setProfile({
           id: profileData.id,
           first_name: profileData.first_name,
@@ -71,13 +58,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           has_completed_onboarding: profileData.has_completed_onboarding,
           tier: profileData.tier || 'free'
         });
+      } else {
+        console.warn("AUTH DEBUG: Profile data empty even with RPC.");
       }
     } catch (err) {
-      console.error("Error fetching profile from webhook:", err);
-      // Fallback: clear the debounce ref so we can try again if needed
-      lastFetchedUserId.current = null;
-      // FIX: Zombie auth state - ensure we don't leave the app inside a valid user state but invalid profile state if crucial
-      // For now, we allow the user to exist without profile, but log potential issue.
+      console.error("Error fetching profile:", err);
     }
   };
 
@@ -85,9 +70,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let mounted = true;
 
+    // Safety timeout
+    const safetyTimer = setTimeout(() => {
+      if (mounted) {
+        console.warn("Auth check timed out, forcing loading false");
+        setLoading(false);
+      }
+    }, 5000);
+
     const initAuth = async () => {
-      // FIX: Initialization hang risk
-      // Check initial session first to ensure we don't wait for onAuthStateChange if it fires too late or not at all for existing session
       const { data: { session: initialSession } } = await supabase.auth.getSession();
 
       if (!mounted) return;
@@ -95,54 +86,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (initialSession?.user) {
         setSession(initialSession);
         setUser(initialSession.user);
-        await fetchProfile(initialSession.user.id);
-      }
-      // If no session, wait for onAuthStateChange or just finish loading
-      if (!initialSession) {
-        // setLoading(false) will be handled by onAuthStateChange 'INITIAL_SESSION' or fall through? 
-        // supabase.auth.onAuthStateChange usually fires immediately with current state.
+        await fetchProfile(initialSession.user.id, initialSession.access_token);
       }
     };
 
-    // Listen for changes on auth state (sign in, sign out, etc.)
+    // Listen for changes on auth state
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('AUTH EVENT:', event, session?.user?.email); // DEBUG
+      console.log('AUTH EVENT:', event, session?.user?.email);
       if (!mounted) return;
 
-      // Explicitly handle SIGNED_OUT event
       if (event === 'SIGNED_OUT') {
-        console.log('Handling SIGNED_OUT'); // DEBUG
         setSession(null);
         setUser(null);
         setProfile(null);
         setLoading(false);
-        lastFetchedUserId.current = null;
         return;
       }
 
       setSession(session);
       setUser(session?.user ?? null);
-      console.log('Set User:', session?.user?.id); // DEBUG
 
       if (session?.user) {
-        // Fetch profile if user changed or not fetched yet (handled by ref check in fetchProfile)
-        // FIX: Race condition - await fetchProfile before setting loading to false
-        await fetchProfile(session.user.id).catch(console.error);
+        await fetchProfile(session.user.id, session.access_token).catch(console.error);
       } else {
         setProfile(null);
-        lastFetchedUserId.current = null;
       }
 
       setLoading(false);
     });
 
-    // Run initAuth to ensure initial state is caught if onAuthStateChange lags
     initAuth().catch(console.error);
 
     return () => {
       mounted = false;
+      clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
   }, []);
@@ -150,22 +129,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
   const signOut = async () => {
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+    localStorage.removeItem('CS_LAST_TEAM_ID');
+
     try {
       await supabase.auth.signOut();
     } catch (error) {
       console.error("Error during supabase signOut:", error);
-    } finally {
-      // Force clear state to ensure UI updates
-      setSession(null);
-      setUser(null);
-      setProfile(null);
     }
   };
 
   const refreshProfile = async () => {
     if (user) {
-      lastFetchedUserId.current = null;
-      await fetchProfile(user.id);
+      await fetchProfile(user.id, session?.access_token);
     }
   };
 

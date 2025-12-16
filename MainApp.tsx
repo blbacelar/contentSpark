@@ -6,6 +6,7 @@ import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
 import AuthPage from './components/AuthPage';
 import UpdatePassword from './components/UpdatePassword';
+import JoinTeamPage from './components/JoinTeamPage';
 
 // Guard for Protected Routes
 const RequireAuth = ({ children }: { children?: React.ReactNode }) => {
@@ -57,6 +58,9 @@ export default function App() {
 
         {/* App is Protected */}
         <Route path="/app" element={<RequireAuth><Dashboard /></RequireAuth>} />
+
+        {/* Join Team Route */}
+        <Route path="/join-team/:code" element={<RequireAuth><JoinTeamPage /></RequireAuth>} />
 
         {/* Password Update (Protected - user is logged in via link) */}
         <Route path="/update-password" element={<UpdatePassword />} />

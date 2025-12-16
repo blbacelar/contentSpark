@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import CreateTeamModal from './CreateTeamModal';
+import InviteMemberModal from './InviteMemberModal';
 import { cn } from '../utils';
 
 // Draggable Chip
@@ -108,6 +109,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     const { t } = useTranslation();
     const { teams, currentTeam, switchTeam } = useTeam();
     const [isCreateTeamOpen, setIsCreateTeamOpen] = React.useState(false);
+    const [isInviteOpen, setIsInviteOpen] = React.useState(false);
 
     const { setNodeRef, isOver } = useDroppable({
         id: 'backlog',
@@ -187,41 +189,57 @@ const Sidebar: React.FC<SidebarProps> = ({
                             {t('auth.title')}
                         </span>
                         {/* Team Switcher */}
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-auto p-0 hover:bg-transparent font-bold text-lg text-[#1A1A1A] gap-2 flex items-center">
-                                    {currentTeam ? currentTeam.name : t('sidebar.personal_workspace')}
-                                    <ChevronDown size={16} className="text-gray-400" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="w-56">
-                                <DropdownMenuLabel>{t('sidebar.switch_workspace')}</DropdownMenuLabel>
+                        <div id="tour-team-switcher">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="h-auto p-0 hover:bg-transparent font-bold text-lg text-[#1A1A1A] gap-2 flex items-center">
+                                        {currentTeam ? currentTeam.name : t('sidebar.personal_workspace')}
+                                        <ChevronDown size={16} className="text-gray-400" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="w-56">
+                                    <DropdownMenuLabel>{t('sidebar.switch_workspace')}</DropdownMenuLabel>
 
-                                <DropdownMenuLabel>{t('sidebar.teams')}</DropdownMenuLabel>
-                                {teams.map(team => (
-                                    <DropdownMenuItem key={team.id} onClick={() => switchTeam(team.id)} className="gap-2">
-                                        <Avatar className="h-6 w-6">
-                                            <AvatarFallback className="bg-blue-100 text-blue-600">{team.name.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        {team.name}
-                                        {currentTeam?.id === team.id && <Check size={14} className="ml-auto" />}
+                                    <DropdownMenuLabel>{t('sidebar.teams')}</DropdownMenuLabel>
+                                    {teams.map(team => (
+                                        <DropdownMenuItem key={team.id} onClick={() => switchTeam(team.id)} className="gap-2">
+                                            <Avatar className="h-6 w-6">
+                                                <AvatarFallback className="bg-blue-100 text-blue-600">{team.name.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            {team.name}
+                                            {currentTeam?.id === team.id && <Check size={14} className="ml-auto" />}
+                                        </DropdownMenuItem>
+                                    ))}
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => setIsCreateTeamOpen(true)} className="gap-2 text-blue-600 font-medium">
+                                        <PlusCircle size={14} />
+                                        {t('sidebar.create_team')}
                                     </DropdownMenuItem>
-                                ))}
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => setIsCreateTeamOpen(true)} className="gap-2 text-blue-600 font-medium">
-                                    <PlusCircle size={14} />
-                                    {t('sidebar.create_team')}
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </div>
 
+                                    {currentTeam && (
+                                        <>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem onClick={() => setIsInviteOpen(true)} className="gap-2 text-[#1A1A1A] font-medium">
+                                                <Users size={14} />
+                                                {t('sidebar.invite_members') || "Invite Members"}
+                                            </DropdownMenuItem>
+                                        </>
+                                    )}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+
+            <div className="px-6">
                 <Button
                     onClick={hasCredits ? onGenerateClick : undefined}
                     disabled={!hasCredits}
                     className={cn(
-                        "w-full h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg",
+                        "w-full h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg mb-6",
                         hasCredits
                             ? "bg-[#1A1A1A] text-white hover:bg-black shadow-black/5 hover:scale-[1.02]"
                             : "bg-gray-200 text-gray-500 cursor-not-allowed shadow-none"
@@ -366,6 +384,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                 isOpen={isCreateTeamOpen}
                 onClose={() => setIsCreateTeamOpen(false)}
             />
+            {
+                currentTeam && (
+                    <InviteMemberModal
+                        isOpen={isInviteOpen}
+                        onClose={() => setIsInviteOpen(false)}
+                        team={currentTeam}
+                    />
+                )
+            }
         </div>
     );
 };

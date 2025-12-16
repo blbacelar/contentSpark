@@ -46,7 +46,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// 1. Get the raw text\nconst aiText = items[0].json.output || items[0].json.response || \"\";\n\nconst results = [];\n\n// Split by \"title\": since every object starts with it\n// (slice(1) removes the empty string before the first title)\nconst chunks = aiText.split(/\"title\":/i).slice(1);\n\nfor (const chunk of chunks) {\n    try {\n        // --- EXTRACTION REGEX ---\n        // We look for the content between specific keys\n\n        // 1. Description\n        const descMatch = chunk.match(/\"description\":\\s*\"?([\\s\\S]*?)\"?,\\s*\"hook\"/i);\n        // 2. Hook\n        const hookMatch = chunk.match(/\"hook\":\\s*\"?([\\s\\S]*?)\"?,\\s*\"caption\"/i);\n        // 3. Caption\n        const captionMatch = chunk.match(/\"caption\":\\s*\"?([\\s\\S]*?)\"?,\\s*\"cta\"/i);\n        // 4. CTA\n        const ctaMatch = chunk.match(/\"cta\":\\s*\"?([\\s\\S]*?)\"?,\\s*\"hashtags\"/i);\n        // 5. Hashtags\n        const tagsMatch = chunk.match(/\"hashtags\":\\s*\"?([\\s\\S]*?)\"?,\\s*\"platform_suggestion\"/i);\n        // 6. Platform\n        // Updated regex to stop at \"user_id\"\n        const platformMatch = chunk.match(/\"platform_suggestion\":\\s*\"?([\\s\\S]*?)\"?,\\s*\"user_id\"/i);\n        \n        // 7. User ID (MOVED INSIDE THE LOOP)\n        // We look for \"user_id\": \"VALUE\" } at the end of the chunk\n        const userIdMatch = chunk.match(/\"user_id\":\\s*\"?([\\s\\S]*?)\"?\\s*}/i);\n        \n        // Title Cleanup\n        let titleRaw = chunk.split(/\"description\"/)[0];\n        const titleClean = titleRaw.replace(/^[\\s\"]+|[\\s\",]+$/g, \"\").trim();\n\n        results.push({\n            title: titleClean,\n            description: descMatch ? descMatch[1].trim() : \"\",\n            hook: hookMatch ? hookMatch[1].trim() : \"\",\n            caption: captionMatch ? captionMatch[1].trim() : \"\",\n            cta: ctaMatch ? ctaMatch[1].trim() : \"\",\n            hashtags: tagsMatch ? tagsMatch[1].trim() : \"\",\n            platform_suggestion: platformMatch ? platformMatch[1].trim() : \"Instagram\",\n            \n            // FIX: Check if match exists, then grab index [1] (the capture group)\n            user_id: userIdMatch ? userIdMatch[1].trim() : \"\" \n        });\n    } catch (err) {\n        // Skip bad chunks\n    }\n}\n\nreturn results.map(item => ({ json: item }));"
+        "jsCode": "// 1. Get the raw text\nconst aiText = items[0].json.output || items[0].json.response || \"\";\n\nconst results = [];\n\n// Split by \"title\": since every object starts with it\n// (slice(1) removes the empty string before the first title)\nconst chunks = aiText.split(/\"title\":/i).slice(1);\n\nfor (const chunk of chunks) {\n    try {\n        // --- EXTRACTION REGEX ---\n        // We look for the content between specific keys\n\n        // 1. Description\n        const descMatch = chunk.match(/\"description\":\\s*\"?([\\s\\S]*?)\"?,\\s*\"hook\"/i);\n        // 2. Hook\n        const hookMatch = chunk.match(/\"hook\":\\s*\"?([\\s\\S]*?)\"?,\\s*\"caption\"/i);\n        // 3. Caption\n        const captionMatch = chunk.match(/\"caption\":\\s*\"?([\\s\\S]*?)\"?,\\s*\"cta\"/i);\n        // 4. CTA\n        const ctaMatch = chunk.match(/\"cta\":\\s*\"?([\\s\\S]*?)\"?,\\s*\"hashtags\"/i);\n        // 5. Hashtags\n        const tagsMatch = chunk.match(/\"hashtags\":\\s*\"?([\\s\\S]*?)\"?,\\s*\"platform_suggestion\"/i);\n        // 6. Platform\n        // Updated regex to stop at \"user_id\"\n        const platformMatch = chunk.match(/\"platform_suggestion\":\\s*\"?([\\s\\S]*?)\"?,\\s*\"user_id\"/i);\n        \n        // 7. User ID (MOVED INSIDE THE LOOP)\n        // We look for \"user_id\": \"VALUE\" } at the end of the chunk\n        const userIdMatch = chunk.match(/\"user_id\":\\s*\"?([\\s\\S]*?)\"?\\s*}/i);\n        const teamIdMatch = chunk.match(/\"team_id\":\\s*\"?([\\s\\S]*?)\"?,/i);\n        \n        // Title Cleanup\n        let titleRaw = chunk.split(/\"description\"/)[0];\n        const titleClean = titleRaw.replace(/^[\\s\"]+|[\\s\",]+$/g, \"\").trim();\n\n        results.push({\n            title: titleClean,\n            description: descMatch ? descMatch[1].trim() : \"\",\n            hook: hookMatch ? hookMatch[1].trim() : \"\",\n            caption: captionMatch ? captionMatch[1].trim() : \"\",\n            cta: ctaMatch ? ctaMatch[1].trim() : \"\",\n            hashtags: tagsMatch ? tagsMatch[1].trim() : \"\",\n            platform_suggestion: platformMatch ? platformMatch[1].trim() : \"Instagram\",\n            team_id: teamIdMatch ? teamIdMatch[1].trim() : \"\", \n            user_id: userIdMatch ? userIdMatch[1].trim() : \"\" \n        });\n    } catch (err) {\n        // Skip bad chunks\n    }\n}\n\nreturn results.map(item => ({ json: item }));"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -93,6 +93,10 @@
             {
               "fieldId": "hashtags",
               "fieldValue": "={{ $json.hashtags }}"
+            },
+            {
+              "fieldId": "team_id",
+              "fieldValue": "={{ $json.team_id }}"
             }
           ]
         }
@@ -705,6 +709,28 @@
                 ],
                 "combinator": "and"
               }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "1e0fa93f-98be-410d-a85a-7ec713d956af",
+                    "leftValue": "={{ $('Map fields').item.json.path }}",
+                    "rightValue": "/delete-persona",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
             }
           ]
         },
@@ -811,8 +837,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -4704,
-        1248
+        -4752,
+        992
       ],
       "id": "94e3f43d-6e34-4d36-8400-a15638e2ac26",
       "name": "update-card",
@@ -828,8 +854,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -4704,
-        1056
+        -4752,
+        800
       ],
       "id": "17a9c13f-29a7-43e6-9cff-1f0425e4217b",
       "name": "update-persona",
@@ -845,8 +871,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -4704,
-        864
+        -4752,
+        608
       ],
       "id": "6f40f7d1-ccaa-4afd-b89a-1c9d7d93dc8d",
       "name": "create-idea",
@@ -862,8 +888,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -4704,
-        688
+        -4752,
+        432
       ],
       "id": "6e01932d-819a-4fa3-b567-a8e67c9dde93",
       "name": "generate-ideas",
@@ -878,8 +904,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -4704,
-        1440
+        -4752,
+        1184
       ],
       "id": "456f74ca-690c-49c6-9db4-0e98216f084b",
       "name": "get-user-ideas",
@@ -895,8 +921,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -4704,
-        1632
+        -4752,
+        1376
       ],
       "id": "005b463d-6d40-420d-b107-e78736bf138a",
       "name": "delete-user-ideas",
@@ -912,8 +938,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -4704,
-        1824
+        -4752,
+        1568
       ],
       "id": "8d1cd27a-101f-4975-bbf7-c9fdbbb72c74",
       "name": "complete-onboarding",
@@ -955,6 +981,10 @@
             {
               "fieldId": "hashtags",
               "fieldValue": "={{ $('Map fields').item.json.data.hashtags }}"
+            },
+            {
+              "fieldId": "team_id",
+              "fieldValue": "={{ $('Map fields').item.json.data.team_id }}"
             }
           ]
         }
@@ -1127,12 +1157,18 @@
         "operation": "getAll",
         "tableId": "content_ideas",
         "returnAll": true,
+        "matchType": "allFilters",
         "filters": {
           "conditions": [
             {
               "keyName": "user_id",
               "condition": "eq",
-              "keyValue": "={{ $('Map fields').item.json.data.user_id }}"
+              "keyValue": "={{ $('Map fields').item.json.query.user_id }}"
+            },
+            {
+              "keyName": "team_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Map fields').item.json.query.team_id }}"
             }
           ]
         }
@@ -1258,8 +1294,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -4704,
-        2000
+        -4752,
+        1744
       ],
       "id": "ddc77b87-9675-4f77-91aa-bafe06fd51e5",
       "name": "get_profile",
@@ -1275,8 +1311,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -4704,
-        2192
+        -4752,
+        1936
       ],
       "id": "fe6e40c9-d10c-4308-8c59-d04c4dfc23e1",
       "name": "save-persona",
@@ -1366,8 +1402,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -4704,
-        2384
+        -4752,
+        2128
       ],
       "id": "5700f86a-f246-494a-9a88-7a7f4e6f1ddf",
       "name": "get-persona",
@@ -1608,7 +1644,8 @@
             "type": "main",
             "index": 0
           }
-        ]
+        ],
+        []
       ]
     },
     "Verify Token": {
@@ -1865,11 +1902,18 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "503e51ff-eb47-427f-9c87-f6970ae8b812",
+  "versionId": "50757711-7d77-46c5-a9f8-08610b5cea03",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b9ec77acaa8460b052222b9fec6cee8fb6e12a11641989419183ce0e2a680f6a"
   },
   "id": "BczYPV1XKzPj1GfD",
-  "tags": []
+  "tags": [
+    {
+      "name": "create_ideas",
+      "id": "su41kjzAacsc1tah",
+      "updatedAt": "2025-12-15T17:17:50.638Z",
+      "createdAt": "2025-12-15T17:17:50.638Z"
+    }
+  ]
 }

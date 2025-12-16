@@ -157,20 +157,27 @@ test.describe('API Endpoint Validation', () => {
 
     test.describe('Content Ideas Endpoints', () => {
 
-        test('GET /get-user-ideas - should fetch user ideas', async ({ request }) => {
-            const response = await request.get(`${BASE_URL}/get-user-ideas`, {
-                params: { user_id: testUserId },
-                headers: { 'Authorization': `Bearer ${authToken}` }
+        // Updated to use Direct Supabase REST (matching genai.ts refactor)
+        test('GET /content_ideas - should fetch user ideas directly', async ({ request }) => {
+            const response = await request.get(`${SUPABASE_URL}/rest/v1/content_ideas`, {
+                params: {
+                    user_id: `eq.${testUserId}`,
+                    select: '*'
+                },
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${authToken}`
+                }
             });
 
             expect(response.ok()).toBeTruthy();
             expect(response.status()).toBe(200);
 
             const data = await response.json();
-            expect(Array.isArray(data) || Array.isArray(data.ideas)).toBeTruthy();
+            expect(Array.isArray(data)).toBeTruthy();
         });
 
-        test('POST /create-idea - should create new idea', async ({ request }) => {
+        test('POST /create-idea - should create new idea (Webhooks)', async ({ request }) => {
             const newIdea = {
                 user_id: testUserId,
                 title: 'API Test Idea',
@@ -192,12 +199,18 @@ test.describe('API Endpoint Validation', () => {
             });
 
             expect(response.status()).toBeLessThan(400);
-            // Note: n8n might return 200 even with warnings
+
+            // Capture ID for cleanup/verification
+            try {
+                const data = await response.json();
+                if (data.id) testIdeaIds.push(data.id);
+            } catch (e) { /* ignore */ }
         });
 
-        test('PATCH /update-card - should update existing idea', async ({ request }) => {
+        test('PATCH /update-card - should update existing idea (Webhook)', async ({ request }) => {
+            // ... existing test ...
             const updatePayload = {
-                id: 'test-id-123',
+                id: testIdeaIds[0] || 'test-id-123', // Try to use a real ID from create
                 user_id: testUserId,
                 title: 'Updated Title',
                 status: 'In Progress'
@@ -211,24 +224,24 @@ test.describe('API Endpoint Validation', () => {
                 }
             });
 
-            // May fail if ID doesn't exist, but should not return 500
             expect(response.status()).not.toBe(500);
         });
 
-        test('DELETE /delete-user-ideas - should delete idea', async ({ request }) => {
-            const response = await request.delete(`${BASE_URL}/delete-user-ideas`, {
-                data: {
-                    id: 'test-id-to-delete',
-                    user_id: testUserId
+        test('DELETE /content_ideas - should delete idea directly', async ({ request }) => {
+            const idToDelete = testIdeaIds.pop() || 'test-id-to-delete';
+
+            const response = await request.delete(`${SUPABASE_URL}/rest/v1/content_ideas`, {
+                params: {
+                    id: `eq.${idToDelete}`
                 },
                 headers: {
+                    'apikey': SUPABASE_KEY,
                     'Authorization': `Bearer ${authToken}`,
                     'Content-Type': 'application/json'
                 }
             });
 
-            // Should not error even if ID doesn't exist
-            expect(response.status()).toBeLessThan(500);
+            expect(response.status()).toBeLessThan(300);
         });
 
         test('POST /generate-ideas - should generate AI ideas', async ({ request }) => {
