@@ -28,12 +28,20 @@ const LandingPage = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
-            <a href="#features" className="hover:text-[#1A1A1A] transition-colors">Features</a>
-            <a href="#how-it-works" className="hover:text-[#1A1A1A] transition-colors">How it Works</a>
-            <a href="#pricing" className="hover:text-[#1A1A1A] transition-colors">Pricing</a>
+            <a href="#features" className="hover:text-[#1A1A1A] transition-colors">{t('landing.nav.features')}</a>
+            <a href="#how-it-works" className="hover:text-[#1A1A1A] transition-colors">{t('landing.nav.how_it_works')}</a>
+            <a href="#pricing" className="hover:text-[#1A1A1A] transition-colors">{t('landing.nav.pricing')}</a>
           </div>
 
           <div className="flex items-center gap-4">
+            <button
+              onClick={toggleLanguage}
+              className="hidden md:flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-[#1A1A1A] transition-colors"
+              title={t('common.switch_language')}
+            >
+              <Globe size={16} />
+              <span>{i18n.language === 'en' ? 'PT' : 'EN'}</span>
+            </button>
             {!user && (
               <button
                 onClick={() => navigate('/login')}
