@@ -1,41 +1,8 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Step, CallBackProps, STATUS, EVENTS } from 'react-joyride';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { completeUserOnboarding } from '../services/genai';
-
-export const TOUR_STEPS: Step[] = [
-    {
-        target: 'body',
-        placement: 'center',
-        content: "Welcome to ContentSpark! Let's get your content engine running in 3 simple steps.",
-        disableBeacon: true,
-    },
-    {
-        target: '#tour-team-switcher',
-        content: "Manage your teams here. You can switch between workspaces or create a new team to collaborate.",
-        placement: 'bottom',
-        disableBeacon: true,
-    },
-    {
-        target: '#tour-persona-card',
-        content: "First, define your Audience here. The more details (Pains, Goals) you add, the better your AI ideas will be.",
-        placement: 'left',
-        disableBeacon: true,
-    },
-    {
-        target: '#tour-generator-input',
-        content: "Enter a topic here (e.g., 'Vegan Diet') and click Generate to see the magic happen.",
-        placement: 'bottom',
-        disableBeacon: true,
-    },
-    {
-        target: '#tour-calendar',
-        content: "Drag and drop your generated ideas onto the calendar to schedule your week.",
-        placement: 'center',
-        disableBeacon: true,
-    }
-];
 
 interface UseTourProps {
     setIsFormOpen: (open: boolean) => void;
@@ -44,8 +11,42 @@ interface UseTourProps {
 
 export function useTour({ setIsFormOpen, setView }: UseTourProps) {
     const { user, profile, refreshProfile } = useAuth();
+    const { t } = useTranslation();
     const [runTour, setRunTour] = useState(false);
     const [stepIndex, setStepIndex] = useState(0);
+
+    const steps: Step[] = useMemo(() => [
+        {
+            target: 'body',
+            placement: 'center',
+            content: t('tour.step1'),
+            disableBeacon: true,
+        },
+        {
+            target: '#tour-team-switcher',
+            content: t('tour.step2'),
+            placement: 'bottom',
+            disableBeacon: true,
+        },
+        {
+            target: '#tour-persona-card',
+            content: t('tour.step3'),
+            placement: 'left',
+            disableBeacon: true,
+        },
+        {
+            target: '#tour-generator-input',
+            content: t('tour.step4'),
+            placement: 'bottom',
+            disableBeacon: true,
+        },
+        {
+            target: '#tour-calendar',
+            content: t('tour.step5'),
+            placement: 'center',
+            disableBeacon: true,
+        }
+    ], [t]);
 
     // Initial check
     useEffect(() => {
@@ -107,6 +108,6 @@ export function useTour({ setIsFormOpen, setView }: UseTourProps) {
         runTour,
         stepIndex,
         handleJoyrideCallback,
-        TOUR_STEPS
+        steps
     };
 }

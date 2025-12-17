@@ -106,12 +106,7 @@ export default function Dashboard() {
         handleDragEnd
     } = useDragAndDrop({ ideas, setIdeas, triggerToast });
 
-    const {
-        runTour,
-        stepIndex,
-        handleJoyrideCallback,
-        TOUR_STEPS
-    } = useTour({ setIsFormOpen, setView });
+    const { runTour, stepIndex, handleJoyrideCallback, steps: tourSteps } = useTour({ setIsFormOpen, setView });
 
 
 
@@ -134,7 +129,7 @@ export default function Dashboard() {
         <>
             {/* Joyride Tour - Always rendered to persist across views */}
             <Joyride
-                steps={TOUR_STEPS}
+                steps={tourSteps}
                 run={runTour}
                 stepIndex={stepIndex}
                 debug={true}

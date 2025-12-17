@@ -118,7 +118,19 @@ export const resources = {
         date_past_error: "Date cannot be in the past.",
         title_required: "Title is required.",
         canva_prompt_label: "Canva / AI Image Prompt",
-        canva_prompt_placeholder: "Describe the image you want to generate..."
+        canva_prompt_placeholder: "Describe the image you want to generate...",
+        desc_label: "Description / Notes",
+        desc_placeholder: "Add some details...",
+        save_btn: "Save Idea",
+        delete_btn: "Delete",
+        platform_label: "Platform"
+      },
+      tour: {
+        step1: "Welcome to ContentSpark! Let's get your content engine running in 3 simple steps.",
+        step2: "Manage your teams here. You can switch between workspaces or create a new team to collaborate.",
+        step3: "First, define your Audience here. The more details (Pains, Goals) you add, the better your AI ideas will be.",
+        step4: "Enter a topic here (e.g., 'Diet') and click Generate to see the magic happen.",
+        step5: "Drag and drop your generated ideas onto the calendar to schedule your week."
       },
       invite: {
         title: "Invite to Team",
@@ -463,7 +475,19 @@ export const resources = {
         date_past_error: "A data não pode ser no passado.",
         title_required: "O título é obrigatório.",
         canva_prompt_label: "Prompt de Imagem (Canva / IA)",
-        canva_prompt_placeholder: "Descreva a imagem que você deseja gerar..."
+        canva_prompt_placeholder: "Descreva a imagem que você deseja gerar...",
+        desc_label: "Descrição / Notas",
+        desc_placeholder: "Adicione alguns detalhes...",
+        save_btn: "Salvar Ideia",
+        delete_btn: "Excluir",
+        platform_label: "Plataforma"
+      },
+      tour: {
+        step1: "Bem-vindo ao ContentSpark! Vamos colocar seu motor de conteúdo para rodar em 3 passos simples.",
+        step2: "Gerencie suas equipes aqui. Você pode alternar entre workspaces ou criar uma nova equipe para colaborar.",
+        step3: "Primeiro, defina seu Público aqui. Quanto mais detalhes (Dores, Objetivos) você adicionar, melhores serão as ideias da IA.",
+        step4: "Digite um tópico aqui (ex: 'Dieta') e clique em Gerar para ver a mágica acontecer.",
+        step5: "Arraste e solte suas ideias geradas no calendário para agendar sua semana."
       },
       invite: {
         title: "Convidar para Equipe",
