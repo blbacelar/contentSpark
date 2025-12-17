@@ -12,7 +12,10 @@ const LandingPage = () => {
   const { t, i18n } = useTranslation();
 
   const toggleLanguage = () => {
-    const newLang = i18n.language === 'en' ? 'pt' : 'en';
+    // Use resolvedLanguage for more accurate detection
+    const currentLang = i18n.resolvedLanguage || i18n.language || 'en';
+    const newLang = currentLang.startsWith('pt') ? 'en' : 'pt';
+    console.log('Switching from', currentLang, 'to', newLang);
     i18n.changeLanguage(newLang);
   };
 
