@@ -43,21 +43,21 @@ const LandingPage = () => {
               title={t('common.switch_language')}
             >
               <Globe size={16} />
-              <span>{i18n.language === 'en' ? 'PT' : 'EN'}</span>
+              <span>{i18n.language === 'en' ? 'EN' : 'PT'}</span>
             </button>
             {!user && (
               <button
                 onClick={() => navigate('/login')}
                 className="hidden md:block text-sm font-bold text-gray-500 hover:text-[#1A1A1A] transition-colors"
               >
-                Sign In
+                {t('landing.nav.sign_in')}
               </button>
             )}
             <Button
               onClick={() => user ? navigate('/app') : navigate('/login')}
               className="rounded-full font-bold shadow-sm bg-[#FFDA47] text-[#1A1A1A] hover:bg-[#FFC040] hover:scale-105 transition-all"
             >
-              {user ? 'Dashboard' : 'Get Started Free'}
+              {user ? t('landing.nav.dashboard') : t('landing.nav.get_started')}
             </Button>
           </div>
         </div>
