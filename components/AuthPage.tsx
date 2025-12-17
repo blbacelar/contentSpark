@@ -101,8 +101,8 @@ export default function AuthPage() {
 
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
-          <div className="bg-[#1A1A1A] p-3 rounded-2xl shadow-lg shadow-black/10 mb-4">
-            <Zap className="w-8 h-8 text-[#FFE566] fill-[#FFE566]" />
+          <div className="mb-4">
+            <img src="/logo.png" alt="ContentSpark" className="w-16 h-16 rounded-2xl shadow-xl shadow-yellow-400/20" />
           </div>
           <h1 className="text-2xl font-bold text-[#1A1A1A] tracking-tight">
             {t('auth.title')}
