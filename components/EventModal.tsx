@@ -360,7 +360,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
             <div className="pt-6 border-t border-gray-100 mt-6">
               <div className="flex items-center justify-between mb-3">
                 <Label className="text-xs font-bold text-indigo-500 uppercase tracking-wider flex items-center gap-1.5">
-                  <Monitor size={12} /> Canva Prompt
+                  <Monitor size={12} /> {t('modal.canva_prompt_label')}
                 </Label>
                 <Button
                   variant="ghost"
