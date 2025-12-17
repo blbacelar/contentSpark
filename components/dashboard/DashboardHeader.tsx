@@ -106,7 +106,7 @@ export function DashboardHeader({
                     )}
                 </div>
 
-                <Button
+                {/* <Button
                     variant="outline"
                     size="icon"
                     onClick={onOpenSettings}
@@ -114,7 +114,7 @@ export function DashboardHeader({
                     title={t('common.settings')}
                 >
                     <Settings size={20} />
-                </Button>
+                </Button> */}
                 <Button
                     variant="default"
                     size="icon"
