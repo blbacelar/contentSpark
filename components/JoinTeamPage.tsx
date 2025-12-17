@@ -50,7 +50,7 @@ export default function JoinTeamPage() {
             ]);
 
             // Switch to new team context
-            switchTeam(result.team.id);
+            switchTeam(result.team);
 
             // Redirect after delay
             setTimeout(() => {

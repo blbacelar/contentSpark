@@ -1,10 +1,20 @@
 import { test as base, expect } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 
-// Re-defining here to avoid import issues with relative paths outside 'tests' in some configs
-const supabaseUrl = 'https://tciqwxkdukfbflhiziql.supabase.co';
-// Note: This is a publishable key, so it's safe to use in tests.
-const supabaseKey = 'sb_publishable_kp4l5uKw4iMU7FnGE9ibIQ_JF2CwYbN';
+// Get credentials from environment variables
+const supabaseUrl = process.env.TEST_SUPABASE_URL;
+const supabaseKey = process.env.TEST_SUPABASE_KEY;
+const testEmail = process.env.TEST_USER_EMAIL;
+const testPassword = process.env.TEST_USER_PASSWORD;
+
+if (!supabaseUrl || !supabaseKey) {
+    throw new Error('TEST_SUPABASE_URL and TEST_SUPABASE_KEY must be set in .env.test');
+}
+
+if (!testEmail || !testPassword) {
+    throw new Error('TEST_USER_EMAIL and TEST_USER_PASSWORD must be set in .env.test');
+}
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 type MyFixtures = {
@@ -14,12 +24,9 @@ type MyFixtures = {
 export const test = base.extend<MyFixtures>({
     loggedInUser: async ({ page }, use) => {
         // 1. Log in via API (Faster and less prone to UI timeout if UI is slow under load)
-        const email = 'brunolbacelar@gmail.com';
-        const password = 'A123#456a';
-
         const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
+            email: testEmail,
+            password: testPassword,
         });
 
         if (error || !data.session) {
@@ -27,7 +34,8 @@ export const test = base.extend<MyFixtures>({
         }
 
         // 2. Set LocalStorage via addInitScript before any page load
-        const projectRef = 'tciqwxkdukfbflhiziql';
+        // Extract project ref from URL
+        const projectRef = new URL(supabaseUrl).hostname.split('.')[0];
         const storageKey = `sb-${projectRef}-auth-token`;
         const sessionStr = JSON.stringify(data.session);
 
@@ -37,7 +45,7 @@ export const test = base.extend<MyFixtures>({
         }, { key: storageKey, value: sessionStr });
 
         // 3. Provide details
-        await use({ email, id: data.user?.id || '' });
+        await use({ email: testEmail, id: data.user?.id || '' });
     },
 });
 

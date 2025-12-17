@@ -9,7 +9,7 @@ interface TeamContextType {
     isLoading: boolean;
     error: string | null;
     createTeam: (name: string) => Promise<void>;
-    switchTeam: (teamId: string | null) => void; // null = Personal
+    switchTeam: (teamOrId: string | Team | null) => void;
     refreshTeams: () => Promise<void>;
     updateTeamCode: (teamId: string) => Promise<void>;
 }
@@ -105,12 +105,15 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    const switchTeam = (teamId: string | null) => {
-        if (teamId === null) {
+    const switchTeam = (teamOrId: string | Team | null) => {
+        if (teamOrId === null) {
             setCurrentTeam(null);
-        } else {
-            const team = teams.find(t => t.id === teamId);
+        } else if (typeof teamOrId === 'string') {
+            const team = teams.find(t => t.id === teamOrId);
             if (team) setCurrentTeam(team);
+        } else {
+            // It's a Team object
+            setCurrentTeam(teamOrId);
         }
     };
 

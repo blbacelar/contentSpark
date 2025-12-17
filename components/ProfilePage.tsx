@@ -147,10 +147,12 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
     const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url || null);
 
     // Branding State
-    const [branding, setBranding] = useState<BrandingSettings>(profile?.branding || {
+    // Branding State - Ensure defaults if property is missing or empty object
+    const [branding, setBranding] = useState<BrandingSettings>({
         colors: [],
         fonts: {},
-        style: ''
+        style: '',
+        ...(profile?.branding || {})
     });
 
     // Persona State
@@ -190,7 +192,14 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
             setLastName(profile.last_name || '');
             setAvatarUrl(profile.avatar_url || null);
             if (profile.branding) {
-                setBranding(profile.branding);
+                setBranding(prev => ({
+                    colors: [],
+                    fonts: {},
+                    style: '',
+                    ...prev, // Keep current state as base? No, we want profile to win but be safe.
+                    // Better: use defaults + profile.branding
+                    ...profile.branding
+                }));
             }
         }
     }, [profile]);

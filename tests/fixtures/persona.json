@@ -1,0 +1,22 @@
+{
+    "name": "E2E Test Persona",
+    "gender": "Female",
+    "age_range": "25-34",
+    "occupation": "Tech Lead",
+    "education": "Master's",
+    "marital_status": "Single",
+    "has_children": false,
+    "income_level": "High",
+    "social_networks": "LinkedIn,X",
+    "pains_list": [
+        "Inefficient workflows",
+        "Legacy code"
+    ],
+    "goals_list": [
+        "Automate everything",
+        "Scale team"
+    ],
+    "questions_list": [
+        "How to optimize CI/CD?"
+    ]
+}

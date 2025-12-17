@@ -1,0 +1,30 @@
+[
+    {
+        "id": "mock_idea_1",
+        "title": "Mastering E2E Testing with Playwright",
+        "description": "A comprehensive guide to automating user flows.",
+        "hook": "Are you still testing manually? Stop.",
+        "caption": "End-to-end testing ensures your user flows work as expected. \n\nWith Playwright, you can automate complex interactions and catch bugs before they reach production. \n\nHere are 3 tips to get started...",
+        "cta": "Read the full guide",
+        "hashtags": "#testing #playwright #automation",
+        "canva_prompt": "Futuristic clean laboratory with glowing code",
+        "platform": [
+            "LinkedIn"
+        ],
+        "status": "Pending"
+    },
+    {
+        "id": "mock_idea_2",
+        "title": "Why Manual QA is Dead",
+        "description": "Opinion piece on the shift to automation.",
+        "hook": "Manual QA is slowing you down.",
+        "caption": "Speed is everything. If you're relying solely on manual testing, you're falling behind.",
+        "cta": "Share your thoughts",
+        "hashtags": "#qa #devops #tech",
+        "canva_prompt": "Robot hand pressing a red button",
+        "platform": [
+            "X"
+        ],
+        "status": "Pending"
+    }
+]

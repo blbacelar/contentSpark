@@ -468,6 +468,20 @@ export const createPersona = async (persona: PersonaData, userId?: string, token
     }, token);
 
     const created = data?.[0];
+
+    // Optimistic Cache Update: Add to cache
+    const cacheKey = `${CACHE_PREFIX}PERSONAS_${userId || persona.user_id}`;
+    const cached = getCache<PersonaData[]>(cacheKey);
+    if (cached && created) {
+      setCache(cacheKey, [...cached, created]);
+    } else {
+      // If no cache exists, we don't need to do anything, next fetch will get fresh data
+      // BUT if next fetch sees nothing in cache, it fetches.
+      // However, if we just invalidated? No, setCache is better.
+      // Actually, if we invalidate, next fetch gets all.
+      invalidateCache(cacheKey);
+    }
+
     return created;
 
   } catch (err) {
@@ -536,6 +550,16 @@ export const updateUserPersona = async (persona: PersonaData, token?: string) =>
     }, token);
 
     const updated = data?.[0];
+
+    // Optimistic Cache Update: Update item in cache
+    const cacheKey = `${CACHE_PREFIX}PERSONAS_${persona.user_id}`;
+    const cached = getCache<PersonaData[]>(cacheKey);
+    if (cached && updated) {
+      setCache(cacheKey, cached.map(p => p.id === updated.id ? updated : p));
+    } else {
+      invalidateCache(cacheKey);
+    }
+
     return { success: true, data: updated };
 
   } catch (err) {
