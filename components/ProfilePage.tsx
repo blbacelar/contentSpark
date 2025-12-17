@@ -64,6 +64,12 @@ const DynamicList = ({
                         onChange={(e) => onChange(index, e.target.value)}
                         placeholder={placeholder}
                         className="flex-1"
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                onAdd();
+                            }
+                        }}
                     />
                     <Button
                         variant="ghost"
