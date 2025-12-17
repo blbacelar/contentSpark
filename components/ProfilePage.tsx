@@ -756,7 +756,8 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                         <TabsTrigger
                                             key={tab.id}
                                             value={String(tab.id)}
-                                            className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#FFDA47] rounded-none pb-4 pt-2 px-1"
+                                            disabled={selectedPersonaId === 'new' && tab.id !== 0}
+                                            className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#FFDA47] rounded-none pb-4 pt-2 px-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <div className="flex items-center gap-2">
                                                 <Icon size={16} />
