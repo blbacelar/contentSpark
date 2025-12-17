@@ -40,7 +40,11 @@ export const resources = {
         password_placeholder: "••••••••",
         name_placeholder: "Jane",
         surname_placeholder: "Doe",
-        invalid_credentials: "Invalid email or password."
+        invalid_credentials: "Invalid email or password.",
+        forgot_password: "Forgot password?",
+        reset_password: "Reset Password",
+        remember_password: "Remember your password?",
+        check_email_reset: "Check your email for the reset link!"
       },
       sidebar: {
         new_strategy: "New Strategy",
@@ -84,7 +88,7 @@ export const resources = {
         subtitle: "Define parameters for your new content batch.",
         persona: "Target Persona",
         topic: "Topic",
-        topic_placeholder: "e.g., Vegan Cooking",
+        topic_placeholder: "e.g., Cooking",
         audience: "Audience",
         audience_placeholder: "e.g., Busy Moms",
         tone: "Tone",
@@ -380,7 +384,11 @@ export const resources = {
         password_placeholder: "••••••••",
         name_placeholder: "João",
         surname_placeholder: "Silva",
-        invalid_credentials: "E-mail ou senha inválidos."
+        invalid_credentials: "E-mail ou senha inválidos.",
+        forgot_password: "Esqueceu a senha?",
+        reset_password: "Redefinir Senha",
+        remember_password: "Lembrou sua senha?",
+        check_email_reset: "Verifique seu e-mail para o link de redefinição!"
       },
       sidebar: {
         new_strategy: "Nova Estratégia",
@@ -424,7 +432,7 @@ export const resources = {
         subtitle: "Defina parâmetros para seu novo lote de conteúdo.",
         persona: "Persona Alvo",
         topic: "Tópico",
-        topic_placeholder: "ex: Culinária Vegana",
+        topic_placeholder: "ex: Culinária",
         audience: "Público",
         audience_placeholder: "ex: Mães ocupadas",
         tone: "Tom",

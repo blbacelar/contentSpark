@@ -31,7 +31,7 @@ export default function AuthPage() {
           redirectTo: window.location.origin + '/update-password'
         });
         if (error) throw error;
-        setSuccessMessage("Check your email for the reset link!");
+        setSuccessMessage(t('auth.check_email_reset'));
         return;
       }
 
@@ -207,7 +207,7 @@ export default function AuthPage() {
                 }}
                 className="text-xs font-bold text-gray-500 hover:text-[#1A1A1A] hover:underline"
               >
-                {t('auth.forgot_password', { defaultValue: 'Forgot password?' })}
+                {t('auth.forgot_password')}
               </button>
             </div>
           )}
@@ -219,7 +219,7 @@ export default function AuthPage() {
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
               <>
-                {isResetMode ? "Reset Password" : (isSignUp ? t('auth.create_account') : t('auth.sign_in'))} <ArrowRight className="w-4 h-4" />
+                {isResetMode ? t('auth.reset_password') : (isSignUp ? t('auth.create_account') : t('auth.sign_in'))} <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>
@@ -230,7 +230,7 @@ export default function AuthPage() {
           <p className="text-sm font-medium text-gray-500">
             {isResetMode ? (
               <>
-                Remember your password?
+                {t('auth.remember_password')}
                 <button
                   onClick={() => {
                     setIsResetMode(false);
