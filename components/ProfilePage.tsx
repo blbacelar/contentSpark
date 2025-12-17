@@ -81,7 +81,7 @@ const DynamicList = ({
                 onClick={onAdd}
                 className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-[#1A1A1A] px-2 py-1 transition-colors"
             >
-                <Plus size={16} /> Add another
+                <Plus size={16} /> {t('profile.add_another')}
             </Button>
         </div>
     );
