@@ -2,12 +2,19 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { createCheckoutSession } from '../services/genai';
-import { Zap, Sparkles, User, Calendar, CheckCircle2, ArrowRight, Menu } from 'lucide-react';
+import { Zap, Sparkles, User, Calendar, CheckCircle2, ArrowRight, Menu, Globe } from 'lucide-react';
 import { Button } from './ui/button';
+import { useTranslation } from 'react-i18next';
 
 const LandingPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, i18n } = useTranslation();
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'en' ? 'pt' : 'en';
+    i18n.changeLanguage(newLang);
+  };
 
   return (
     <div className="bg-[#FAFAF9] h-screen overflow-y-auto custom-scrollbar font-sans text-[#1A1A1A]">

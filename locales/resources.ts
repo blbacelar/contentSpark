@@ -243,6 +243,87 @@ export const resources = {
         marketing: "e.g., Marketing Manager",
         age: "e.g., 25-34",
         networks: "e.g., Instagram, LinkedIn"
+      },
+      landing: {
+        nav: {
+          features: "Features",
+          how_it_works: "How it Works",
+          pricing: "Pricing",
+          sign_in: "Sign In",
+          get_started: "Get Started Free",
+          dashboard: "Dashboard"
+        },
+        hero: {
+          badge: "AI-Powered Strategy",
+          title_line1: "Stop Staring at a",
+          title_line2: "Blank Page.",
+          subtitle: "The only AI Content Generator that reads your audience's mind. Define your",
+          subtitle_highlight: "Target Persona",
+          subtitle_end: ", and get hyper-relevant post ideas, captions, and hooks instantly.",
+          cta_primary: "Start Creating for Free",
+          cta_dashboard: "Go to Dashboard",
+          social_proof: "Trusted by 1,000+ Creators"
+        },
+        features: {
+          section_title: "Not Just Another AI Wrapper",
+          section_subtitle: "We don't just vomit words. We build a strategy based on who you're actually talking to.",
+          feature1_title: "Persona-First Engine",
+          feature1_desc: "Generic AI gives generic advice. We use your specific Audience Pains & Goals to craft content that actually converts.",
+          feature2_title: "First Drafts, Done",
+          feature2_desc: "Don't just get ideas. Get the full Caption, Viral Hook, CTA, and Hashtags ready to copy-paste immediately.",
+          feature3_title: "Visual Planning",
+          feature3_desc: "Drag your favorite ideas onto a Google-style calendar to plan your entire month in minutes."
+        },
+        how_it_works: {
+          step1_number: "01",
+          step1_title: "Build Your Strategy.",
+          step1_desc: "Input your niche, tone, and define your audience's deepest pains and desires. The AI learns what makes them tick.",
+          step2_number: "02",
+          step2_title: "Generate Magic.",
+          step2_desc: "Click one button and watch as 6 unique, fully-fleshed out content ideas appear tailored to your persona.",
+          step3_number: "03",
+          step3_title: "Plan & Post.",
+          step3_desc: "Drag your winning ideas onto the calendar. Export, copy-paste, and watch your engagement grow."
+        },
+        pricing: {
+          title: "Simple Pricing",
+          subtitle: "Start for free. Upgrade when you're famous.",
+          free_title: "Free",
+          free_price: "$0",
+          free_desc: "Perfect to try the magic.",
+          free_feature1: "10 Credits",
+          free_feature2: "Basic Persona",
+          free_cta: "Start Free",
+          creator_title: "Creator",
+          creator_price: "$12",
+          creator_price_period: "/mo",
+          creator_desc: "For consistent posting.",
+          creator_badge: "POPULAR",
+          creator_feature1: "100 Credits / mo",
+          creator_feature2: "Advanced Persona",
+          creator_feature3: "Calendar Export",
+          creator_cta: "Upgrade to Creator",
+          creator_cta_guest: "Get Started",
+          pro_title: "Pro",
+          pro_price: "$39",
+          pro_price_period: "/mo",
+          pro_desc: "For Agencies & Power Users.",
+          pro_feature1: "1,000 Credits / mo",
+          pro_feature2: "Multiple Personas",
+          pro_cta: "Contact Sales"
+        },
+        cta: {
+          title: "Ready to explode your engagement?",
+          button_auth: "Go to Dashboard",
+          button_guest: "Create My Free Account",
+          disclaimer: "No credit card required for free tier."
+        },
+        footer: {
+          terms: "Terms",
+          privacy: "Privacy",
+          support: "Support",
+          copyright: "© 2025 ContentSpark. All rights reserved."
+        }
       }
     }
   },
@@ -489,6 +570,87 @@ export const resources = {
         marketing: "ex: Gerente de Marketing",
         age: "ex: 25-34",
         networks: "ex: Instagram, LinkedIn"
+      },
+      landing: {
+        nav: {
+          features: "Recursos",
+          how_it_works: "Como Funciona",
+          pricing: "Preços",
+          sign_in: "Entrar",
+          get_started: "Começar Grátis",
+          dashboard: "Painel"
+        },
+        hero: {
+          badge: "Estratégia Baseada em IA",
+          title_line1: "Pare de Olhar para uma",
+          title_line2: "Página em Branco.",
+          subtitle: "O único Gerador de Conteúdo com IA que lê a mente do seu público. Defina sua",
+          subtitle_highlight: "Persona Alvo",
+          subtitle_end: " e receba ideias de posts super relevantes, legendas  e ganchos instantaneamente.",
+          cta_primary: "Comece a Criar Grátis",
+          cta_dashboard: "Ir para o Painel",
+          social_proof: "Confiado por mais de 1.000 criadores"
+        },
+        features: {
+          section_title: "Não é Apenas Mais um Wrapper de IA",
+          section_subtitle: "Nós não apenas vomitamos palavras. Criamos estratégias baseadas em com quem você está realmente falando.",
+          feature1_title: "Motor Baseado em Persona",
+          feature1_desc: "IA genérica dá conselhos genéricos. Nós usamos as Dores e Objetivos específicos do seu público para criar conteúdo que realmente converte.",
+          feature2_title: "Primeiros Rascunhos, Prontos",
+          feature2_desc: "Não apenas receba ideias. Receba o texto completo, Gancho Viral, CTA e Hashtags prontos para copiar e colar imediatamente.",
+          feature3_title: "Planejamento Visual",
+          feature3_desc: "Arraste suas ideias favoritas para um calendário estilo Google e planeje todo o seu mês em minutos."
+        },
+        how_it_works: {
+          step1_number: "01",
+          step1_title: "Construa Sua Estratégia.",
+          step1_desc: "Digite seu nicho, tom e defina as dores e desejos mais profundos do seu público. A IA aprende o que os motiva.",
+          step2_number: "02",
+          step2_title: "Gere Magia.",
+          step2_desc: "Clique em um botão e assista 6 ideias de conteúdo únicas e completas aparecerem, adaptadas à sua persona.",
+          step3_number: "03",
+          step3_title: "Planeje e Poste.",
+          step3_desc: "Arraste suas melhores ideias para o calendário. Exporte, copie e cole, e veja seu engajamento crescer."
+        },
+        pricing: {
+          title: "Preços Simples",
+          subtitle: "Comece grátis. Faça upgrade quando ficar famoso.",
+          free_title: "Grátis",
+          free_price: "$0",
+          free_desc: "Perfeito para experimentar a magia.",
+          free_feature1: "10 Créditos",
+          free_feature2: "Persona Básica",
+          free_cta: "Começar Grátis",
+          creator_title: "Criador",
+          creator_price: "$12",
+          creator_price_period: "/mês",
+          creator_desc: "Para postar consistentemente.",
+          creator_badge: "POPULAR",
+          creator_feature1: "100 Créditos / mês",
+          creator_feature2: "Persona Avançada",
+          creator_feature3: "Exportar Calendário",
+          creator_cta: "Upgrade para Criador",
+          creator_cta_guest: "Começar",
+          pro_title: "Pro",
+          pro_price: "$39",
+          pro_price_period: "/mês",
+          pro_desc: "Para Agências e Power Users.",
+          pro_feature1: "1.000 Créditos / mês",
+          pro_feature2: "Múltiplas Personas",
+          pro_cta: "Entrar em Contato"
+        },
+        cta: {
+          title: "Pronto para explodir seu engajamento?",
+          button_auth: "Ir para o Painel",
+          button_guest: "Criar Minha Conta Grátis",
+          disclaimer: "Sem cartão de crédito necessário para o plano grátis."
+        },
+        footer: {
+          terms: "Termos",
+          privacy: "Privacidade",
+          support: "Suporte",
+          copyright: "© 2025 ContentSpark. Todos os direitos reservados."
+        }
       }
     }
   }
