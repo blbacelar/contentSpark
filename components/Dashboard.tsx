@@ -130,20 +130,9 @@ export default function Dashboard() {
         allPersonas
     );
 
-    // View Switching Logic
-    if (view === 'profile') {
-        return (
-            <ProfilePage onBack={() => {
-                setView('calendar');
-                refreshData();
-            }} />
-        );
-    }
-
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-[#F2F2F2] relative">
-
-            {/* Joyride Tour */}
+        <>
+            {/* Joyride Tour - Always rendered to persist across views */}
             <Joyride
                 steps={TOUR_STEPS}
                 run={runTour}
@@ -166,136 +155,147 @@ export default function Dashboard() {
                 }}
             />
 
-            {/* Context Providers Setup via DnD */}
-            <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            {view === 'profile' ? (
+                <ProfilePage onBack={() => {
+                    setView('calendar');
+                    refreshData();
+                }} />
+            ) : (
+                <div className="flex h-screen w-screen overflow-hidden bg-[#F2F2F2] relative">
 
-                {/* Global Toast */}
-                {toast && (
-                    <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-2xl z-[100] animate-fade-in flex items-center gap-3 font-bold text-sm border ${toast.isError ? 'bg-red-500 text-white border-red-600' : 'bg-[#1A1A1A] text-white border-black'}`}>
-                        {toast.message}
-                    </div>
-                )}
 
-                {/* Sidebar */}
-                <Sidebar
-                    ideas={ideas}
-                    isLoading={isFetching}
-                    onEventClick={setEditingIdea}
-                    onGenerateClick={() => setIsFormOpen(true)}
-                    onProfileClick={() => setView('profile')}
-                    onManualCreate={handleManualCreate}
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    statusFilter={statusFilter}
-                    setStatusFilter={setStatusFilter}
-                />
+                    {/* Context Providers Setup via DnD */}
+                    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
 
-                {/* Main Content Area */}
-                <div className="flex-1 flex flex-col h-full min-w-0">
-                    <DashboardHeader
-                        currentDate={currentDate}
-                        setCurrentDate={setCurrentDate}
-                        isFetching={isFetching}
-                        isPt={isPt}
-                        toggleLanguage={() => i18n.changeLanguage(isPt ? 'en' : 'pt')}
-                        credits={credits}
-                        isLowCredits={isLowCredits}
-                        notifications={notifications}
-                        isNotificationsOpen={isNotificationsOpen}
-                        setIsNotificationsOpen={setIsNotificationsOpen}
-                        onMarkAsRead={async (id) => {
-                            await markNotificationAsRead(id);
-                            setNotifications(prev => prev.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n));
-                        }}
-                        onMarkAllRead={async () => {
-                            if (user) await markAllNotificationsAsRead(user.id);
-                            setNotifications(prev => prev.map(n => ({ ...n, read_at: new Date().toISOString() })));
-                        }}
-                        onOpenSettings={() => setIsSettingsOpen(true)}
-                        onSignOut={signOut}
-                    />
+                        {/* Global Toast */}
+                        {toast && (
+                            <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-2xl z-[100] animate-fade-in flex items-center gap-3 font-bold text-sm border ${toast.isError ? 'bg-red-500 text-white border-red-600' : 'bg-[#1A1A1A] text-white border-black'}`}>
+                                {toast.message}
+                            </div>
+                        )}
 
-                    <div className="flex-1 min-h-0 p-6 pt-2">
-                        <CalendarGrid
-                            currentDate={currentDate}
-                            ideas={filteredIdeas}
+                        {/* Sidebar */}
+                        <Sidebar
+                            ideas={ideas}
+                            isLoading={isFetching}
                             onEventClick={setEditingIdea}
+                            onGenerateClick={() => setIsFormOpen(true)}
+                            onProfileClick={() => setView('profile')}
+                            onManualCreate={handleManualCreate}
+                            searchQuery={searchQuery}
+                            setSearchQuery={setSearchQuery}
+                            statusFilter={statusFilter}
+                            setStatusFilter={setStatusFilter}
                         />
-                    </div>
-                </div>
 
-                {/* Drag Overlay */}
-                <IdeaDragOverlay activeIdea={activeIdea} />
+                        {/* Main Content Area */}
+                        <div className="flex-1 flex flex-col h-full min-w-0">
+                            <DashboardHeader
+                                currentDate={currentDate}
+                                setCurrentDate={setCurrentDate}
+                                isFetching={isFetching}
+                                isPt={isPt}
+                                toggleLanguage={() => i18n.changeLanguage(isPt ? 'en' : 'pt')}
+                                credits={credits}
+                                isLowCredits={isLowCredits}
+                                notifications={notifications}
+                                isNotificationsOpen={isNotificationsOpen}
+                                setIsNotificationsOpen={setIsNotificationsOpen}
+                                onMarkAsRead={async (id) => {
+                                    await markNotificationAsRead(id);
+                                    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n));
+                                }}
+                                onMarkAllRead={async () => {
+                                    if (user) await markAllNotificationsAsRead(user.id);
+                                    setNotifications(prev => prev.map(n => ({ ...n, read_at: new Date().toISOString() })));
+                                }}
+                                onOpenSettings={() => setIsSettingsOpen(true)}
+                                onSignOut={signOut}
+                            />
 
-                {/* Modals */}
-                <EventModal
-                    isOpen={!!editingIdea}
-                    idea={editingIdea}
-                    onClose={() => setEditingIdea(null)}
-                    onSave={updateIdeaWrapper}
-                    onDelete={(id) => {
-                        deleteIdeaWrapper(id);
-                        setEditingIdea(null);
-                    }}
-                    isNew={editingIdea ? !ideas.some(i => i.id === editingIdea.id) : false}
-                    triggerToast={triggerToast}
-                    profile={profile}
-                />
-
-                {isFormOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A1A1A]/30 backdrop-blur-sm animate-fade-in">
-                        <div className="bg-white rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-scale-in relative">
-                            <button
-                                onClick={() => setIsFormOpen(false)}
-                                className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 z-10"
-                            >
-                                <span className="sr-only">{t('common.close')}</span>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                            <div className="p-2">
-                                <SparkForm
-                                    formData={formData}
-                                    setFormData={setFormData}
-                                    onSubmit={handleGenerateSubmit}
-                                    isLoading={isGenerating}
-                                    credits={credits}
-                                    personas={allPersonas}
+                            <div className="flex-1 min-h-0 p-6 pt-2">
+                                <CalendarGrid
+                                    currentDate={currentDate}
+                                    ideas={filteredIdeas}
+                                    onEventClick={setEditingIdea}
                                 />
                             </div>
                         </div>
-                    </div>
-                )}
 
-                <SettingsModal
-                    isOpen={isSettingsOpen}
-                    onClose={() => setIsSettingsOpen(false)}
-                    config={webhookConfig}
-                    setConfig={setWebhookConfig}
-                />
+                        {/* Drag Overlay */}
+                        <IdeaDragOverlay activeIdea={activeIdea} />
 
-                {showPersonaAlert && (
-                    <PersonaMissingAlert
-                        onClose={() => setShowPersonaAlert(false)}
-                        onGoToProfile={() => setView('profile')}
-                        onContinue={() => {
-                            const fallbackPersona = allPersonas.find(p => p.id === formData.persona_id) || allPersonas[0];
-                            // We need to use the method provided by useIdeaManagement to bypass validation
-                            // However, validateAndGenerate is the only exposed method that calls performGeneration AND checks validation.
-                            // performGeneration is internal to the hook in the previous step?
-                            // WAIT: I exposed performGeneration in useIdeaManagement in Step 5512.
-                            // So I can call it directly here.
-                            // It expects (webhookUrl, specificPersona).
-                            // We must ensure 'performGeneration' is destructured from the hook result.
-                            // I checked line 118 of Dashboard.tsx and it IS destructured.
-                            performGeneration(
-                                webhookConfig.useWebhook ? webhookConfig.url : undefined,
-                                fallbackPersona
-                            );
-                        }}
-                    />
-                )}
+                        {/* Modals */}
+                        <EventModal
+                            isOpen={!!editingIdea}
+                            idea={editingIdea}
+                            onClose={() => setEditingIdea(null)}
+                            onSave={updateIdeaWrapper}
+                            onDelete={(id) => {
+                                deleteIdeaWrapper(id);
+                                setEditingIdea(null);
+                            }}
+                            isNew={editingIdea ? !ideas.some(i => i.id === editingIdea.id) : false}
+                            triggerToast={triggerToast}
+                            profile={profile}
+                        />
 
-            </DndContext>
-        </div>
+                        {isFormOpen && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A1A1A]/30 backdrop-blur-sm animate-fade-in">
+                                <div className="bg-white rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-scale-in relative">
+                                    <button
+                                        onClick={() => setIsFormOpen(false)}
+                                        className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 z-10"
+                                    >
+                                        <span className="sr-only">{t('common.close')}</span>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                    <div className="p-2">
+                                        <SparkForm
+                                            formData={formData}
+                                            setFormData={setFormData}
+                                            onSubmit={handleGenerateSubmit}
+                                            isLoading={isGenerating}
+                                            credits={credits}
+                                            personas={allPersonas}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <SettingsModal
+                            isOpen={isSettingsOpen}
+                            onClose={() => setIsSettingsOpen(false)}
+                            config={webhookConfig}
+                            setConfig={setWebhookConfig}
+                        />
+
+                        {showPersonaAlert && (
+                            <PersonaMissingAlert
+                                onClose={() => setShowPersonaAlert(false)}
+                                onGoToProfile={() => setView('profile')}
+                                onContinue={() => {
+                                    const fallbackPersona = allPersonas.find(p => p.id === formData.persona_id) || allPersonas[0];
+                                    // We need to use the method provided by useIdeaManagement to bypass validation
+                                    // However, validateAndGenerate is the only exposed method that calls performGeneration AND checks validation.
+                                    // performGeneration is internal to the hook in the previous step?
+                                    // WAIT: I exposed performGeneration in useIdeaManagement in Step 5512.
+                                    // So I can call it directly here.
+                                    // It expects (webhookUrl, specificPersona).
+                                    // We must ensure 'performGeneration' is destructured from the hook result.
+                                    // I checked line 118 of Dashboard.tsx and it IS destructured.
+                                    performGeneration(
+                                        webhookConfig.useWebhook ? webhookConfig.url : undefined,
+                                        fallbackPersona
+                                    );
+                                }}
+                            />
+                        )}
+
+                    </DndContext>
+                </div>
+            )}
+        </>
     );
 }
