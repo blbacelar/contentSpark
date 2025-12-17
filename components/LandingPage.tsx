@@ -16,9 +16,7 @@ const LandingPage = () => {
       <nav className="sticky top-0 z-50 bg-[#FAFAF9]/80 backdrop-blur-md border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="bg-[#1A1A1A] p-1.5 rounded-lg">
-              <Zap className="w-5 h-5 text-[#FFDA47] fill-[#FFDA47]" />
-            </div>
+            <img src="/logo.png" alt="ContentSpark Logo" className="w-8 h-8 rounded-lg" />
             <span className="text-xl font-bold tracking-tight">ContentSpark</span>
           </div>
 
@@ -337,9 +335,7 @@ const LandingPage = () => {
       <footer className="bg-[#1A1A1A] text-white py-12 border-t border-gray-800">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
-            <div className="bg-[#333] p-1.5 rounded-lg">
-              <Zap className="w-4 h-4 text-[#FFDA47] fill-[#FFDA47]" />
-            </div>
+            <img src="/logo.png" alt="ContentSpark Logo" className="w-6 h-6 rounded-lg" />
             <span className="font-bold tracking-tight">ContentSpark</span>
           </div>
           <div className="flex gap-6 text-sm text-gray-400">
