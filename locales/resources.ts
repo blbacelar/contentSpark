@@ -243,7 +243,7 @@ export const resources = {
       placeholders: {
         pains: "e.g., Can't find time to cook healthy meals",
         goals: "e.g., Run a half-marathon this year",
-        questions: "e.g., Is the keto diet safe for beginners?",
+        questions: "e.g., Is it safe to use AI to generate content?",
         marketing: "e.g., Marketing Manager",
         age: "e.g., 25-34",
         networks: "e.g., Instagram, LinkedIn"
@@ -586,7 +586,7 @@ export const resources = {
       placeholders: {
         pains: "ex: Não tenho tempo para cozinhar",
         goals: "ex: Correr uma meia maratona",
-        questions: "ex: A dieta keto é segura para iniciantes?",
+        questions: "ex: É seguro usar inteligência artificial para gerar conteúdo?",
         marketing: "ex: Gerente de Marketing",
         age: "ex: 25-34",
         networks: "ex: Instagram, LinkedIn"
