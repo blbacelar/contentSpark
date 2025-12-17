@@ -56,7 +56,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           avatar_url: profileData.avatar_url,
           credits: profileData.credits ?? 0,
           has_completed_onboarding: profileData.has_completed_onboarding,
-          tier: profileData.tier || 'free'
+          tier: profileData.tier || 'free',
+          branding: profileData.branding
         });
       } else {
         console.warn("AUTH DEBUG: Profile data empty even with RPC.");

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Trash2, Calendar as CalendarIcon, Save, Monitor, Activity, Copy, Check, Clock, AlertCircle, Quote, MessageSquare, Hash, Target, Plus, FileText } from 'lucide-react';
-import { ContentIdea, IdeaStatus, STATUS_COLORS, SOCIAL_PLATFORMS } from '../types';
+import { ContentIdea, IdeaStatus, STATUS_COLORS, SOCIAL_PLATFORMS, UserProfile } from '../types';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -19,6 +19,7 @@ interface EventModalProps {
   onDelete: (id: string) => void;
   isNew?: boolean;
   triggerToast: (message: string, isError?: boolean) => void;
+  profile?: UserProfile | null;
 }
 
 // Helper Component for Header with Copy
@@ -58,7 +59,7 @@ const FieldHeader = ({ label, icon: Icon, text }: { label: string, icon: any, te
   );
 };
 
-const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, onDelete, isNew = false, triggerToast }) => {
+const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, onDelete, isNew = false, triggerToast, profile }) => {
   const { t } = useTranslation();
   const [formData, setFormData] = React.useState<ContentIdea | null>(null);
   const [showCopyFeedback, setShowCopyFeedback] = React.useState(false);
@@ -73,7 +74,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
     setError(null);
   }, [idea, isOpen]);
 
-  if (!isOpen || !formData) return null;
+
 
   const handleChange = (field: keyof ContentIdea, value: any) => {
     setFormData(prev => prev ? ({ ...prev, [field]: value }) : null);
@@ -142,6 +143,52 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
     value: status,
     label: t(`status.${status}`)
   }));
+
+  /* 
+   * FIX: Move hook calculations BEFORE any conditional returns. 
+   * Previously, `if (!isOpen || !formData) return null;` was here, causing hook count mismatch.
+   */
+  const canvaPrompt = React.useMemo(() => {
+    // Priority: 1. AI Generated Prompt (from Idea), 2. Client-side Generated Prompt
+    if (idea?.canva_prompt) return idea.canva_prompt;
+
+    /* Safe access using fallback to avoid null errors since we are calculating this unconditionally now */
+    const currentData = formData || idea;
+
+    if (!currentData || !profile?.branding) return '';
+
+    const { branding } = profile;
+    const { colors, fonts, style } = branding;
+
+    let prompt = `Create a ${style || 'professional'} social media graphic.\n`;
+
+    // Content
+    prompt += `\n**CONTENT:**\n`;
+    prompt += `- Headline: "${currentData.title}"\n`;
+    if (currentData.caption) prompt += `- Body Text: "${currentData.caption}"\n`;
+
+    // Visual Style
+    if (style) prompt += `\n**STYLE:** ${style}\n`;
+
+    // Colors
+    if (colors && colors.length > 0) {
+      prompt += `\n**COLORS:** Use these brand colors: ${colors.join(', ')}\n`;
+    }
+
+    // Fonts
+    if (fonts) {
+      prompt += `\n**TYPOGRAPHY:**\n`;
+      if (fonts.title) prompt += `- Title Font: ${fonts.title}\n`;
+      if (fonts.body) prompt += `- Body Font: ${fonts.body}\n`;
+    }
+
+    return prompt;
+  }, [idea, formData, profile]);
+
+  /* NOW it is safe to return conditionally */
+  if (!isOpen || !formData) return null;
+
+  /* Note: Removed the previous return prompt logic that was broken by regex replace */
 
   return (
     <Dialog open={isOpen} onOpenChange={(val) => !val && onClose()}>
@@ -308,6 +355,33 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
             </div>
           </div>
 
+          {/* Canva Prompt Section */}
+          {profile?.branding && (
+            <div className="pt-6 border-t border-gray-100 mt-6">
+              <div className="flex items-center justify-between mb-3">
+                <Label className="text-xs font-bold text-indigo-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Monitor size={12} /> Canva Prompt
+                </Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(canvaPrompt);
+                    triggerToast("Prompt copied to clipboard!");
+                  }}
+                  className="h-6 px-2 text-[10px] bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 font-bold rounded-lg"
+                >
+                  <Copy size={10} className="mr-1" /> Copy Prompt
+                </Button>
+              </div>
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                <p className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed select-text font-medium">
+                  {canvaPrompt || "Add branding details in your profile to generate a prompt."}
+                </p>
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* Footer */}
@@ -410,7 +484,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
           )}
         </div>
       </DialogContent>
-    </Dialog>
+    </Dialog >
   );
 };
 

@@ -112,7 +112,9 @@ export const resources = {
         status_label: "Status",
         platforms_label: "Platforms",
         date_past_error: "Date cannot be in the past.",
-        title_required: "Title is required."
+        title_required: "Title is required.",
+        canva_prompt_label: "Canva / AI Image Prompt",
+        canva_prompt_placeholder: "Describe the image you want to generate..."
       },
       invite: {
         title: "Invite to Team",
@@ -165,7 +167,19 @@ export const resources = {
         persona_deleted: "Persona deleted",
         delete_failed: "Failed to delete persona",
         saved_local_webhook_failed: "Persona saved locally, but AI sync failed.",
-        persona_saved: "Persona saved successfully!"
+
+        persona_saved: "Persona saved successfully!",
+        brand_kit: {
+          title: "Brand Kit",
+          desc: "Define your brand's visual identity for AI content generation.",
+          colors: "Brand Colors",
+          colors_tooltip: "Add your brand's primary and secondary colors.",
+          typography: "Typography",
+          typography_tooltip: "Specify fonts for different text roles.",
+          style: "Visual Style",
+          style_tooltip: "Describe the overall look and feel (e.g., Minimalist, Corporate, Playful).",
+          save_btn: "Save Brand Kit"
+        }
       },
       settings: {
         connection: "Connection",
@@ -345,7 +359,9 @@ export const resources = {
         status_label: "Status",
         platforms_label: "Plataformas",
         date_past_error: "A data não pode ser no passado.",
-        title_required: "O título é obrigatório."
+        title_required: "O título é obrigatório.",
+        canva_prompt_label: "Prompt de Imagem (Canva / IA)",
+        canva_prompt_placeholder: "Descreva a imagem que você deseja gerar..."
       },
       invite: {
         title: "Convidar para Equipe",
@@ -398,7 +414,18 @@ export const resources = {
         persona_deleted: "Persona excluída",
         delete_failed: "Falha ao excluir persona",
         saved_local_webhook_failed: "Persona salva localmente, mas a sincronização com IA falhou.",
-        persona_saved: "Persona salva com sucesso!"
+        persona_saved: "Persona salva com sucesso!",
+        brand_kit: {
+          title: "Kit de Marca",
+          desc: "Defina sua identidade visual para geração de conteúdo com IA.",
+          colors: "Cores da Marca",
+          colors_tooltip: "Adicione as cores primárias e secundárias da sua marca.",
+          typography: "Tipografia",
+          typography_tooltip: "Especifique fontes para diferentes hierarquias de texto.",
+          style: "Estilo Visual",
+          style_tooltip: "Descreva o visual geral (ex: Minimalista, Corporativo, Divertido).",
+          save_btn: "Salvar Kit de Marca"
+        }
       },
       settings: {
         connection: "Conexão",

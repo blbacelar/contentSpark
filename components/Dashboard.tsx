@@ -24,6 +24,7 @@ import { useDragAndDrop } from '../hooks/useDragAndDrop';
 import { useTour } from '../hooks/useTour';
 import { fetchNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../services/notifications';
 
+
 // Types
 import { WebhookConfig } from '../types';
 
@@ -111,6 +112,8 @@ export default function Dashboard() {
         handleJoyrideCallback,
         TOUR_STEPS
     } = useTour({ setIsFormOpen, setView });
+
+
 
     // Helpers
     const credits = profile?.credits ?? 0;
@@ -236,6 +239,7 @@ export default function Dashboard() {
                     }}
                     isNew={editingIdea ? !ideas.some(i => i.id === editingIdea.id) : false}
                     triggerToast={triggerToast}
+                    profile={profile}
                 />
 
                 {isFormOpen && (

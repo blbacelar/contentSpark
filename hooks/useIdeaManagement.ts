@@ -169,7 +169,8 @@ export function useIdeaManagement({
                 specificPersona,
                 isPt ? 'pt' : 'en',
                 currentTeam?.id,
-                session?.access_token
+                session?.access_token,
+                profile?.branding
             );
 
             setIdeas(prev => [...prev, ...newIdeas]);

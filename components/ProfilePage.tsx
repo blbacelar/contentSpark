@@ -4,8 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { supabase, supabaseFetch } from '../services/supabase';
 import { fetchUserPersona, saveUserPersona, updateUserPersona, fetchPersonas, deletePersona } from '../services/genai';
 
-import { PersonaData, SOCIAL_PLATFORMS } from '../types';
-import { ArrowLeft, Camera, Loader2, CheckCircle2, AlertCircle, Save, Trash2, Plus, Target, HeartCrack, HelpCircle, User, Info } from 'lucide-react';
+import { PersonaData, BrandingSettings, SOCIAL_PLATFORMS } from '../types';
+import { ArrowLeft, Camera, Loader2, CheckCircle2, AlertCircle, Save, Trash2, Plus, Target, HeartCrack, HelpCircle, User, Info, Palette } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -14,6 +14,8 @@ import { Switch } from './ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+import { FontPicker } from './ui/font-picker';
 import { toast } from 'sonner';
 
 interface ProfilePageProps {
@@ -85,6 +87,54 @@ const DynamicList = ({
     );
 };
 
+const DynamicColorList = ({
+    colors,
+    onChange,
+    onAdd,
+    onRemove
+}: {
+    colors: string[],
+    onChange: (idx: number, val: string) => void,
+    onAdd: () => void,
+    onRemove: (idx: number) => void
+}) => {
+    return (
+        <div className="flex flex-wrap gap-3 animate-fade-in">
+            {colors.map((color, index) => (
+                <div key={index} className="flex items-center gap-2 bg-white border border-gray-200 rounded-full pl-1 pr-2 py-1 shadow-sm">
+                    <input
+                        type="color"
+                        value={color}
+                        onChange={(e) => onChange(index, e.target.value)}
+                        className="w-6 h-6 rounded-full border-none cursor-pointer bg-transparent"
+                    />
+                    <Input
+                        type="text"
+                        value={color}
+                        onChange={(e) => onChange(index, e.target.value)}
+                        placeholder="#000000"
+                        className="w-20 h-7 text-xs border-none bg-transparent focus-visible:ring-0 p-0 uppercase"
+                    />
+                    <button
+                        onClick={() => onRemove(index)}
+                        className="text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                        <Trash2 size={14} />
+                    </button>
+                </div>
+            ))}
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={onAdd}
+                className="rounded-full h-9 border-dashed border-gray-300 text-gray-500 hover:text-[#1A1A1A] hover:border-gray-400"
+            >
+                <Plus size={14} className="mr-1" /> Add Color
+            </Button>
+        </div>
+    );
+};
+
 export default function ProfilePage({ onBack }: ProfilePageProps) {
     const { user, profile, signOut, refreshProfile } = useAuth();
     const { t } = useTranslation();
@@ -95,6 +145,13 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
     const [firstName, setFirstName] = useState(profile?.first_name || '');
     const [lastName, setLastName] = useState(profile?.last_name || '');
     const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url || null);
+
+    // Branding State
+    const [branding, setBranding] = useState<BrandingSettings>(profile?.branding || {
+        colors: [],
+        fonts: {},
+        style: ''
+    });
 
     // Persona State
     const [personas, setPersonas] = useState<PersonaData[]>([]);
@@ -132,6 +189,9 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
             setFirstName(profile.first_name || '');
             setLastName(profile.last_name || '');
             setAvatarUrl(profile.avatar_url || null);
+            if (profile.branding) {
+                setBranding(profile.branding);
+            }
         }
     }, [profile]);
 
@@ -248,6 +308,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                 first_name: firstName,
                 last_name: lastName,
                 avatar_url: avatarUrl,
+                branding: branding,
                 updated_at: new Date(),
             };
 
@@ -517,6 +578,95 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                             >
                                 {loading ? <Loader2 className="animate-spin" size={16} /> : null}
                                 {t('profile.save_changes')}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* --- CARD 1.5: BRAND KIT --- */}
+                <div className="w-full overflow-hidden rounded-[32px] bg-white shadow-sm animate-scale-in" style={{ animationDelay: '0.05s' }}>
+                    <div className="p-8 pb-8">
+                        <div className="flex items-center gap-2 mb-6">
+                            <Palette className="w-6 h-6 text-[#1A1A1A]" />
+                            <div>
+                                <h2 className="text-xl font-bold text-[#1A1A1A] tracking-tight">{t('profile.brand_kit.title')}</h2>
+                                <p className="text-sm text-gray-500 font-medium">{t('profile.brand_kit.desc')}</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-8 animate-fade-in">
+                            {/* Brand Colors */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="text-sm font-bold text-[#1A1A1A]">{t('profile.brand_kit.colors')}</h3>
+                                    <HelperTooltip text={t('profile.brand_kit.colors_tooltip')} />
+                                </div>
+                                <DynamicColorList
+                                    colors={branding.colors}
+                                    onChange={(idx, val) => {
+                                        const newColors = [...branding.colors];
+                                        newColors[idx] = val;
+                                        setBranding({ ...branding, colors: newColors });
+                                    }}
+                                    onAdd={() => setBranding({ ...branding, colors: [...branding.colors, '#000000'] })}
+                                    onRemove={(idx) => {
+                                        const newColors = branding.colors.filter((_, i) => i !== idx);
+                                        setBranding({ ...branding, colors: newColors });
+                                    }}
+                                />
+                            </div>
+
+                            {/* Typography */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="text-sm font-bold text-[#1A1A1A]">{t('profile.brand_kit.typography')}</h3>
+                                    <HelperTooltip text={t('profile.brand_kit.typography_tooltip')} />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {['Title', 'Subtitle', 'Heading', 'Subheading', 'Section Header', 'Body', 'Quote', 'Caption'].map((role) => {
+                                        const key = role.toLowerCase().replace(' ', '_') as keyof typeof branding.fonts;
+                                        return (
+                                            <div key={key} className="space-y-1.5">
+                                                <Label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-400">{role}</Label>
+                                                <FontPicker
+                                                    value={branding.fonts[key] || ''}
+                                                    onChange={(val) => setBranding({
+                                                        ...branding,
+                                                        fonts: { ...branding.fonts, [key]: val }
+                                                    })}
+                                                    placeholder={`e.g. Inter`}
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Visual Style */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="text-sm font-bold text-[#1A1A1A]">{t('profile.brand_kit.style')}</h3>
+                                    <HelperTooltip text={t('profile.brand_kit.style_tooltip')} />
+                                </div>
+                                <Input
+                                    type="text"
+                                    value={branding.style}
+                                    onChange={(e) => setBranding({ ...branding, style: e.target.value })}
+                                    placeholder="e.g. Modern, Minimalist, Vibrant..."
+                                    className="w-full"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end pt-8 mt-8 border-t border-gray-100">
+                            <Button
+                                onClick={updateProfile}
+                                disabled={loading}
+                                className="font-bold text-[#1A1A1A] bg-[#FFDA47] hover:bg-[#FFC040] hover:text-[#1A1A1A]"
+                                size="lg"
+                            >
+                                {loading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                                {t('profile.brand_kit.save_btn')}
                             </Button>
                         </div>
                     </div>
@@ -795,6 +945,8 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                             />
                                         </div>
                                     </TabsContent>
+
+
 
                                     {/* Save Button / Delete Confirm */}
                                     <div className="flex justify-end pt-8 mt-4 border-t border-gray-100">

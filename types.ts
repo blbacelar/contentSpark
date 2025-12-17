@@ -18,6 +18,7 @@ export interface ContentIdea {
   cta?: string; // Call to Action
   hashtags?: string; // e.g. "#design #tips"
   platform: string[]; // Changed to support multi-select
+  canva_prompt?: string;
   date: string | null; // ISO Date String YYYY-MM-DD
   time: string | null; // HH:mm 24-hour format
   status: IdeaStatus;
@@ -65,6 +66,22 @@ export interface UserProfile {
   credits: number;
   has_completed_onboarding?: boolean;
   tier?: 'free' | 'creator' | 'pro';
+  branding?: BrandingSettings;
+}
+
+export interface BrandingSettings {
+  colors: string[];
+  fonts: {
+    title?: string;
+    subtitle?: string;
+    heading?: string;
+    subheading?: string;
+    section_header?: string;
+    body?: string;
+    quote?: string;
+    caption?: string;
+  };
+  style: string;
 }
 
 export interface PersonaData {

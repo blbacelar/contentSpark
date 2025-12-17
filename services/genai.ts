@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { parseISO, isValid, format } from "date-fns";
-import { ContentIdea, FormData, Tone, PersonaData } from "../types";
+import { ContentIdea, FormData, Tone, PersonaData, BrandingSettings } from "../types";
 import { supabase } from "../services/supabase";
 
 // Initialize Gemini Client
@@ -22,7 +22,7 @@ export const generateId = () => Math.random().toString(36).substr(2, 9);
 
 
 // --- Caching Helpers ---
-const CACHE_PREFIX = 'CS_CACHE_';
+const CACHE_PREFIX = 'CS_CACHE_V2_';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 interface CacheItem<T> {
@@ -177,11 +177,33 @@ export const fetchUserIdeas = async (userId: string, teamId?: string, token?: st
       // Platform normalization (stored as text array or similar in postgres)
       // Supabase returns Postgres arrays as JS arrays.
       // CSV showed column is 'platform_suggestion'.
-      const platforms = Array.isArray(idea.platform_suggestion)
-        ? idea.platform_suggestion
-        : typeof idea.platform_suggestion === 'string'
-          ? [idea.platform_suggestion]
-          : (Array.isArray(idea.platform) ? idea.platform : ["General"]);
+      // Platform normalization logic
+      let platforms: string[] = ["General"];
+
+      const rawPlatform = idea.platform_suggestion || idea.platform;
+
+      if (Array.isArray(rawPlatform)) {
+        platforms = rawPlatform;
+      } else if (typeof rawPlatform === 'string') {
+        // Try parsing if it looks like JSON array
+        if (rawPlatform.trim().startsWith('[') && rawPlatform.trim().endsWith(']')) {
+          try {
+            const parsed = JSON.parse(rawPlatform);
+            if (Array.isArray(parsed)) platforms = parsed;
+            else platforms = [rawPlatform];
+          } catch (e) {
+            platforms = [rawPlatform];
+          }
+        } else {
+          // Comma separated? or just single value
+          // If it contains comma but not brackets, maybe CSV?
+          if (rawPlatform.includes(',') && !rawPlatform.includes('[')) {
+            platforms = rawPlatform.split(',').map((s: string) => s.trim());
+          } else {
+            platforms = [rawPlatform];
+          }
+        }
+      }
 
       // Parse scheduled_at for date/time
       let date = idea.date || null;
@@ -190,8 +212,14 @@ export const fetchUserIdeas = async (userId: string, teamId?: string, token?: st
       if (idea.scheduled_at) {
         try {
           // scheduled_at is ISO string e.g. 2025-12-10T02:00:00+00
-          date = format(parseISO(idea.scheduled_at), 'yyyy-MM-dd');
-          time = format(parseISO(idea.scheduled_at), 'HH:mm');
+          // STRATEGY: Treat time as Floating/Local by stripping timezone info.
+          // This ensures that if DB says "22:00:00...", we show "22:00" (10pm), not converted to 3pm.
+          const rawIso = idea.scheduled_at;
+          // Take only the YYYY-MM-DDTHH:mm:ss part (first 19 chars), ignoring Z, +00, -07, etc.
+          const floatingIso = rawIso.substring(0, 19);
+
+          date = format(parseISO(floatingIso), 'yyyy-MM-dd');
+          time = format(parseISO(floatingIso), 'HH:mm');
         } catch (e) {
           console.warn("Failed to parse scheduled_at", idea.scheduled_at);
         }
@@ -253,7 +281,7 @@ export const updateContent = async (payload: Partial<ContentIdea>, userId?: stri
     if (payload.date) {
       // If we have a time, combine them. Default to 09:00 if no time.
       const timePart = payload.time || '09:00';
-      // Construct ISO timestamp for scheduled_at
+      // Construct ISO timestamp for scheduled_at (Implicit UTC/Floating)
       updatePayload.scheduled_at = `${payload.date}T${timePart}:00`;
     }
 
@@ -523,7 +551,8 @@ export const generateContent = async (
   persona?: PersonaData | null,
   language: string = 'en',
   teamId?: string,
-  token?: string
+  token?: string,
+  branding?: BrandingSettings
 ): Promise<ContentIdea[]> => {
 
   // ... (personaPayload construction unchanged)
@@ -555,9 +584,10 @@ export const generateContent = async (
           user_id: userId,
           team_id: teamId, // Add team_id
           persona: personaPayload,
-          language: language
+          language: language,
+          branding: branding || {}
         }),
-      }, 1, token);
+      }, 0, token);
 
       const text = await response.text();
       let data: any = {};
@@ -567,7 +597,8 @@ export const generateContent = async (
       }
 
       if (response.status === 500 || !response.ok || data.error === true) {
-        throw new Error(data.message || `Server Error: ${response.status}`);
+        const errorMessage = data.message || data.error?.message || data.error || `Server Error: ${response.status}`;
+        throw new Error(errorMessage);
       }
 
       let ideas: any[] = [];
@@ -588,6 +619,7 @@ export const generateContent = async (
           caption: idea.caption || "",
           cta: idea.cta || "",
           hashtags: idea.hashtags || "",
+          canva_prompt: idea.canva_prompt || "",
           platform: platforms,
           date: null,
           time: null,
@@ -638,7 +670,14 @@ export const generateContent = async (
         - Niche/Topic: ${safeTopic}
         - Target Audience: ${safeAudience}
         - Tone: ${safeTone}
+        - Tone: ${safeTone}
         ${personaContext}
+
+        Branding Context:
+        ${branding ? `
+        - Style: ${branding.style}
+        - Brand Colors: ${branding.colors.join(', ')}
+        ` : 'N/A'}
         
         For each idea, provide:
         1. A catchy Title
@@ -670,9 +709,10 @@ export const generateContent = async (
                 caption: { type: Type.STRING },
                 cta: { type: Type.STRING },
                 hashtags: { type: Type.STRING },
+                canva_prompt: { type: Type.STRING },
                 platform: { type: Type.ARRAY, items: { type: Type.STRING } },
               },
-              required: ["title", "description", "hook", "caption", "cta", "hashtags", "platform"],
+              required: ["title", "description", "hook", "caption", "cta", "hashtags", "canva_prompt", "platform"],
             },
           },
         },
