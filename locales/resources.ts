@@ -170,6 +170,7 @@ export const resources = {
         name_required: "Persona Name is required.",
         persona_deleted: "Persona deleted",
         delete_failed: "Failed to delete persona",
+        update_failed_not_found: "Profile not found. Please try signing out and back in.",
         saved_local_webhook_failed: "Persona saved locally, but AI sync failed.",
 
         persona_saved: "Persona saved successfully!",
@@ -512,8 +513,9 @@ export const resources = {
         delete_persona: "Excluir Persona",
         persona_name: "Nome da Persona",
         name_required: "O nome da Persona é obrigatório.",
-        persona_deleted: "Persona excluída",
-        delete_failed: "Falha ao excluir persona",
+        persona_deleted: "Persona excluída com sucesso.",
+        delete_failed: "Falha ao excluir persona.",
+        update_failed_not_found: "Perfil não encontrado. Tente sair e entrar novamente.",
         saved_local_webhook_failed: "Persona salva localmente, mas a sincronização com IA falhou.",
         persona_saved: "Persona salva com sucesso!",
         brand_kit: {

@@ -323,13 +323,18 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
 
             // Using REST API via supabaseFetch to prevent SDK hangs
             // PATCH /rest/v1/profiles?id=eq.{user.id}
-            await supabaseFetch(`profiles?id=eq.${user.id}`, {
+            const data = await supabaseFetch(`profiles?id=eq.${user.id}`, {
                 method: 'PATCH',
                 body: JSON.stringify(updates),
                 headers: {
                     'Prefer': 'return=representation'
                 }
             }, token);
+
+            if (Array.isArray(data) && data.length === 0) {
+                console.warn('Profile update returned no data - row might be missing');
+                throw new Error(t('profile.update_failed_not_found') || 'Profile not found. Please try signing out and back in.');
+            }
 
             await refreshProfile(); // Refresh context to sync UI using its own logic
             toast.success(t('profile.toast_updated'));
