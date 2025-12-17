@@ -4,7 +4,7 @@ import { UserSettings } from '../types';
 export const fetchUserSettings = async (userId: string): Promise<UserSettings | null> => {
     const { data, error } = await supabase
         .from('user_settings')
-        .select('*')
+        .select('user_id, notify_on_team_join, notify_on_idea_due, idea_due_threshold_hours')
         .eq('user_id', userId)
         .single();
 

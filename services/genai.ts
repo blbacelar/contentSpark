@@ -156,7 +156,7 @@ export const fetchUserIdeas = async (userId: string, teamId?: string, token?: st
     }
 
     // Direct Supabase Call
-    let query = `content_ideas?select=*&order=created_at.desc`;
+    let query = `content_ideas?select=id,title,description,hook,caption,cta,hashtags,platform_suggestion,scheduled_at,status,created_at,team_id,user_id&order=created_at.desc`;
     if (teamId) {
       query += `&team_id=eq.${teamId}`;
     } else {
@@ -389,8 +389,9 @@ export const fetchPersonas = async (userId: string, token?: string): Promise<Per
     }
 
     // Direct Supabase REST call
-    // GET /rest/v1/personas?user_id=eq.{userId}&select=*
-    const data = await supabaseFetch(`personas?user_id=eq.${userId}&select=*`, {
+    // GET /rest/v1/personas?user_id=eq.{userId}&select=...
+    const query = `personas?user_id=eq.${userId}&select=id,name,user_id,gender,age_range,occupation,education,marital_status,has_children,income_level,social_networks,pains_list,goals_list,questions_list`;
+    const data = await supabaseFetch(query, {
       method: 'GET'
     }, token);
 

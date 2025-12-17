@@ -24,6 +24,7 @@ export interface ContentIdea {
   persona_id?: string;
   persona_name?: string;
   team_id?: string;
+  created_at?: string;
 }
 
 export interface Notification {
@@ -116,21 +117,4 @@ export interface TeamMember {
     avatar_url?: string;
     email?: string;
   };
-}
-
-export interface ContentIdea {
-  id: string;
-  title: string;
-  description: string; // Used for short summary
-  hook?: string; // First sentence/attention grabber
-  caption?: string; // Full post body
-  cta?: string; // Call to Action
-  hashtags?: string; // e.g. "#design #tips"
-  platform: string[]; // Changed to support multi-select
-  date: string | null; // ISO Date String YYYY-MM-DD
-  time: string | null; // HH:mm 24-hour format
-  status: IdeaStatus;
-  persona_id?: string;
-  persona_name?: string;
-  team_id?: string;
 }

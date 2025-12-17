@@ -54,7 +54,7 @@ export const fetchUserTeams = async (userId: string, token?: string | null): Pro
         }
 
         // RLS will filter by user automatically based on token
-        const data = await supabaseFetch('teams?select=*', {
+        const data = await supabaseFetch('teams?select=id,name,owner_id,created_at,invitation_code', {
             method: 'GET'
         }, token);
 
@@ -71,7 +71,7 @@ export const fetchTeamMembers = async (teamId: string, token?: string | null): P
 
         // Join with profiles table
         // Syntax: *,user:profiles(...)
-        const query = `select=*,user:profiles(first_name,last_name,avatar_url,email)&team_id=eq.${teamId}`;
+        const query = `select=team_id,user_id,role,joined_at,user:profiles(first_name,last_name,avatar_url,email)&team_id=eq.${teamId}`;
         const data = await supabaseFetch(`team_members?${query}`, {
             method: 'GET'
         }, token);
