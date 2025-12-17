@@ -1,5 +1,6 @@
 import { test as base, expect } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
+import { cleanupTestData, resetUserCredits } from './test-helpers';
 
 // Get credentials from environment variables
 const supabaseUrl = process.env.TEST_SUPABASE_URL;
@@ -45,8 +46,22 @@ export const test = base.extend<MyFixtures>({
         }, { key: storageKey, value: sessionStr });
 
         // 3. Provide details
-        await use({ email: testEmail, id: data.user?.id || '' });
+        const userId = data.user?.id || '';
+
+        // 4. Use the fixture
+        await use({ email: testEmail, id: userId });
+
+        // 5. Cleanup after test (this runs even if test fails)
+        console.log('[Fixture] Cleaning up test data...');
+        try {
+            await cleanupTestData(userId, false); // Don't delete the auth user
+            await resetUserCredits(userId, 10); // Reset credits to default
+        } catch (cleanupError) {
+            console.error('[Fixture] Cleanup failed:', cleanupError);
+            // Don't throw - we don't want cleanup failures to fail the test
+        }
     },
 });
 
 export { expect } from '@playwright/test';
+
