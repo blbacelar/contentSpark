@@ -111,14 +111,14 @@ const LandingPage = () => {
             <div className="relative transform rotate-3 hover:rotate-0 transition-transform duration-500">
               <div className="bg-white rounded-[32px] p-6 shadow-2xl border border-gray-100 w-96 mx-auto">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="bg-[#FFDA47] text-[#1A1A1A] text-xs font-bold px-3 py-1 rounded-full">New Idea</span>
+                  <span className="bg-[#FFDA47] text-[#1A1A1A] text-xs font-bold px-3 py-1 rounded-full">{t('landing.mockup.new_idea')}</span>
                   <div className="flex gap-1">
                     <div className="w-2 h-2 rounded-full bg-gray-200"></div>
                     <div className="w-2 h-2 rounded-full bg-gray-200"></div>
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-[#1A1A1A] mb-2">5 Mistakes Vegans Make</h3>
-                <p className="text-gray-400 text-sm mb-4">Hook: "You might be accidentally ruining your progress..."</p>
+                <h3 className="text-xl font-bold text-[#1A1A1A] mb-2">{t('landing.mockup.example_title')}</h3>
+                <p className="text-gray-400 text-sm mb-4">{t('landing.mockup.example_hook')}</p>
                 <div className="space-y-2">
                   <div className="h-2 bg-gray-100 rounded w-full"></div>
                   <div className="h-2 bg-gray-100 rounded w-5/6"></div>
@@ -142,8 +142,8 @@ const LandingPage = () => {
                     <CheckCircle2 size={16} />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-[#1A1A1A]">Scheduled</p>
-                    <p className="text-[10px] text-gray-400">Tomorrow, 9:00 AM</p>
+                    <p className="text-xs font-bold text-[#1A1A1A]">{t('landing.mockup.scheduled')}</p>
+                    <p className="text-[10px] text-gray-400">{t('landing.mockup.tomorrow_time')}</p>
                   </div>
                 </div>
               </div>
@@ -212,15 +212,15 @@ const LandingPage = () => {
             <div className="flex-1 bg-white p-6 rounded-[32px] shadow-xl shadow-gray-200/50 border border-gray-100 rotate-2">
               <div className="space-y-3">
                 <div className="flex gap-2 overflow-x-auto pb-2">
-                  <div className="bg-[#FFDA47] px-4 py-2 rounded-lg text-xs font-bold text-[#1A1A1A]">Pains</div>
-                  <div className="bg-gray-100 px-4 py-2 rounded-lg text-xs font-bold text-gray-400">Goals</div>
-                  <div className="bg-gray-100 px-4 py-2 rounded-lg text-xs font-bold text-gray-400">Questions</div>
+                  <div className="bg-[#FFDA47] px-4 py-2 rounded-lg text-xs font-bold text-[#1A1A1A]">{t('landing.mockup.pains')}</div>
+                  <div className="bg-gray-100 px-4 py-2 rounded-lg text-xs font-bold text-gray-400">{t('landing.mockup.goals')}</div>
+                  <div className="bg-gray-100 px-4 py-2 rounded-lg text-xs font-bold text-gray-400">{t('landing.mockup.questions')}</div>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-xl text-sm font-medium text-gray-600">
-                  "I don't have time to cook healthy meals..."
+                  {t('landing.mockup.example_pain')}
                 </div>
                 <div className="bg-gray-50 p-4 rounded-xl text-sm font-medium text-gray-600">
-                  "Confused about which protein powder to buy..."
+                  {t('landing.mockup.example_question')}
                 </div>
               </div>
             </div>

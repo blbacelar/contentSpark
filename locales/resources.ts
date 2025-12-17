@@ -323,6 +323,18 @@ export const resources = {
           privacy: "Privacy",
           support: "Support",
           copyright: "© 2025 ContentSpark. All rights reserved."
+        },
+        mockup: {
+          new_idea: "New Idea",
+          example_title: "5 Mistakes Vegans Make",
+          example_hook: "Hook: \"You might be accidentally ruining your progress...\"",
+          scheduled: "Scheduled",
+          tomorrow_time: "Tomorrow, 9:00 AM",
+          pains: "Pains",
+          goals: "Goals",
+          questions: "Questions",
+          example_pain: "\"I don't have time to cook healthy meals...\"",
+          example_question: "\"Confused about which protein powder to buy...\""
         }
       }
     }
@@ -650,6 +662,18 @@ export const resources = {
           privacy: "Privacidade",
           support: "Suporte",
           copyright: "© 2025 ContentSpark. Todos os direitos reservados."
+        },
+        mockup: {
+          new_idea: "Nova Ideia",
+          example_title: "5 Erros que Veganos Cometem",
+          example_hook: "Gancho: \"Você pode estar arruinando seu progresso sem saber...\"",
+          scheduled: "Agendado",
+          tomorrow_time: "Amanhã, 9:00",
+          pains: "Dores",
+          goals: "Objetivos",
+          questions: "Perguntas",
+          example_pain: "\"Não tenho tempo para cozinhar refeições saudáveis...\"",
+          example_question: "\"Confuso sobre qual proteína comprar...\""
         }
       }
     }
