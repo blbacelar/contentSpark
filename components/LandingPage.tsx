@@ -68,16 +68,16 @@ const LandingPage = () => {
           <div className="space-y-8 animate-fade-in z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-50 border border-yellow-100 text-yellow-700 text-xs font-bold uppercase tracking-wide">
               <Sparkles size={12} />
-              <span>AI-Powered Strategy</span>
+              <span>{t('landing.hero.badge')}</span>
             </div>
 
             <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1]">
-              Stop Staring at a <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1A1A1A] to-gray-500">Blank Page.</span>
+              {t('landing.hero.title_line1')} <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1A1A1A] to-gray-500">{t('landing.hero.title_line2')}</span>
             </h1>
 
             <p className="text-lg text-gray-500 leading-relaxed max-w-lg">
-              The only AI Content Generator that reads your audience's mind. Define your <span className="text-[#1A1A1A] font-bold">Target Persona</span>, and get hyper-relevant post ideas, captions, and hooks instantly.
+              {t('landing.hero.subtitle')} <span className="text-[#1A1A1A] font-bold">{t('landing.hero.subtitle_highlight')}</span>{t('landing.hero.subtitle_end')}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
@@ -85,7 +85,7 @@ const LandingPage = () => {
                 onClick={() => user ? navigate('/app') : navigate('/login')}
                 className="rounded-full text-base font-bold shadow-xl shadow-black/10 bg-[#1A1A1A] hover:bg-black hover:scale-105 transition-all text-white h-auto px-8 py-4"
               >
-                {user ? 'Go to Dashboard' : 'Start Creating for Free'} <ArrowRight size={18} className="ml-2" />
+                {user ? t('landing.hero.cta_dashboard') : t('landing.hero.cta_primary')} <ArrowRight size={18} className="ml-2" />
               </Button>
             </div>
 
@@ -95,7 +95,7 @@ const LandingPage = () => {
                 <div className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white"></div>
                 <div className="w-8 h-8 rounded-full bg-gray-400 border-2 border-white"></div>
               </div>
-              <span>Trusted by 1,000+ Creators</span>
+              <span>{t('landing.hero.social_proof')}</span>
             </div>
           </div>
 
@@ -154,8 +154,8 @@ const LandingPage = () => {
       <section id="features" className="py-20 bg-white rounded-t-[48px]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-[#1A1A1A] mb-4">Not Just Another AI Wrapper</h2>
-            <p className="text-gray-500 max-w-xl mx-auto">We don't just vomit words. We build a strategy based on who you're actually talking to.</p>
+            <h2 className="text-3xl font-bold text-[#1A1A1A] mb-4">{t('landing.features.section_title')}</h2>
+            <p className="text-gray-500 max-w-xl mx-auto">{t('landing.features.section_subtitle')}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -164,9 +164,9 @@ const LandingPage = () => {
               <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 text-blue-600">
                 <User size={24} />
               </div>
-              <h3 className="text-xl font-bold text-[#1A1A1A] mb-3">Persona-First Engine</h3>
+              <h3 className="text-xl font-bold text-[#1A1A1A] mb-3">{t('landing.features.feature1_title')}</h3>
               <p className="text-gray-500 leading-relaxed text-sm">
-                Generic AI gives generic advice. We use your specific Audience Pains & Goals to craft content that actually converts.
+                {t('landing.features.feature1_desc')}
               </p>
             </div>
 
@@ -175,9 +175,9 @@ const LandingPage = () => {
               <div className="w-12 h-12 bg-[#FFDA47] rounded-2xl flex items-center justify-center mb-6 text-[#1A1A1A]">
                 <Sparkles size={24} />
               </div>
-              <h3 className="text-xl font-bold text-[#1A1A1A] mb-3">First Drafts, Done</h3>
+              <h3 className="text-xl font-bold text-[#1A1A1A] mb-3">{t('landing.features.feature2_title')}</h3>
               <p className="text-gray-500 leading-relaxed text-sm">
-                Don't just get ideas. Get the full Caption, Viral Hook, CTA, and Hashtags ready to copy-paste immediately.
+                {t('landing.features.feature2_desc')}
               </p>
             </div>
 
@@ -186,9 +186,9 @@ const LandingPage = () => {
               <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center mb-6 text-purple-600">
                 <Calendar size={24} />
               </div>
-              <h3 className="text-xl font-bold text-[#1A1A1A] mb-3">Visual Planning</h3>
+              <h3 className="text-xl font-bold text-[#1A1A1A] mb-3">{t('landing.features.feature3_title')}</h3>
               <p className="text-gray-500 leading-relaxed text-sm">
-                Drag your favorite ideas onto a Google-style calendar to plan your entire month in minutes.
+                {t('landing.features.feature3_desc')}
               </p>
             </div>
           </div>
@@ -202,9 +202,9 @@ const LandingPage = () => {
           {/* Step 1 */}
           <div className="flex flex-col md:flex-row items-center gap-12">
             <div className="flex-1 space-y-6">
-              <div className="text-5xl font-extrabold text-[#E5E5E5]">01</div>
-              <h3 className="text-3xl font-bold text-[#1A1A1A]">Build Your Strategy.</h3>
-              <p className="text-gray-500 text-lg">Input your niche, tone, and define your audience's deepest pains and desires. The AI learns what makes them tick.</p>
+              <div className="text-5xl font-extrabold text-[#E5E5E5]">{t('landing.how_it_works.step1_number')}</div>
+              <h3 className="text-3xl font-bold text-[#1A1A1A]">{t('landing.how_it_works.step1_title')}</h3>
+              <p className="text-gray-500 text-lg">{t('landing.how_it_works.step1_desc')}</p>
             </div>
             <div className="flex-1 bg-white p-6 rounded-[32px] shadow-xl shadow-gray-200/50 border border-gray-100 rotate-2">
               <div className="space-y-3">
@@ -226,9 +226,9 @@ const LandingPage = () => {
           {/* Step 2 */}
           <div className="flex flex-col md:flex-row-reverse items-center gap-12">
             <div className="flex-1 space-y-6">
-              <div className="text-5xl font-extrabold text-[#E5E5E5]">02</div>
-              <h3 className="text-3xl font-bold text-[#1A1A1A]">Generate Magic.</h3>
-              <p className="text-gray-500 text-lg">Click one button and watch as 6 unique, fully-fleshed out content ideas appear tailored to your persona.</p>
+              <div className="text-5xl font-extrabold text-[#E5E5E5]">{t('landing.how_it_works.step2_number')}</div>
+              <h3 className="text-3xl font-bold text-[#1A1A1A]">{t('landing.how_it_works.step2_title')}</h3>
+              <p className="text-gray-500 text-lg">{t('landing.how_it_works.step2_desc')}</p>
             </div>
             <div className="flex-1 grid grid-cols-2 gap-4">
               {[1, 2, 3, 4].map(i => (
@@ -243,9 +243,9 @@ const LandingPage = () => {
           {/* Step 3 */}
           <div className="flex flex-col md:flex-row items-center gap-12">
             <div className="flex-1 space-y-6">
-              <div className="text-5xl font-extrabold text-[#E5E5E5]">03</div>
-              <h3 className="text-3xl font-bold text-[#1A1A1A]">Plan & Post.</h3>
-              <p className="text-gray-500 text-lg">Drag your winning ideas onto the calendar. Export, copy-paste, and watch your engagement grow.</p>
+              <div className="text-5xl font-extrabold text-[#E5E5E5]">{t('landing.how_it_works.step3_number')}</div>
+              <h3 className="text-3xl font-bold text-[#1A1A1A]">{t('landing.how_it_works.step3_title')}</h3>
+              <p className="text-gray-500 text-lg">{t('landing.how_it_works.step3_desc')}</p>
             </div>
             <div className="flex-1 bg-white p-4 rounded-[32px] shadow-xl shadow-gray-200/50 border border-gray-100 -rotate-2">
               <div className="grid grid-cols-7 gap-2">
@@ -262,39 +262,39 @@ const LandingPage = () => {
       <section id="pricing" className="py-20 bg-white rounded-t-[48px]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-[#1A1A1A] mb-4">Simple Pricing</h2>
-            <p className="text-gray-500">Start for free. Upgrade when you're famous.</p>
+            <h2 className="text-3xl font-bold text-[#1A1A1A] mb-4">{t('landing.pricing.title')}</h2>
+            <p className="text-gray-500">{t('landing.pricing.subtitle')}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {/* Free */}
             <div className="bg-[#FAFAF9] p-8 rounded-[32px] border border-gray-100">
-              <h3 className="text-xl font-bold text-[#1A1A1A]">Free</h3>
-              <div className="text-4xl font-extrabold mt-4 mb-2">$0</div>
-              <p className="text-gray-500 text-sm mb-6">Perfect to try the magic.</p>
+              <h3 className="text-xl font-bold text-[#1A1A1A]">{t('landing.pricing.free_title')}</h3>
+              <div className="text-4xl font-extrabold mt-4 mb-2">{t('landing.pricing.free_price')}</div>
+              <p className="text-gray-500 text-sm mb-6">{t('landing.pricing.free_desc')}</p>
               <ul className="space-y-3 mb-8">
-                <li className="flex items-center gap-2 text-sm font-medium text-gray-700"><CheckCircle2 size={16} className="text-[#1A1A1A]" /> 10 Credits</li>
-                <li className="flex items-center gap-2 text-sm font-medium text-gray-700"><CheckCircle2 size={16} className="text-[#1A1A1A]" /> Basic Persona</li>
+                <li className="flex items-center gap-2 text-sm font-medium text-gray-700"><CheckCircle2 size={16} className="text-[#1A1A1A]" /> {t('landing.pricing.free_feature1')}</li>
+                <li className="flex items-center gap-2 text-sm font-medium text-gray-700"><CheckCircle2 size={16} className="text-[#1A1A1A]" /> {t('landing.pricing.free_feature2')}</li>
               </ul>
               <Button
                 onClick={() => user ? navigate('/app') : navigate('/login')}
                 variant="outline"
                 className="w-full py-6 rounded-xl border-2 border-[#1A1A1A] text-[#1A1A1A] font-bold hover:bg-[#1A1A1A] hover:text-white transition-colors"
               >
-                {user ? 'Go to Dashboard' : 'Start Free'}
+                {user ? t('landing.nav.dashboard') : t('landing.pricing.free_cta')}
               </Button>
             </div>
 
             {/* Creator */}
             <div className="bg-[#1A1A1A] p-8 rounded-[32px] text-white relative transform md:-translate-y-4 shadow-2xl">
-              <div className="absolute top-4 right-4 bg-[#FFDA47] text-[#1A1A1A] text-xs font-bold px-2 py-1 rounded">POPULAR</div>
-              <h3 className="text-xl font-bold">Creator</h3>
-              <div className="text-4xl font-extrabold mt-4 mb-2 text-[#FFDA47]">$12<span className="text-base font-medium text-gray-400">/mo</span></div>
-              <p className="text-gray-400 text-sm mb-6">For consistent posting.</p>
+              <div className="absolute top-4 right-4 bg-[#FFDA47] text-[#1A1A1A] text-xs font-bold px-2 py-1 rounded">{t('landing.pricing.creator_badge')}</div>
+              <h3 className="text-xl font-bold">{t('landing.pricing.creator_title')}</h3>
+              <div className="text-4xl font-extrabold mt-4 mb-2 text-[#FFDA47]">{t('landing.pricing.creator_price')}<span className="text-base font-medium text-gray-400">{t('landing.pricing.creator_price_period')}</span></div>
+              <p className="text-gray-400 text-sm mb-6">{t('landing.pricing.creator_desc')}</p>
               <ul className="space-y-3 mb-8">
-                <li className="flex items-center gap-2 text-sm font-medium"><CheckCircle2 size={16} className="text-[#FFDA47]" /> 100 Credits / mo</li>
-                <li className="flex items-center gap-2 text-sm font-medium"><CheckCircle2 size={16} className="text-[#FFDA47]" /> Advanced Persona</li>
-                <li className="flex items-center gap-2 text-sm font-medium"><CheckCircle2 size={16} className="text-[#FFDA47]" /> Calendar Export</li>
+                <li className="flex items-center gap-2 text-sm font-medium"><CheckCircle2 size={16} className="text-[#FFDA47]" /> {t('landing.pricing.creator_feature1')}</li>
+                <li className="flex items-center gap-2 text-sm font-medium"><CheckCircle2 size={16} className="text-[#FFDA47]" /> {t('landing.pricing.creator_feature2')}</li>
+                <li className="flex items-center gap-2 text-sm font-medium"><CheckCircle2 size={16} className="text-[#FFDA47]" /> {t('landing.pricing.creator_feature3')}</li>
               </ul>
               <Button
                 onClick={async () => {
@@ -313,20 +313,20 @@ const LandingPage = () => {
                 className="w-full py-6 rounded-xl bg-[#FFDA47] text-[#1A1A1A] font-bold hover:bg-[#FFC040] transition-colors"
                 variant="default"
               >
-                {user ? 'Upgrade to Creator' : 'Get Started'}
+                {user ? t('landing.pricing.creator_cta') : t('landing.pricing.creator_cta_guest')}
               </Button>
             </div>
 
             {/* Pro */}
             <div className="bg-[#FAFAF9] p-8 rounded-[32px] border border-gray-100">
-              <h3 className="text-xl font-bold text-[#1A1A1A]">Pro</h3>
-              <div className="text-4xl font-extrabold mt-4 mb-2">$39<span className="text-base font-medium text-gray-500">/mo</span></div>
-              <p className="text-gray-500 text-sm mb-6">For Agencies & Power Users.</p>
+              <h3 className="text-xl font-bold text-[#1A1A1A]">{t('landing.pricing.pro_title')}</h3>
+              <div className="text-4xl font-extrabold mt-4 mb-2">{t('landing.pricing.pro_price')}<span className="text-base font-medium text-gray-500">{t('landing.pricing.pro_price_period')}</span></div>
+              <p className="text-gray-500 text-sm mb-6">{t('landing.pricing.pro_desc')}</p>
               <ul className="space-y-3 mb-8">
-                <li className="flex items-center gap-2 text-sm font-medium text-gray-700"><CheckCircle2 size={16} className="text-[#1A1A1A]" /> 1,000 Credits / mo</li>
-                <li className="flex items-center gap-2 text-sm font-medium text-gray-700"><CheckCircle2 size={16} className="text-[#1A1A1A]" /> Multiple Personas</li>
+                <li className="flex items-center gap-2 text-sm font-medium text-gray-700"><CheckCircle2 size={16} className="text-[#1A1A1A]" /> {t('landing.pricing.pro_feature1')}</li>
+                <li className="flex items-center gap-2 text-sm font-medium text-gray-700"><CheckCircle2 size={16} className="text-[#1A1A1A]" /> {t('landing.pricing.pro_feature2')}</li>
               </ul>
-              <Button onClick={() => navigate('/login')} variant="outline" className="w-full py-6 rounded-xl border-2 border-gray-200 text-gray-500 font-bold hover:border-[#1A1A1A] hover:text-[#1A1A1A] transition-colors">Contact Sales</Button>
+              <Button onClick={() => navigate('/login')} variant="outline" className="w-full py-6 rounded-xl border-2 border-gray-200 text-gray-500 font-bold hover:border-[#1A1A1A] hover:text-[#1A1A1A] transition-colors">{t('landing.pricing.pro_cta')}</Button>
             </div>
           </div>
         </div>
@@ -335,14 +335,14 @@ const LandingPage = () => {
       {/* CTA */}
       <section className="bg-[#FFDA47] py-24 px-6 text-center">
         <div className="max-w-3xl mx-auto space-y-8">
-          <h2 className="text-4xl md:text-5xl font-extrabold text-[#1A1A1A]">Ready to explode your engagement?</h2>
+          <h2 className="text-4xl md:text-5xl font-extrabold text-[#1A1A1A]">{t('landing.cta.title')}</h2>
           <Button
             onClick={() => user ? navigate('/app') : navigate('/login')}
             className="bg-white text-[#1A1A1A] px-10 py-6 h-auto rounded-full text-lg font-bold hover:scale-105 transition-transform shadow-xl hover:bg-white/90"
           >
-            {user ? 'Go to Dashboard' : 'Create My Free Account'}
+            {user ? t('landing.cta.button_auth') : t('landing.cta.button_guest')}
           </Button>
-          <p className="text-[#1A1A1A]/60 text-sm font-medium">No credit card required for free tier.</p>
+          <p className="text-[#1A1A1A]/60 text-sm font-medium">{t('landing.cta.disclaimer')}</p>
         </div>
       </section>
 
@@ -354,12 +354,12 @@ const LandingPage = () => {
             <span className="font-bold tracking-tight">ContentSpark</span>
           </div>
           <div className="flex gap-6 text-sm text-gray-400">
-            <a href="#" className="hover:text-white transition-colors">Terms</a>
-            <a href="#" className="hover:text-white transition-colors">Privacy</a>
-            <a href="#" className="hover:text-white transition-colors">Support</a>
+            <a href="#" className="hover:text-white transition-colors">{t('landing.footer.terms')}</a>
+            <a href="#" className="hover:text-white transition-colors">{t('landing.footer.privacy')}</a>
+            <a href="#" className="hover:text-white transition-colors">{t('landing.footer.support')}</a>
           </div>
           <div className="text-sm text-gray-600">
-            © 2025 ContentSpark. All rights reserved.
+            {t('landing.footer.copyright')}
           </div>
         </div>
       </footer>
