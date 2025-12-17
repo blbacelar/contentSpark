@@ -152,7 +152,7 @@ test.describe('Dashboard & Core Features (Logged In)', () => {
 
         // 3. Fill Form
         // Topic
-        const topicInput = page.getByPlaceholder(/Vegan Cooking|Culinária Vegana/i);
+        const topicInput = page.getByPlaceholder(/Cooking|Culinária/i);
 
         // Strict assertion to ensure test fails if form is closed
         await expect(topicInput).toBeVisible({ timeout: 5000 });

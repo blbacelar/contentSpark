@@ -326,7 +326,7 @@ export const resources = {
         },
         mockup: {
           new_idea: "New Idea",
-          example_title: "5 Mistakes Vegans Make",
+          example_title: "5 Mistakes that People Make",
           example_hook: "Hook: \"You might be accidentally ruining your progress...\"",
           scheduled: "Scheduled",
           tomorrow_time: "Tomorrow, 9:00 AM",
@@ -665,7 +665,7 @@ export const resources = {
         },
         mockup: {
           new_idea: "Nova Ideia",
-          example_title: "5 Erros que Veganos Cometem",
+          example_title: "5 Erros que Pessoas Cometem",
           example_hook: "Gancho: \"Você pode estar arruinando seu progresso sem saber...\"",
           scheduled: "Agendado",
           tomorrow_time: "Amanhã, 9:00",
