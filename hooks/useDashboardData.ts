@@ -47,6 +47,9 @@ export function useDashboardData() {
                     session?.access_token
                 );
 
+                // Debug: Verify correct arguments are passed
+                // console.log("Dashboard Fetch:", { uid: user.id, team: currentTeam?.id, token: !!session?.access_token });
+
                 setIdeas(ideasData);
                 setAllPersonas(personasList);
 

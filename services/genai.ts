@@ -542,9 +542,9 @@ export const fetchPersonas = async (userId: string, teamId: string | null = null
 
 // (Function fetchPersonas ends correctly at line 537 in previous read, so I need to remove the trailing garbage)
 
-export const fetchUserPersona = async (userId: string): Promise<PersonaData | null> => {
+export const fetchUserPersona = async (userId: string, token: string): Promise<PersonaData | null> => {
   // Deprecated for direct use, fetches the most recent persona
-  const personas = await fetchPersonas(userId);
+  const personas = await fetchPersonas(userId, null, token);
   return personas.length > 0 ? personas[0] : null;
 };
 
