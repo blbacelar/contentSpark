@@ -19,12 +19,12 @@ Stop staring at a blank page. Generate, organize, and schedule content ideas eff
 ## 🎯 Features
 
 ### Core Functionality
-- **🤖 AI Content Generation**: Powered by Google Gemini AI
+- **🤖 AI Content Generation**: Powered by **Google Gemini 2.0 Flash**
 - **📅 Content Calendar**: Visual calendar with drag-and-drop scheduling
-- **👥 Team Collaboration**: Create teams, invite members, share ideas
-- **🎨 Brand Kit**: Define your brand colors, fonts, and style
+- **🏢 Client/Team Management**: Treat teams as separate clients with isolated data
+- **🎨 Isolated Brand Kits**: Each team/client has its own Brand Kit (Colors, Fonts, Style)
+- **👥 Smart Personas**: Personas are now linked to specific teams/clients
 - **🔔 Smart Notifications**: Get notified when ideas are due
-- **📊 Persona Management**: Target specific audiences
 - **🌍 Internationalization**: English & Portuguese support
 
 ### Technical Highlights
@@ -151,7 +151,7 @@ contentSpark/
 | **Vite** | Build tool & dev server |
 | **Tailwind CSS** | Styling |
 | **Supabase** | Backend (Auth, Database, Storage) |
-| **Google Gemini AI** | Content generation |
+| **Google Gemini AI** | Content generation (Gemini 2.0 Flash) |
 | **n8n** | Workflow automation |
 | **Playwright** | E2E testing |
 | **i18next** | Internationalization |
@@ -164,9 +164,9 @@ contentSpark/
 
 ### Main Tables
 - `profiles` - User profiles and settings
+- `teams` - Client/Team scope (Contains `branding` JSONB)
+- `personas` - Linked to `teams` (Team-specific target audiences)
 - `content_ideas` - Generated content ideas
-- `personas` - Target audience personas
-- `teams` - Collaboration teams
 - `team_members` - Team membership
 - `notifications` - User notifications
 - `user_settings` - User preferences
