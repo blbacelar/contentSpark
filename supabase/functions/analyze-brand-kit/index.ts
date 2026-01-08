@@ -1,20 +1,18 @@
-
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.1.3"
+import { GoogleGenerativeAI } from "@google/generative-ai"
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+Deno.serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders })
     }
 
     try {
         const formData = await req.formData()
-        const file = formData.get('file')
+        const file = formData.get('file') as File
 
         if (!file) {
             throw new Error('No file provided')
@@ -72,7 +70,7 @@ serve(async (req) => {
         })
 
     } catch (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
+        return new Response(JSON.stringify({ error: (error as Error).message }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
