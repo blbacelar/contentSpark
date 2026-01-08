@@ -39,21 +39,13 @@ export function useDashboardData() {
                 let ideasData: ContentIdea[] = [];
                 let personasList: PersonaData[] = [];
 
-                if (currentTeam) {
-                    // Fetch Team Data
-                    ideasData = await fetchUserIdeas(user.id, currentTeam.id, session?.access_token);
-                    personasList = await fetchPersonas(
-                        user.id,
-                        currentTeam?.id || null, // Safety check matches audit
-                        session?.access_token
-                    );
-                } else {
-                    // Fetch Personal Data (Legacy/Default)
-                    [ideasData, personasList] = await Promise.all([
-                        fetchUserIdeas(user.id, undefined, session?.access_token),
-                        fetchPersonas(user.id, null, session?.access_token)
-                    ]);
-                }
+                // Unified Data Fetching
+                ideasData = await fetchUserIdeas(user.id, currentTeam?.id, session?.access_token);
+                personasList = await fetchPersonas(
+                    user.id,
+                    currentTeam?.id || null,
+                    session?.access_token
+                );
 
                 setIdeas(ideasData);
                 setAllPersonas(personasList);
