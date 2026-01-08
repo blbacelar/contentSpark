@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { parseISO, isValid, format } from "date-fns";
 import { ContentIdea, FormData, Tone, PersonaData, BrandingSettings } from "../types";
 import { supabase } from "../services/supabase";
@@ -6,7 +6,7 @@ import { supabase } from "../services/supabase";
 // Initialize Gemini Client
 // Initialize Gemini Client
 const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
-const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+const ai = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 // Update Webhook URL
 const UPDATE_WEBHOOK_URL = import.meta.env.VITE_UPDATE_WEBHOOK_URL;
@@ -19,6 +19,82 @@ const CREATE_IDEA_WEBHOOK_URL = import.meta.env.VITE_CREATE_IDEA_WEBHOOK_URL;
 const CREATE_CHECKOUT_URL = import.meta.env.VITE_CREATE_CHECKOUT_URL;
 
 export const generateId = () => Math.random().toString(36).substr(2, 9);
+
+// Helper to convert File to Base64
+const fileToGenerativePart = async (file: File): Promise<{ inlineData: { data: string; mimeType: string } }> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64Data = reader.result as string;
+      const base64Content = base64Data.split(',')[1];
+      resolve({
+        inlineData: {
+          data: base64Content,
+          mimeType: file.type,
+        },
+      });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
+export const analyzeBrandKitPDF = async (file: File): Promise<BrandingSettings> => {
+  if (!ai) throw new Error("AI not initialized");
+
+  const model = ai.getGenerativeModel({ model: "gemini-2.0-flash-001" });
+  const filePart = await fileToGenerativePart(file);
+
+  const prompt = `
+    Analyze this Brand Kit PDF. 
+    Extract the following information into a strictly valid JSON format:
+    1. "colors": An array of hex color codes (e.g., ["#FFFFFF", "#000000"]). Extract at least the primary and secondary colors.
+    2. "fonts": An object mapping roles to font family names. CRITICAL: Identify at least one font.
+       - Roles: "title", "subtitle", "heading", "body", "quote".
+       - If only one font is found, assign it to "title" AND "body".
+    3. "style": A short descriptive string summarising the visual style (e.g., "Minimalist and clean", "Bold and energetic").
+
+    Return ONLY the JSON. No markdown formatting.
+    Example structure:
+    {
+      "colors": ["#FF0000", "#00FF00"],
+      "fonts": { "title": "Roboto", "heading": "Roboto", "body": "Open Sans" },
+      "style": "Modern"
+    }
+  `;
+
+  try {
+    const result = await model.generateContent([prompt, filePart]);
+    const response = await result.response;
+    const text = response.text();
+
+    // Clean markdown if present
+    const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const data = JSON.parse(jsonStr);
+
+    const fonts = data.fonts || {};
+    // Fallback: If 'title' is missing but we have other fonts, use the first available one
+    if (!fonts['title'] && Object.keys(fonts).length > 0) {
+      fonts['title'] = Object.values(fonts)[0] as string;
+    }
+    // Ensure 'body' has a fallback properly too
+    if (!fonts['body'] && fonts['title']) {
+      fonts['body'] = fonts['title'];
+    }
+
+    return {
+      colors: Array.isArray(data.colors) ? data.colors : [],
+      fonts: fonts,
+      style: data.style || "Professional"
+    };
+  } catch (error) {
+    console.error("PDF Analysis failed:", error);
+    // @ts-ignore
+    const msg = error.message || "Unknown error";
+    throw new Error(`Failed to analyze PDF: ${msg}`);
+  }
+};
+
 
 
 // --- Caching Helpers ---
@@ -402,8 +478,38 @@ export const deleteContent = async (id: string, userId?: string, token?: string)
 
 import { supabaseFetch } from "../services/supabase";
 
-export const fetchPersonas = async (userId: string, token?: string): Promise<PersonaData[]> => {
-  const cacheKey = `${CACHE_PREFIX}PERSONAS_${userId}`;
+// --- Team Branding ---
+export const fetchTeamBranding = async (teamId: string, token: string): Promise<BrandingSettings | null> => {
+  try {
+    const data = await supabaseFetch(`teams?id=eq.${teamId}&select=branding`, {
+      method: 'GET'
+    }, token);
+
+    if (data && data.length > 0) {
+      return data[0].branding as BrandingSettings;
+    }
+    return null;
+  } catch (error) {
+    console.error("Fetch Team Branding failed:", error);
+    return null;
+  }
+};
+
+export const updateTeamBranding = async (teamId: string, branding: BrandingSettings, token: string) => {
+  try {
+    await supabaseFetch(`teams?id=eq.${teamId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ branding })
+    }, token);
+  } catch (error) {
+    console.error("Update Team Branding failed:", error);
+    throw error;
+  }
+};
+
+export const fetchPersonas = async (userId: string, teamId: string | null = null, token?: string): Promise<PersonaData[]> => {
+  // Cache key includes teamId if present, else falls back to userId (legacy)
+  const cacheKey = teamId ? `${CACHE_PREFIX}PERSONAS_TEAM_${teamId}` : `${CACHE_PREFIX}PERSONAS_${userId}`;
 
   // Try Cache First
   const cached = getCache<PersonaData[]>(cacheKey);
@@ -411,34 +517,40 @@ export const fetchPersonas = async (userId: string, token?: string): Promise<Per
 
   try {
     if (!token) {
-      // Fallback or skip if no token provided (though should be passed)
       console.warn("fetchPersonas called without token");
       return [];
     }
 
-    // Direct Supabase REST call
-    // GET /rest/v1/personas?user_id=eq.{userId}&select=...
-    const query = `personas?user_id=eq.${userId}&select=id,name,user_id,gender,age_range,occupation,education,marital_status,has_children,income_level,social_networks,pains_list,goals_list,questions_list`;
+    // If Team ID is provided, strictly filter by team_id
+    // If not, fall back to user_id (Backwards compatibility or Personal Team)
+    const query = teamId
+      ? `personas?team_id=eq.${teamId}&select=*&order=created_at.desc`
+      : `personas?user_id=eq.${userId}&select=*&order=created_at.desc`;
+
     const data = await supabaseFetch(query, {
       method: 'GET'
     }, token);
 
-    const personas: PersonaData[] = data || [];
+    if (data) {
+      const personas: PersonaData[] = data.map((p: any) => ({
+        ...p,
+        // Ensure arrays
+        pains_list: p.pains_list || [],
+        goals_list: p.goals_list || [],
+        questions_list: p.questions_list || []
+      }));
+      setCache(cacheKey, personas);
+      return personas;
+    }
+    return [];
 
-    const normalized = personas.map(p => ({
-      ...p,
-      pains_list: p.pains_list || [],
-      goals_list: p.goals_list || [],
-      questions_list: p.questions_list || []
-    }));
-
-    setCache(cacheKey, normalized);
-    return normalized;
   } catch (err) {
     console.error("Error fetching personas via Supabase:", err);
     return [];
   }
 };
+
+// (Function fetchPersonas ends correctly at line 537 in previous read, so I need to remove the trailing garbage)
 
 export const fetchUserPersona = async (userId: string): Promise<PersonaData | null> => {
   // Deprecated for direct use, fetches the most recent persona
@@ -453,11 +565,13 @@ export const createPersona = async (persona: PersonaData, userId?: string, token
     // POST /rest/v1/personas
     const payload = {
       ...persona,
-      user_id: userId || persona.user_id, // Ensure user_id is set
+      user_id: userId || persona.user_id,
+      team_id: persona.team_id, // Include Team ID
       // Clean up lists to ensure they are arrays
       pains_list: persona.pains_list || [],
       goals_list: persona.goals_list || [],
-      questions_list: persona.questions_list || []
+      questions_list: persona.questions_list || [],
+      description: persona.description || ''
     };
     delete payload.id; // Ensure no ID is sent for creation
 
@@ -470,17 +584,13 @@ export const createPersona = async (persona: PersonaData, userId?: string, token
     const created = data?.[0];
 
     // Optimistic Cache Update: Add to cache
-    const cacheKey = `${CACHE_PREFIX}PERSONAS_${userId || persona.user_id}`;
-    const cached = getCache<PersonaData[]>(cacheKey);
-    if (cached && created) {
-      setCache(cacheKey, [...cached, created]);
-    } else {
-      // If no cache exists, we don't need to do anything, next fetch will get fresh data
-      // BUT if next fetch sees nothing in cache, it fetches.
-      // However, if we just invalidated? No, setCache is better.
-      // Actually, if we invalidate, next fetch gets all.
-      invalidateCache(cacheKey);
-    }
+    // We need to invalidate both user and team caches potentially
+    const cacheKeyUser = `${CACHE_PREFIX}PERSONAS_${userId || persona.user_id}`;
+    const cacheKeyTeam = persona.team_id ? `${CACHE_PREFIX}PERSONAS_TEAM_${persona.team_id}` : null;
+
+    // Invalidate instead of smart update for simplicity in multi-context
+    invalidateCache(cacheKeyUser);
+    if (cacheKeyTeam) invalidateCache(cacheKeyTeam);
 
     return created;
 
@@ -489,6 +599,8 @@ export const createPersona = async (persona: PersonaData, userId?: string, token
     throw err;
   }
 };
+// End of createPersona
+
 
 export const saveUserPersona = async (persona: PersonaData, token?: string) => {
   // Legacy support: Just create or update based on if we find one? 
@@ -539,7 +651,8 @@ export const updateUserPersona = async (persona: PersonaData, token?: string) =>
       social_networks: persona.social_networks,
       pains_list: persona.pains_list || [],
       goals_list: persona.goals_list || [],
-      questions_list: persona.questions_list || []
+      questions_list: persona.questions_list || [],
+      description: persona.description || ''
     };
 
     // PATCH /rest/v1/personas?id=eq.{id}
@@ -582,6 +695,8 @@ export const generateContent = async (
   // ... (personaPayload construction unchanged)
 
   const personaPayload = persona ? {
+    name: persona.name || "",
+    description: persona.description || "",
     gender: persona.gender || "",
     age_range: persona.age_range || "",
     occupation: persona.occupation || "",
@@ -594,6 +709,10 @@ export const generateContent = async (
     goals_list: Array.isArray(persona.goals_list) ? persona.goals_list : [],
     questions_list: Array.isArray(persona.questions_list) ? persona.questions_list : [],
   } : {};
+
+  // ... (lines 600-630 skipped for brevity in search, wait replace_file_content replaces a block)
+  // I need to be careful. I will use multi_replace for 2 separate edits.
+
 
   let generatedIdeas: ContentIdea[] = [];
 
@@ -628,7 +747,7 @@ export const generateContent = async (
       let ideas: any[] = [];
       if (Array.isArray(data)) ideas = data;
       else if (data && data.ideas && Array.isArray(data.ideas)) ideas = data.ideas;
-      else throw new Error("Invalid response format");
+      else throw new Error(`Invalid response format. Received: ${text.substring(0, 100)}...`);
 
       generatedIdeas = ideas.map(idea => {
         let platforms: string[] = ["General"];
@@ -668,6 +787,8 @@ export const generateContent = async (
 
         personaContext = `
             Target Persona Context:
+            - Name: ${persona.name}
+            - Description: ${persona.description || "N/A"}
             - Occupation: ${persona.occupation}
             - Age Range: ${persona.age_range}
             - Social Networks: ${persona.social_networks}
@@ -717,32 +838,32 @@ export const generateContent = async (
         throw new Error("Gemini API configuration is missing. Please check your environment variables.");
       }
 
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
+      const model = ai.getGenerativeModel({
+        model: "gemini-1.5-flash",
+        generationConfig: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.ARRAY,
+            type: SchemaType.ARRAY,
             items: {
-              type: Type.OBJECT,
+              type: SchemaType.OBJECT,
               properties: {
-                title: { type: Type.STRING },
-                description: { type: Type.STRING },
-                hook: { type: Type.STRING },
-                caption: { type: Type.STRING },
-                cta: { type: Type.STRING },
-                hashtags: { type: Type.STRING },
-                canva_prompt: { type: Type.STRING },
-                platform: { type: Type.ARRAY, items: { type: Type.STRING } },
+                title: { type: SchemaType.STRING },
+                description: { type: SchemaType.STRING },
+                hook: { type: SchemaType.STRING },
+                caption: { type: SchemaType.STRING },
+                cta: { type: SchemaType.STRING },
+                hashtags: { type: SchemaType.STRING },
+                canva_prompt: { type: SchemaType.STRING },
+                platform: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
               },
               required: ["title", "description", "hook", "caption", "cta", "hashtags", "canva_prompt", "platform"],
             },
           },
-        },
+        }
       });
 
-      const text = response.text;
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
       if (!text) return [];
 
       const rawIdeas = JSON.parse(text) as Omit<ContentIdea, 'id' | 'date' | 'status'>[];

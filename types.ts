@@ -87,7 +87,9 @@ export interface BrandingSettings {
 export interface PersonaData {
   id?: string;
   name?: string;
+  description: string;
   user_id?: string;
+  team_id?: string;
   gender: string;
   age_range: string;
   occupation: string;
@@ -121,6 +123,7 @@ export interface Team {
   owner_id: string;
   created_at: string;
   invitation_code?: string;
+  branding?: BrandingSettings;
 }
 
 export interface TeamMember {

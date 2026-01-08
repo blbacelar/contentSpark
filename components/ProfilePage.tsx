@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import { useTeam } from '../context/TeamContext';
 import { supabase, supabaseFetch } from '../services/supabase';
-import { fetchUserPersona, saveUserPersona, updateUserPersona, fetchPersonas, deletePersona } from '../services/genai';
+import { fetchUserPersona, saveUserPersona, updateUserPersona, fetchPersonas, deletePersona, analyzeBrandKitPDF, fetchTeamBranding, updateTeamBranding } from '../services/genai';
 
 import { PersonaData, BrandingSettings, SOCIAL_PLATFORMS } from '../types';
-import { ArrowLeft, Camera, Loader2, CheckCircle2, AlertCircle, Save, Trash2, Plus, Target, HeartCrack, HelpCircle, User, Info, Palette } from 'lucide-react';
+import { ArrowLeft, Camera, Loader2, CheckCircle2, AlertCircle, Save, Trash2, Plus, Target, HeartCrack, HelpCircle, User, Info, Palette, Upload, FileText } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
@@ -143,30 +145,33 @@ const DynamicColorList = ({
 
 export default function ProfilePage({ onBack }: ProfilePageProps) {
     const { user, profile, signOut, refreshProfile } = useAuth();
+    const { currentTeam } = useTeam();
     const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
 
-    // Profile State - Initialize from context immediately if available
+    // Profile State 
     const [firstName, setFirstName] = useState(profile?.first_name || '');
     const [lastName, setLastName] = useState(profile?.last_name || '');
     const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url || null);
 
-    // Branding State
-    // Branding State - Ensure defaults if property is missing or empty object
+    // Branding State (Team-based now)
     const [branding, setBranding] = useState<BrandingSettings>({
         colors: [],
         fonts: {},
         style: '',
-        ...(profile?.branding || {})
     });
 
     // Persona State
     const [personas, setPersonas] = useState<PersonaData[]>([]);
     const [selectedPersonaId, setSelectedPersonaId] = useState<string | 'new'>('new');
     const [personaLoading, setPersonaLoading] = useState(false);
+    const [generating, setGenerating] = useState(false);
     const [savingPersona, setSavingPersona] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+    // PDF Upload State
+    const [isAnalyzingPdf, setIsAnalyzingPdf] = useState(false);
     const [activeTab, setActiveTab] = useState<number>(0);
 
     const defaultPersona: PersonaData = {
@@ -183,114 +188,108 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
         goals: '',
         pains_list: [''],
         goals_list: [''],
-        questions_list: ['']
+        questions_list: [''],
+        description: ''
     };
 
     const [personaData, setPersonaData] = useState<PersonaData>(defaultPersona);
 
-    // Feedback
-    // const [toast, setToast] = useState<{ message: string; isError: boolean } | null>(null);
+    // Load Data Effect
+    useEffect(() => {
+        const loadTeamData = async () => {
+            if (!user) return;
+            if (!currentTeam) return;
 
-    // Sync state with profile updates from context
+            // 1. Load Team Branding
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) return;
+
+            setPersonaLoading(true);
+
+            try {
+                // Fetch Branding
+                const teamBranding = await fetchTeamBranding(currentTeam.id, token);
+                // If team has no branding yet, maybe fallback to profile or empty?
+                // For migration: if team branding is empty but user profile has one, we could auto-migrate?
+                // Let's stick to simple: load team, if empty use defaults.
+                if (teamBranding) {
+                    setBranding({
+                        colors: teamBranding.colors || [],
+                        fonts: teamBranding.fonts || {},
+                        style: teamBranding.style || ''
+                    });
+                } else if (profile?.branding && (!teamBranding)) {
+                    // Check if this is the "Personal Team" and maybe sync? 
+                    // Or just default to empty for clean separation.
+                    // Decision: Default to empty to avoid confusion.
+                    setBranding({ colors: [], fonts: {}, style: '' });
+                }
+
+                // 2. Fetch Team Personas
+                const teamPersonas = await fetchPersonas(user.id, currentTeam.id, token);
+                setPersonas(teamPersonas);
+
+            } catch (e) {
+                console.error("Error loading team data", e);
+            } finally {
+                setPersonaLoading(false);
+            }
+        };
+
+        loadTeamData();
+    }, [user, currentTeam]); // Reload when switching teams
+
+    // Sync user profile fields only (not branding)
     useEffect(() => {
         if (profile) {
             setFirstName(profile.first_name || '');
             setLastName(profile.last_name || '');
             setAvatarUrl(profile.avatar_url || null);
-            if (profile.branding) {
-                setBranding(prev => ({
-                    colors: [],
-                    fonts: {},
-                    style: '',
-                    ...prev, // Keep current state as base? No, we want profile to win but be safe.
-                    // Better: use defaults + profile.branding
-                    ...profile.branding
-                }));
-            }
         }
     }, [profile]);
 
-    useEffect(() => {
-        if (user) {
-            loadPersonas();
-        }
-    }, [user]);
+    // Select Persona Logic
+    const selectPersona = (persona: PersonaData) => {
+        setSelectedPersonaId(persona.id!);
 
-    // Toast removed, using sonner
-    // const showToast = (message: string, isError: boolean = false) => {
-    //     setToast({ message, isError });
-    //     setTimeout(() => setToast(null), 4000);
-    // };
-
-    const loadPersonas = async () => {
-        if (!user) return;
-        setPersonaLoading(true);
-        try {
-            const data = await fetchPersonas(user.id); // Updated to fetch list
-            if (data && data.length > 0) {
-                setPersonas(data);
-                // Select the first one by default
-                selectPersona(data[0]);
-            } else {
-                setPersonas([]);
-                setPersonaData(defaultPersona);
-                setSelectedPersonaId('new');
-            }
-        } catch (error) {
-            console.error('Failed to load personas', error);
-        } finally {
-            setPersonaLoading(false);
-        }
-    };
-
-    const selectPersona = (p: PersonaData) => {
-        setSelectedPersonaId(p.id || 'new');
+        // Pad Lists
         setPersonaData({
-            ...p,
-            pains_list: (p.pains_list && p.pains_list.length > 0) ? p.pains_list : [''],
-            goals_list: (p.goals_list && p.goals_list.length > 0) ? p.goals_list : [''],
-            questions_list: (p.questions_list && p.questions_list.length > 0) ? p.questions_list : ['']
+            ...persona,
+            pains_list: persona.pains_list.length ? persona.pains_list : [''],
+            goals_list: persona.goals_list.length ? persona.goals_list : [''],
+            questions_list: persona.questions_list.length ? persona.questions_list : [''],
         });
     };
 
     const handleCreateNew = () => {
-        // Plan Restrictions
-        const isPro = profile?.tier === 'pro';
-        if (!isPro && personas.length >= 1) {
-            toast.error("Upgrade to Pro to create multiple personas.");
-            // Reset selection to the first existing persona if available
-            if (personas.length > 0 && selectedPersonaId !== personas[0].id) {
-                selectPersona(personas[0]);
-            }
-            return;
-        }
-
         setSelectedPersonaId('new');
         setPersonaData(defaultPersona);
     };
 
-    const handleDeletePersona = async () => {
-        if (!user || selectedPersonaId === 'new') return;
-        setShowDeleteConfirm(true);
+    const loadPersonas = async () => {
+        // Redundant if we have useEffect, but used for refresh
+        if (user && currentTeam) {
+            const { data: { session } } = await supabase.auth.getSession();
+            const list = await fetchPersonas(user.id, currentTeam.id, session?.access_token);
+            setPersonas(list);
+        }
     };
 
-    const confirmDeletePersona = async () => {
-        if (!user || selectedPersonaId === 'new') return;
+    const handleDeletePersona = async () => {
+        if (selectedPersonaId === 'new' || !selectedPersonaId) return;
+        if (!user) return;
 
         try {
-            // Get Token
+            // We need token
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
-            if (!token) throw new Error("No auth session found");
 
             await deletePersona(selectedPersonaId, user.id, token);
-            // Remove from local list
-            const updatedList = personas.filter(p => p.id !== selectedPersonaId);
-            setPersonas(updatedList);
+            setPersonas(prev => prev.filter(p => p.id !== selectedPersonaId));
 
-            if (updatedList.length > 0) {
-                selectPersona(updatedList[0]);
-            } else {
+            // Return to new state if deleted currently selected
+            if (activeTab === 0) { // Just a heuristic
                 handleCreateNew();
             }
             toast.success(t('profile.persona_deleted') || "Persona deleted");
@@ -300,53 +299,81 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
         }
     };
 
+    const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.type !== 'application/pdf') {
+            toast.error("Please upload a valid PDF file.");
+            return;
+        }
+
+        setIsAnalyzingPdf(true);
+        toast.info(t('profile.brand_kit.uploading') || "Analyzing Brand Kit...");
+
+        try {
+            const result = await analyzeBrandKitPDF(file);
+
+            // Determine new state
+            const newBranding = {
+                ...branding,
+                colors: result.colors.length > 0 ? result.colors : branding.colors,
+                fonts: { ...branding.fonts, ...result.fonts },
+                style: result.style || branding.style
+            };
+
+            setBranding(newBranding);
+
+            // Auto Save to Team Logic
+            if (currentTeam) {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.access_token) {
+                    await updateTeamBranding(currentTeam.id, newBranding, session.access_token);
+                }
+            }
+
+            toast.success(t('profile.brand_kit.analysis_success') || "Brand Kit updated from PDF!");
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.message || "Failed to analyze PDF.");
+        } finally {
+            setIsAnalyzingPdf(false);
+            e.target.value = '';
+        }
+    };
+
     const updateProfile = async () => {
         try {
             if (!user) return;
-            // Get session token for REST call
-            // We can get it from useAuth session or trust the cookie? 
-            // REST requires explicit token.
-            // ProfilePage uses useAuth, so we have session theoretically?
-            // AuthContext provides user, session, profile.
-            // But session might be missing from destructuring in line 89.
-            // Let's add session to destructuring.
             setLoading(true);
 
-            // Note: We need the access token for the REST call. 
-            // supabaseFetch handles headers but we need to pass the token.
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
-
             if (!token) throw new Error("No auth session found");
 
-            const updates = {
+            // 1. Update User Profile (Name/Avatar)
+            const userUpdates = {
                 first_name: firstName,
                 last_name: lastName,
                 avatar_url: avatarUrl,
-                branding: branding,
                 updated_at: new Date(),
             };
 
-            // Using REST API via supabaseFetch to prevent SDK hangs
-            // PATCH /rest/v1/profiles?id=eq.{user.id}
-            const data = await supabaseFetch(`profiles?id=eq.${user.id}`, {
+            await supabaseFetch(`profiles?id=eq.${user.id}`, {
                 method: 'PATCH',
-                body: JSON.stringify(updates),
-                headers: {
-                    'Prefer': 'return=representation'
-                }
+                body: JSON.stringify(userUpdates),
+                headers: { 'Prefer': 'return=representation' }
             }, token);
 
-            if (Array.isArray(data) && data.length === 0) {
-                console.warn('Profile update returned no data - row might be missing');
-                throw new Error(t('profile.update_failed_not_found') || 'Profile not found. Please try signing out and back in.');
+            // 2. Update Team Branding (if we have a team)
+            if (currentTeam) {
+                await updateTeamBranding(currentTeam.id, branding, token);
             }
 
-            await refreshProfile(); // Refresh context to sync UI using its own logic
+            await refreshProfile();
             toast.success(t('profile.toast_updated'));
         } catch (error: any) {
             console.error('Error updating the data!', error);
-            // Show more detailed error
             toast.error(error.message || 'Error updating profile.');
         } finally {
             setLoading(false);
@@ -354,26 +381,30 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
     };
 
     const handleSavePersona = async () => {
-        if (!user) return;
+        if (!user || !currentTeam) return;
 
-        // Validation: Name is required
+        // Validation
         if (!personaData.name || personaData.name.trim() === '') {
             toast.error(t('profile.name_required') || "Please enter a name for your Persona.");
             return;
         }
 
+        if (!personaData.description || personaData.description.trim() === '') {
+            toast.error(t('profile.description_required') || 'Description is required');
+            return;
+        }
+
         setSavingPersona(true);
 
-        // Clean up empty strings from lists before saving
         const cleanData = {
             ...personaData,
             pains_list: personaData.pains_list.filter(i => i.trim() !== ''),
             goals_list: personaData.goals_list.filter(i => i.trim() !== ''),
             questions_list: personaData.questions_list.filter(i => i.trim() !== ''),
-            user_id: user.id
+            user_id: user.id,
+            team_id: currentTeam.id // Ensure Team ID is attached
         };
 
-        // If creating new, ensure ID is undefined
         if (selectedPersonaId === 'new') {
             delete cleanData.id;
         }
@@ -382,7 +413,6 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
             let saved;
             let webhookFailed = false;
 
-            // Get Token
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
             if (!token) throw new Error("No auth session found");
@@ -391,7 +421,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                 const result = await updateUserPersona(cleanData, token);
                 // @ts-ignore
                 webhookFailed = result.webhookFailed;
-                saved = result.data; // key is 'data' from our new return shape
+                saved = result.data;
             } else {
                 const result = await saveUserPersona(cleanData, token);
                 // @ts-ignore
@@ -405,22 +435,17 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                 toast.success(t('profile.persona_saved') || "Persona saved successfully!");
             }
 
-            // Refresh list
             if (saved) {
-                // If it was new, add to list, else update list
                 if (selectedPersonaId === 'new') {
                     setPersonas(prev => [saved, ...prev]);
                     selectPersona(saved);
                 } else {
                     setPersonas(prev => prev.map(p => p.id === saved.id ? saved : p));
-                    // Re-pad inputs
                     selectPersona(saved);
                 }
             } else {
-                // Fallback if no return data (shouldn't happen with new logic)
                 loadPersonas();
             }
-
 
         } catch (error: any) {
             console.error(error);
@@ -606,12 +631,33 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                 {/* --- CARD 1.5: BRAND KIT --- */}
                 <div className="w-full overflow-hidden rounded-[32px] bg-white shadow-sm animate-scale-in" style={{ animationDelay: '0.05s' }}>
                     <div className="p-8 pb-8">
-                        <div className="flex items-center gap-2 mb-6">
-                            <Palette className="w-6 h-6 text-[#1A1A1A]" />
-                            <div>
-                                <h2 className="text-xl font-bold text-[#1A1A1A] tracking-tight">{t('profile.brand_kit.title')}</h2>
-                                <p className="text-sm text-gray-500 font-medium">{t('profile.brand_kit.desc')}</p>
+                        <div className="flex items-center gap-2 mb-6 justify-between">
+                            <div className="flex items-center gap-2">
+                                <Palette className="w-6 h-6 text-[#1A1A1A]" />
+                                <div>
+                                    <h2 className="text-xl font-bold text-[#1A1A1A] tracking-tight">{t('profile.brand_kit.title')}</h2>
+                                    <p className="text-sm text-gray-500 font-medium">{t('profile.brand_kit.desc')}</p>
+                                </div>
                             </div>
+
+                            {/* Upload PDF Button */}
+                            <label className="cursor-pointer">
+                                <input
+                                    type="file"
+                                    accept="application/pdf"
+                                    className="hidden"
+                                    onChange={handlePdfUpload}
+                                    disabled={isAnalyzingPdf}
+                                />
+                                <div className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${isAnalyzingPdf ? 'bg-gray-100 text-gray-400' : 'bg-[#FFDA47] text-[#1A1A1A] hover:bg-[#FFC040] shadow-sm hover:shadow-md font-bold text-sm'}`}>
+                                    {isAnalyzingPdf ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Upload className="w-4 h-4" />
+                                    )}
+                                    {isAnalyzingPdf ? t('profile.brand_kit.uploading') : t('profile.brand_kit.upload_pdf')}
+                                </div>
+                            </label>
                         </div>
 
                         <div className="space-y-8 animate-fade-in">
@@ -649,7 +695,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                             <div key={key} className="space-y-1.5">
                                                 <Label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-400">{role}</Label>
                                                 <FontPicker
-                                                    value={branding.fonts[key] || ''}
+                                                    value={branding.fonts?.[key] || ''}
                                                     onChange={(val) => setBranding({
                                                         ...branding,
                                                         fonts: { ...branding.fonts, [key]: val }
@@ -779,13 +825,30 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                     <TabsContent value="0" className="mt-0">
                                         <div className="space-y-8 animate-fade-in">
                                             {/* Persona Name Input */}
-                                            <div className="space-y-2">
-                                                <Label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">{t('profile.persona_name')}</Label>
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="persona-name">{t('profile.persona_name') || 'Persona Name'}</Label>
                                                 <Input
+                                                    id="persona-name"
                                                     type="text"
                                                     value={personaData.name || ''}
                                                     onChange={(e) => handlePersonaChange('name', e.target.value)}
-                                                    placeholder="e.g. Corporate Execs, Busy Moms..."
+                                                    maxLength={30}
+                                                    placeholder={t('profile.personaNamePlaceholder') || 'e.g. Eco-conscious Mom'}
+                                                />
+                                                <div className="text-xs text-muted-foreground text-right text-gray-400">
+                                                    {(personaData.name || '').length}/30
+                                                </div>
+                                            </div>
+
+                                            {/* Description Input */}
+                                            <div className="space-y-2">
+                                                <Label htmlFor="persona-description">{t('profile.persona_description')}</Label>
+                                                <Textarea
+                                                    id="persona-description"
+                                                    value={personaData.description || ''}
+                                                    onChange={(e) => handlePersonaChange('description', e.target.value)}
+                                                    placeholder={t('profile.personaDescriptionPlaceholder') || 'Briefly describe this persona...'}
+                                                    className="min-h-[100px]"
                                                 />
                                             </div>
 
@@ -989,7 +1052,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                                     <Button
                                                         variant="destructive"
                                                         size="sm"
-                                                        onClick={confirmDeletePersona}
+                                                        onClick={handleDeletePersona}
                                                         className="px-4 h-8 rounded-lg text-xs font-bold shadow-sm"
                                                     >
                                                         {t('common.confirm_delete')}
