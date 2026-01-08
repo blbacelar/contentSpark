@@ -909,7 +909,7 @@ export const completeUserOnboarding = async (userId: string, token: string) => {
     .update({ has_completed_onboarding: true })
     .eq('id', userId);
 
-  if (error) throw error; // Allow UI to handle failure
+  if (error) throw error; // CRITICAL: Throwing error to UI per Audit
 }
 
 export const createCheckoutSession = async (priceId: string, userId: string, email?: string, token?: string) => {

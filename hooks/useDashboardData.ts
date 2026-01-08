@@ -39,23 +39,15 @@ export function useDashboardData() {
                 let ideasData: ContentIdea[] = [];
                 let personasList: PersonaData[] = [];
 
-                if (currentTeam) {
-                    // Fetch Team Data
-                    ideasData = await fetchUserIdeas(user.id, currentTeam.id, session?.access_token);
-                    personasList = await fetchPersonas(
-                        user.id,
-                        currentTeam.id,
-                        session?.access_token
-                    );
-                } else {
-                    // Fetch Personal Data
-                    ideasData = await fetchUserIdeas(user.id, undefined, session?.access_token);
-                    personasList = await fetchPersonas(
-                        user.id,
-                        null,
-                        session?.access_token
-                    );
-                }
+                // Unified Data Fetching per Audit Requirement
+                // This ensures correct arguments (3 args) are passed regardless of team state
+                ideasData = await fetchUserIdeas(user.id, currentTeam?.id, session?.access_token);
+
+                personasList = await fetchPersonas(
+                    user.id,
+                    currentTeam?.id || null,
+                    session?.access_token
+                );
 
                 // Debug: Verify correct arguments are passed
                 // console.log("Dashboard Fetch:", { uid: user.id, team: currentTeam?.id, token: !!session?.access_token });
