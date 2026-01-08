@@ -152,25 +152,15 @@ const invalidateCache = (key: string) => {
 
 // --- Helper for Retries & Auth ---
 // --- Helper for Retries & Auth ---
-export const fetchWithRetry = async (url: string, options: RequestInit, retries = 1, token?: string): Promise<Response> => {
-  console.log("DEBUG: fetchWithRetry start", url);
+export const fetchWithRetry = async (url: string, options: RequestInit, retries = 1, token: string): Promise<Response> => {
+  // console.log("DEBUG: fetchWithRetry start", url);
   try {
-    let accessToken = token;
-
-    // Inject Auth Token if not provided
-    if (!accessToken) {
-      console.log("DEBUG: Getting session (fallback)...");
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log("DEBUG: Session retrieved", session?.user?.email);
-      accessToken = session?.access_token;
-    } else {
-      console.log("DEBUG: Using provided token");
+    if (!token) {
+      throw new Error("Authentication token required for services");
     }
 
     const headers = new Headers(options.headers || {});
-    if (accessToken) {
-      headers.set('Authorization', `Bearer ${accessToken}`);
-    }
+    headers.set('Authorization', `Bearer ${token}`);
 
     // Add Timeout (60s) for AI content generation which can be slow
     const controller = new AbortController();
@@ -394,7 +384,7 @@ export const updateContent = async (payload: Partial<ContentIdea>, userId?: stri
   }
 };
 
-export const createContentIdea = async (idea: ContentIdea, userId: string) => {
+export const createContentIdea = async (idea: ContentIdea, userId: string, token: string) => {
   // Optimistically update cache
   const cacheKey = `${CACHE_PREFIX}IDEAS_${userId}`;
   const cached = getCache<ContentIdea[]>(cacheKey) || [];
@@ -423,7 +413,7 @@ export const createContentIdea = async (idea: ContentIdea, userId: string) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-    });
+    }, 1, token);
 
     const text = await response.text();
     let data: any = {};
@@ -894,33 +884,36 @@ export const generateContent = async (
   return generatedIdeas;
 };
 
-export const completeUserOnboarding = async (userId: string) => {
+export const completeUserOnboarding = async (userId: string, token: string) => {
   const WEBHOOK_URL = "https://n8n.bacelardigital.tech/webhook/complete-onboarding";
 
-  // 1. Try Webhook (Log warning on failure but don't stop)
+  // 1. Try Webhook
   try {
     await fetchWithRetry(WEBHOOK_URL, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userId, has_completed_onboarding: true })
-    });
+    }, 1, token);
   } catch (e) {
     console.warn("Webhook update failed, trying direct DB update", e);
   }
 
   // 2. Fallback: Update Supabase directly to ensure state is saved
-  try {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ has_completed_onboarding: true })
-      .eq('id', userId);
+  /* 
+   * Audit Note: Using direct Supabase client here because supabaseFetch 
+   * is better suited for REST endpoints, and we want to ensure the 
+   * client's session state is respected for RLS if applicable.
+   */
+  const { error } = await supabase
+    .from('profiles')
+    .update({ has_completed_onboarding: true })
+    .eq('id', userId);
 
-  } catch (e) {
-    console.error("Failed to update onboarding status in DB", e);
-  }
+  if (error) throw new Error(`Onboarding persistence failed: ${error.message}`);
 }
 
-export const createCheckoutSession = async (priceId: string, userId: string, email?: string) => {
+export const createCheckoutSession = async (priceId: string, userId: string, email?: string, token?: string) => {
+  if (!token) throw new Error("Token required for checkout");
   try {
     const response = await fetchWithRetry(CREATE_CHECKOUT_URL, {
       method: 'POST',
@@ -930,7 +923,7 @@ export const createCheckoutSession = async (priceId: string, userId: string, ema
         userId,
         email
       })
-    });
+    }, 1, token);
 
     if (!response.ok) {
       throw new Error(`Checkout failed: ${response.status}`);

@@ -42,12 +42,16 @@ export function useDashboardData() {
                 if (currentTeam) {
                     // Fetch Team Data
                     ideasData = await fetchUserIdeas(user.id, currentTeam.id, session?.access_token);
-                    personasList = await fetchPersonas(user.id, session?.access_token);
+                    personasList = await fetchPersonas(
+                        user.id,
+                        currentTeam.id, // PASS TEAM ID
+                        session?.access_token
+                    );
                 } else {
-                    // Fetch Personal Data
+                    // Fetch Personal Data (Legacy/Default)
                     [ideasData, personasList] = await Promise.all([
                         fetchUserIdeas(user.id, undefined, session?.access_token),
-                        fetchPersonas(user.id, session?.access_token)
+                        fetchPersonas(user.id, null, session?.access_token)
                     ]);
                 }
 

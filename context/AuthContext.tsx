@@ -80,14 +80,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, 5000);
 
     const initAuth = async () => {
-      const { data: { session: initialSession } } = await supabase.auth.getSession();
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
 
-      if (!mounted) return;
+        if (!mounted) return;
 
-      if (initialSession?.user) {
-        setSession(initialSession);
-        setUser(initialSession.user);
-        await fetchProfile(initialSession.user.id, initialSession.access_token);
+        if (initialSession?.user) {
+          setSession(initialSession);
+          setUser(initialSession.user);
+          await fetchProfile(initialSession.user.id, initialSession.access_token);
+        }
+      } catch (error) {
+        console.error("Auth init error:", error);
+      } finally {
+        if (mounted) setLoading(false);
       }
     };
 

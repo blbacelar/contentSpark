@@ -1,22 +1,39 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Environment - CRITICAL
+.env
+.env.test
+.env.local
 
+# Builds & Deps
 node_modules
 dist
 dist-ssr
 *.local
 
-# Environment files
-.env.test
-.env.local
+# Testing & Reports
+playwright-report/
+test-results/
+tests/test_output_*.txt
 
-# Editor directories and files
+# Debug & Temp Files
+debug-models.js
+models.txt
+models_output.json
+crud_debug.txt
+profile_dump.txt
+test_n8n_code.js
+LANGUAGE_DEBUG.md
+SUPABASE_FIX.md
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# User Data / Large Assets
+*.pdf
+Consolidated_ContentSpark.json
+ContentSpark.json
+
+# IDE
 .vscode/*
 !.vscode/extensions.json
 .idea
