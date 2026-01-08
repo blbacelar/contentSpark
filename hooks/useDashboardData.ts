@@ -44,7 +44,7 @@ export function useDashboardData() {
                     ideasData = await fetchUserIdeas(user.id, currentTeam.id, session?.access_token);
                     personasList = await fetchPersonas(
                         user.id,
-                        currentTeam.id, // PASS TEAM ID
+                        currentTeam?.id || null, // Safety check matches audit
                         session?.access_token
                     );
                 } else {
