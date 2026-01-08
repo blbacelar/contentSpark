@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTeam } from '../context/TeamContext';
@@ -39,24 +38,27 @@ export function useDashboardData() {
                 let ideasData: ContentIdea[] = [];
                 let personasList: PersonaData[] = [];
 
-                // Unified Data Fetching per Audit Requirement
-                // This ensures correct arguments (3 args) are passed regardless of team state
-                ideasData = await fetchUserIdeas(user.id, currentTeam?.id, session?.access_token);
+                // Unified Data Fetching
+                // Explicitly handling null teamId for Personal Mode
+                const targetTeamId = currentTeam?.id || null;
 
-                personasList = await fetchPersonas(
-                    user.id,
-                    currentTeam?.id || null,
-                    session?.access_token
-                );
+                const [resIdeas, resPersonas] = await Promise.all([
+                    fetchUserIdeas(user.id, targetTeamId, session?.access_token),
+                    fetchPersonas(
+                        user.id,
+                        targetTeamId,
+                        session?.access_token
+                    )
+                ]);
 
-                // Debug: Verify correct arguments are passed
-                // console.log("Dashboard Fetch:", { uid: user.id, team: currentTeam?.id, token: !!session?.access_token });
+                ideasData = resIdeas;
+                personasList = resPersonas;
 
                 setIdeas(ideasData);
                 setAllPersonas(personasList);
 
             } catch (err) {
-                console.error(err);
+                console.error("Error loading dashboard data", err);
             } finally {
                 // Always ensure loader is off
                 setIsFetching(false);

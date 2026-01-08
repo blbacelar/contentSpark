@@ -12,34 +12,16 @@ export const createTeam = async (name: string, userId: string, token?: string | 
     try {
         if (!token) throw new Error("Authentication required for createTeam");
 
-        // 1. Create the team
-        const teamData = await supabaseFetch('teams', {
+        // Atomic Team Creation via RPC
+        const team = await supabaseFetch('rpc/create_team_with_owner', {
             method: 'POST',
             body: JSON.stringify({
                 name,
-                owner_id: userId,
-                invitation_code: generateCode()
-            }),
-            headers: { 'Prefer': 'return=representation' } // Ask for returned data
-        }, token);
-
-        const team = teamData?.[0]; // Supabase returns array
-        if (!team) return null;
-
-        // 2. Add creator as owner
-        // Note: RLS should allow this if policy is setup correctly, or we rely on 'default' team logic
-        // But previously we manually inserted into team_members.
-        // Let's do that via REST.
-        await supabaseFetch('team_members', {
-            method: 'POST',
-            body: JSON.stringify({
-                team_id: team.id,
-                user_id: userId,
-                role: 'owner'
+                user_id: userId
             })
         }, token);
 
-        return team;
+        return team as Team;
     } catch (error) {
         console.error('Error creating team:', error);
         throw error;

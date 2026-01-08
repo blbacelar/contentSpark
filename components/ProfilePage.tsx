@@ -230,6 +230,11 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                 const teamPersonas = await fetchPersonas(user.id, currentTeam.id, token);
                 setPersonas(teamPersonas);
 
+                // Auto-select first persona if available to prevent "empty UI" confusion
+                if (teamPersonas.length > 0) {
+                    selectPersona(teamPersonas[0]);
+                }
+
             } catch (e) {
                 console.error("Error loading team data", e);
             } finally {

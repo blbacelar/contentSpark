@@ -1,12 +1,7 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+// GoogleGenerativeAI removed - using Edge Functions
 import { parseISO, isValid, format } from "date-fns";
-import { ContentIdea, FormData, Tone, PersonaData, BrandingSettings } from "../types";
+import { ContentIdea, FormData as AppFormData, Tone, PersonaData, BrandingSettings } from "../types";
 import { supabase } from "../services/supabase";
-
-// Initialize Gemini Client
-// Initialize Gemini Client
-const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
-const ai = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 // Update Webhook URL
 const UPDATE_WEBHOOK_URL = import.meta.env.VITE_UPDATE_WEBHOOK_URL;
@@ -40,53 +35,16 @@ const fileToGenerativePart = async (file: File): Promise<{ inlineData: { data: s
 };
 
 export const analyzeBrandKitPDF = async (file: File): Promise<BrandingSettings> => {
-  if (!ai) throw new Error("AI not initialized");
-
-  const model = ai.getGenerativeModel({ model: "gemini-2.0-flash-001" });
-  const filePart = await fileToGenerativePart(file);
-
-  const prompt = `
-    Analyze this Brand Kit PDF. 
-    Extract the following information into a strictly valid JSON format:
-    1. "colors": An array of hex color codes (e.g., ["#FFFFFF", "#000000"]). Extract at least the primary and secondary colors.
-    2. "fonts": An object mapping roles to font family names. CRITICAL: Identify at least one font.
-       - Roles: "title", "subtitle", "heading", "body", "quote".
-       - If only one font is found, assign it to "title" AND "body".
-    3. "style": A short descriptive string summarising the visual style (e.g., "Minimalist and clean", "Bold and energetic").
-
-    Return ONLY the JSON. No markdown formatting.
-    Example structure:
-    {
-      "colors": ["#FF0000", "#00FF00"],
-      "fonts": { "title": "Roboto", "heading": "Roboto", "body": "Open Sans" },
-      "style": "Modern"
-    }
-  `;
-
   try {
-    const result = await model.generateContent([prompt, filePart]);
-    const response = await result.response;
-    const text = response.text();
+    const formData = new FormData();
+    formData.append('file', file);
 
-    // Clean markdown if present
-    const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    const data = JSON.parse(jsonStr);
+    const { data, error } = await supabase.functions.invoke('analyze-brand-kit', {
+      body: formData,
+    });
 
-    const fonts = data.fonts || {};
-    // Fallback: If 'title' is missing but we have other fonts, use the first available one
-    if (!fonts['title'] && Object.keys(fonts).length > 0) {
-      fonts['title'] = Object.values(fonts)[0] as string;
-    }
-    // Ensure 'body' has a fallback properly too
-    if (!fonts['body'] && fonts['title']) {
-      fonts['body'] = fonts['title'];
-    }
-
-    return {
-      colors: Array.isArray(data.colors) ? data.colors : [],
-      fonts: fonts,
-      style: data.style || "Professional"
-    };
+    if (error) throw error;
+    return data;
   } catch (error) {
     console.error("PDF Analysis failed:", error);
     // @ts-ignore
@@ -245,29 +203,26 @@ export const fetchUserIdeas = async (userId: string, teamId?: string, token?: st
       // CSV showed column is 'platform_suggestion'.
       // Platform normalization logic
       let platforms: string[] = ["General"];
-
       const rawPlatform = idea.platform_suggestion || idea.platform;
 
       if (Array.isArray(rawPlatform)) {
         platforms = rawPlatform;
       } else if (typeof rawPlatform === 'string') {
-        // Try parsing if it looks like JSON array
-        if (rawPlatform.trim().startsWith('[') && rawPlatform.trim().endsWith(']')) {
-          try {
-            const parsed = JSON.parse(rawPlatform);
+        const trimmed = rawPlatform.trim();
+        // Robust JSON parsing
+        try {
+          // Attempt JSON parse first for things that look like arrays
+          if (trimmed.startsWith('[') || trimmed.includes('"')) {
+            const parsed = JSON.parse(trimmed);
             if (Array.isArray(parsed)) platforms = parsed;
-            else platforms = [rawPlatform];
-          } catch (e) {
-            platforms = [rawPlatform];
-          }
-        } else {
-          // Comma separated? or just single value
-          // If it contains comma but not brackets, maybe CSV?
-          if (rawPlatform.includes(',') && !rawPlatform.includes('[')) {
-            platforms = rawPlatform.split(',').map((s: string) => s.trim());
+            else platforms = [trimmed];
           } else {
-            platforms = [rawPlatform];
+            // Fallback to comma-separated
+            platforms = trimmed.includes(',') ? trimmed.split(',').map(s => s.trim()) : [trimmed];
           }
+        } catch (e) {
+          // Final fallback: treat as single string or comma split
+          platforms = trimmed.includes(',') ? trimmed.split(',').map(s => s.trim()) : [trimmed];
         }
       }
 
@@ -277,15 +232,14 @@ export const fetchUserIdeas = async (userId: string, teamId?: string, token?: st
 
       if (idea.scheduled_at) {
         try {
-          // scheduled_at is ISO string e.g. 2025-12-10T02:00:00+00
-          // STRATEGY: Treat time as Floating/Local by stripping timezone info.
-          // This ensures that if DB says "22:00:00...", we show "22:00" (10pm), not converted to 3pm.
-          const rawIso = idea.scheduled_at;
-          // Take only the YYYY-MM-DDTHH:mm:ss part (first 19 chars), ignoring Z, +00, -07, etc.
-          const floatingIso = rawIso.substring(0, 19);
-
-          date = format(parseISO(floatingIso), 'yyyy-MM-dd');
-          time = format(parseISO(floatingIso), 'HH:mm');
+          // Robust Date Parsing
+          const dateObj = new Date(idea.scheduled_at);
+          if (!isNaN(dateObj.getTime())) {
+            date = format(dateObj, 'yyyy-MM-dd');
+            time = format(dateObj, 'HH:mm');
+          } else {
+            console.warn("Invalid Date found:", idea.scheduled_at);
+          }
         } catch (e) {
           console.warn("Failed to parse scheduled_at", idea.scheduled_at);
         }
@@ -507,7 +461,6 @@ export const fetchPersonas = async (userId: string, teamId: string | null = null
 
   try {
     if (!token) {
-      console.warn("fetchPersonas called without token");
       return [];
     }
 
@@ -672,7 +625,7 @@ export const updateUserPersona = async (persona: PersonaData, token?: string) =>
 };
 
 export const generateContent = async (
-  formData: FormData,
+  formData: AppFormData,
   webhookUrl?: string,
   userId?: string,
   persona?: PersonaData | null,
@@ -767,8 +720,11 @@ export const generateContent = async (
       throw error;
     }
   } else {
-    // Gemini API Implementation
+    // Supabase Edge Function Implementation
     try {
+      // Prompt Construction (Kept in Client for now to reuse logic)
+
+
       let personaContext = "";
       if (persona) {
         const painsStr = (persona.pains_list || []).filter(s => s && s.trim()).map(s => `- ${s}`).join('\n') || persona.pain_points || "N/A";
@@ -824,36 +780,21 @@ export const generateContent = async (
         7. A list of suitable Social Media Platforms
         `;
 
-      if (!ai) {
-        throw new Error("Gemini API configuration is missing. Please check your environment variables.");
-      }
-
-      const model = ai.getGenerativeModel({
-        model: "gemini-1.5-flash",
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: SchemaType.ARRAY,
-            items: {
-              type: SchemaType.OBJECT,
-              properties: {
-                title: { type: SchemaType.STRING },
-                description: { type: SchemaType.STRING },
-                hook: { type: SchemaType.STRING },
-                caption: { type: SchemaType.STRING },
-                cta: { type: SchemaType.STRING },
-                hashtags: { type: SchemaType.STRING },
-                canva_prompt: { type: SchemaType.STRING },
-                platform: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-              },
-              required: ["title", "description", "hook", "caption", "cta", "hashtags", "canva_prompt", "platform"],
-            },
-          },
+      // Supabase Edge Function Call
+      const { data: edgeData, error: edgeError } = await supabase.functions.invoke('generate-content', {
+        body: {
+          prompt,
+          // We pass context vars too just in case the backend wants to log or use them later, 
+          // though currently it relies on the 'prompt' string.
+          language
         }
       });
 
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
+      if (edgeError) {
+        throw new Error(`Edge Function failed: ${edgeError.message}`);
+      }
+
+      const text = edgeData.text;
       if (!text) return [];
 
       const rawIdeas = JSON.parse(text) as Omit<ContentIdea, 'id' | 'date' | 'status'>[];
