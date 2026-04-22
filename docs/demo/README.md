@@ -45,13 +45,3 @@ Next, the walkthrough demonstrates the generated content backlog and the edit mo
 The walkthrough ends with a scheduled idea placed into the calendar, showing the planning workflow outcome.
 
 ![Scheduled idea in calendar](./screenshots/09-calendar-scheduled.png)
-
-## How The Assets Are Generated
-
-Run the dedicated demo spec to refresh the video and screenshots:
-
-```bash
-npx playwright test tests/portfolio-demo.spec.ts --reporter=line
-```
-
-The spec records a full product walkthrough and updates the ordered screenshots under [screenshots](./screenshots).
