@@ -21,13 +21,24 @@
     "jsx": "react-jsx",
     "paths": {
       "@/*": [
-        "./*"
+        "./src/*"
       ]
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
+  "include": [
+    "src/**/*",
+    "tests/**/*",
+    "index.tsx",
+    "MainApp.tsx",
+    "types.ts",
+    "vite.config.ts",
+    "playwright.config.ts"
+  ],
   "exclude": [
+    "dist",
+    "node_modules",
     "supabase/functions"
   ]
 }

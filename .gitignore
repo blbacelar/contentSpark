@@ -13,6 +13,7 @@ dist-ssr
 playwright-report/
 test-results/
 tests/test_output_*.txt
+tests/debug_*.png
 
 # Debug & Temp Files
 debug-models.js
@@ -20,7 +21,6 @@ models.txt
 models_output.json
 crud_debug.txt
 profile_dump.txt
-test_n8n_code.js
 LANGUAGE_DEBUG.md
 SUPABASE_FIX.md
 *.log

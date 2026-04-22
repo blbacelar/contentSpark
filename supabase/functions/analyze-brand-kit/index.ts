@@ -1,4 +1,7 @@
-import { GoogleGenerativeAI } from "@google/generative-ai"
+/// <reference path="../deno-shim.d.ts" />
+
+// @ts-ignore -- Resolved by Supabase Edge Function Deno import map in supabase/functions/deno.json
+import { getDocument } from "pdfjs-dist"
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -18,20 +21,36 @@ Deno.serve(async (req: Request) => {
             throw new Error('No file provided')
         }
 
-        const apiKey = Deno.env.get('GOOGLE_API_KEY')
-        if (!apiKey) {
-            throw new Error('GOOGLE_API_KEY not set')
+        const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY')
+        const openRouterModel = Deno.env.get('OPENROUTER_MODEL') ?? 'openai/gpt-4o-mini'
+        if (!openRouterApiKey) {
+            throw new Error('OPENROUTER_API_KEY must be set')
         }
 
-        const genAI = new GoogleGenerativeAI(apiKey)
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-001" })
-
-        // Convert file to base64
         const arrayBuffer = await file.arrayBuffer()
-        const base64 = btoa(new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ''))
+        const pdf = await getDocument({ data: new Uint8Array(arrayBuffer) }).promise
+
+        const pages: string[] = []
+        for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+            const page = await pdf.getPage(pageNumber)
+            const textContent = await page.getTextContent()
+            const pageText = textContent.items
+                .map((item: any) => item.str ?? '')
+                .join(' ')
+                .trim()
+
+            if (pageText) {
+                pages.push(pageText)
+            }
+        }
+
+        const extractedText = pages.join('\n\n').trim()
+        if (!extractedText) {
+            throw new Error('Could not extract text from the PDF')
+        }
 
         const prompt = `
-    Analyze this Brand Kit PDF. 
+    Analyze the following extracted Brand Kit PDF text.
     Extract the following information into a strictly valid JSON format:
     1. "colors": An array of hex color codes (e.g., ["#FFFFFF", "#000000"]). Extract at least the primary and secondary colors.
     2. "fonts": An object mapping roles to font family names. CRITICAL: Identify at least one font.
@@ -46,20 +65,44 @@ Deno.serve(async (req: Request) => {
       "fonts": { "title": "Roboto", "heading": "Roboto", "body": "Open Sans" },
       "style": "Modern"
     }
+
+    PDF text:
+    ${extractedText}
   `
 
-        const result = await model.generateContent([
-            prompt,
-            {
-                inlineData: {
-                    data: base64,
-                    mimeType: file.type || 'application/pdf',
-                },
+        const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${openRouterApiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://contentspark.local',
+                'X-Title': 'ContentSpark'
             },
-        ])
+            body: JSON.stringify({
+                model: openRouterModel,
+                temperature: 0.2,
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'You extract structured brand-kit information and return strictly valid raw JSON only.'
+                    },
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ]
+            })
+        })
 
-        const response = await result.response
-        const text = response.text()
+        const openRouterPayload = await openRouterResponse.json()
+        if (!openRouterResponse.ok) {
+            throw new Error(openRouterPayload?.error?.message ?? 'OpenRouter request failed')
+        }
+
+        const text = openRouterPayload?.choices?.[0]?.message?.content
+        if (!text) {
+            throw new Error('OpenRouter returned an empty response')
+        }
 
         // Clean markdown if present
         const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim()

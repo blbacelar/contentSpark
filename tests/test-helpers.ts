@@ -9,13 +9,20 @@ const serviceRoleKey = process.env.TEST_SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 const adminClient = serviceRoleKey ? createClient(supabaseUrl, serviceRoleKey) : null;
 
+function getCleanupClient(): SupabaseClient {
+    // Prefer service-role for teardown tasks to bypass user RLS and avoid policy recursion noise.
+    return adminClient ?? supabase;
+}
+
 /**
  * Delete all content ideas created by a specific user
  */
 export async function deleteTestIdeas(userId: string): Promise<void> {
     console.log(`[Cleanup] Deleting ideas for user: ${userId}`);
 
-    const { error } = await supabase
+    const cleanupClient = getCleanupClient();
+
+    const { error } = await cleanupClient
         .from('content_ideas')
         .delete()
         .eq('user_id', userId);
@@ -33,8 +40,10 @@ export async function deleteTestIdeas(userId: string): Promise<void> {
 export async function deleteTestTeams(userId: string): Promise<void> {
     console.log(`[Cleanup] Deleting teams for user: ${userId}`);
 
+    const cleanupClient = getCleanupClient();
+
     // First get team IDs owned by user
-    const { data: teams } = await supabase
+    const { data: teams } = await cleanupClient
         .from('teams')
         .select('id')
         .eq('owner_id', userId);
@@ -43,7 +52,7 @@ export async function deleteTestTeams(userId: string): Promise<void> {
         const teamIds = teams.map(t => t.id);
 
         // Delete team memberships
-        const { error: memberError } = await supabase
+        const { error: memberError } = await cleanupClient
             .from('team_members')
             .delete()
             .in('team_id', teamIds);
@@ -53,7 +62,7 @@ export async function deleteTestTeams(userId: string): Promise<void> {
         }
 
         // Delete teams
-        const { error: teamError } = await supabase
+        const { error: teamError } = await cleanupClient
             .from('teams')
             .delete()
             .eq('owner_id', userId);
@@ -72,7 +81,9 @@ export async function deleteTestTeams(userId: string): Promise<void> {
 export async function deleteTestPersonas(userId: string): Promise<void> {
     console.log(`[Cleanup] Deleting personas for user: ${userId}`);
 
-    const { error } = await supabase
+    const cleanupClient = getCleanupClient();
+
+    const { error } = await cleanupClient
         .from('personas')
         .delete()
         .eq('user_id', userId);
@@ -90,7 +101,9 @@ export async function deleteTestPersonas(userId: string): Promise<void> {
 export async function deleteTestNotifications(userId: string): Promise<void> {
     console.log(`[Cleanup] Deleting notifications for user: ${userId}`);
 
-    const { error } = await supabase
+    const cleanupClient = getCleanupClient();
+
+    const { error } = await cleanupClient
         .from('notifications')
         .delete()
         .eq('user_id', userId);
@@ -156,7 +169,9 @@ export async function cleanupTestData(userId: string, includeAuthUser: boolean =
 export async function resetUserCredits(userId: string, credits: number = 10): Promise<void> {
     console.log(`[Cleanup] Resetting credits to ${credits} for user: ${userId}`);
 
-    const { error } = await supabase
+    const cleanupClient = getCleanupClient();
+
+    const { error } = await cleanupClient
         .from('profiles')
         .update({ credits })
         .eq('id', userId);

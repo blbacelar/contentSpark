@@ -11,4 +11,15 @@ declare global {
     };
 }
 
+declare module "pdfjs-dist" {
+    export function getDocument(args: any): {
+        promise: Promise<{
+            numPages: number;
+            getPage(pageNumber: number): Promise<{
+                getTextContent(): Promise<{ items: Array<{ str?: string }> }>;
+            }>;
+        }>;
+    };
+}
+
 export { };

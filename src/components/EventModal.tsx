@@ -1,0 +1,580 @@
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { X, Trash2, Calendar as CalendarIcon, Save, Monitor, Activity, Copy, Check, Clock, AlertCircle, Quote, MessageSquare, Hash, Target, Plus, FileText } from 'lucide-react';
+import { BrandingSettings, ContentIdea, IdeaStatus, STATUS_COLORS, SOCIAL_PLATFORMS, UserProfile } from '../types';
+import { useTeam } from '../context/TeamContext';
+import { supabase } from '../services/supabase';
+import { fetchTeamBranding } from '../services/genai';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Label } from './ui/label';
+import { Badge } from './ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from './ui/dialog';
+import { cn } from '../utils';
+
+interface EventModalProps {
+  isOpen: boolean;
+  idea: ContentIdea | null;
+  onClose: () => void;
+  onSave: (updatedIdea: ContentIdea) => Promise<void>;
+  onDelete: (id: string) => void;
+  isNew?: boolean;
+  triggerToast: (message: string, isError?: boolean) => void;
+  profile?: UserProfile | null;
+}
+
+// Helper Component for Header with Copy
+const FieldHeader = ({ label, icon: Icon, text }: { label: string, icon: any, text?: string }) => {
+  const { t } = useTranslation();
+  const [copied, setCopied] = React.useState(false);
+
+  const handleCopy = async () => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between">
+      <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+        <Icon size={12} /> {label}
+      </Label>
+      {text && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 hover:text-[#1A1A1A] h-6 px-2 py-1 rounded-md transition-all"
+          title={t('common.copy_clipboard')}
+        >
+          {copied ? <Check size={10} className="text-green-600" /> : <Copy size={10} />}
+          {copied ? <span className="text-green-600">{t('common.copied')}</span> : <span>{t('common.copy')}</span>}
+        </Button>
+      )}
+    </div>
+  );
+};
+
+const buildCanvaPrompt = (data: ContentIdea, branding: BrandingSettings): string => {
+  const { colors, fonts, style } = branding;
+
+  // Assign explicit brand color roles so generation stays consistent.
+  const [primaryColor, secondaryColor, accentColor] = [
+    colors?.[0] || '#000000',
+    colors?.[1] || '#ffffff',
+    colors?.[2] || colors?.[0] || '#cccccc',
+  ];
+
+  const styleDirectives: Record<string, string> = {
+    vibrant: 'high-contrast, bold shapes, energetic layout with dynamic diagonal accents and saturated color blocks',
+    minimalist: 'clean whitespace, single focal point, thin lines, restrained color use, generous padding',
+    corporate: 'structured grid, formal alignment, muted tones, professional hierarchy',
+    playful: 'rounded shapes, overlapping elements, bright pops of color, informal typography angles',
+  };
+
+  const normalizedStyle = (style || '').toLowerCase();
+  const visualDirective = styleDirectives[normalizedStyle]
+    || `${style || 'brand-aligned'} aesthetic with purposeful use of brand colors and clear visual hierarchy`;
+
+  return `
+Design a social media graphic (1080x1080px) with the following exact specifications:
+
+**VISUAL STYLE:**
+${visualDirective}. The design must feel intentional and on-brand - avoid generic stock-image aesthetics.
+
+**COLOR SYSTEM:**
+- Background: ${primaryColor}
+- Headline text: ${secondaryColor} (high contrast against background)
+- Accent elements (borders, icons, highlights, CTA): ${accentColor}
+- Do NOT introduce any colors outside this palette.
+
+**TYPOGRAPHY:**
+- Headline: "${data.title || ''}"
+  - Font: ${fonts?.title || 'Source Sans Pro'}, Bold or ExtraBold weight
+  - Size: dominant - largest element on canvas, center-aligned or left-anchored
+  - Color: ${secondaryColor}
+- Body text: "${data.caption || ''}"
+  - Font: ${fonts?.body || 'Roboto'}, Regular weight
+  - Size: secondary - readable but clearly subordinate to headline
+  - Color: ${secondaryColor} at 80% opacity or a softer tint
+
+**LAYOUT & COMPOSITION:**
+- Visual hierarchy: Headline -> Body -> Accent elements (top-to-bottom reading flow)
+- Leave breathing room: minimum 48px padding on all edges
+- Use a geometric accent shape (stripe, rectangle, or corner bracket) in ${accentColor} to frame or anchor the headline
+- No clipart, no generic icons unless emojis from the body text are used as graphic elements
+
+**DO NOT:**
+- Add placeholder lorem ipsum text
+- Invent colors outside the brand palette
+- Use drop shadows unless the style is playful or vibrant
+`.trim();
+};
+
+const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, onDelete, isNew = false, triggerToast, profile }) => {
+  const { t } = useTranslation();
+  const { currentTeam } = useTeam();
+  const [formData, setFormData] = React.useState<ContentIdea | null>(null);
+  const [showCopyFeedback, setShowCopyFeedback] = React.useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [effectiveBranding, setEffectiveBranding] = React.useState<BrandingSettings | null>(profile?.branding || null);
+  const [brandingSource, setBrandingSource] = React.useState<'team' | 'profile' | 'none'>(profile?.branding ? 'profile' : 'none');
+
+  React.useEffect(() => {
+    setFormData(idea);
+    setShowCopyFeedback(false);
+    setShowDeleteConfirm(false);
+    setError(null);
+  }, [idea, isOpen]);
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const loadBranding = async () => {
+      if (!isOpen) return;
+
+      if (currentTeam?.id) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const token = session?.access_token;
+
+          if (token) {
+            const teamBranding = await fetchTeamBranding(currentTeam.id, token);
+            if (isMounted) {
+              if (teamBranding) {
+                setEffectiveBranding(teamBranding);
+                setBrandingSource('team');
+              } else if (profile?.branding) {
+                setEffectiveBranding(profile.branding);
+                setBrandingSource('profile');
+              } else {
+                setEffectiveBranding(null);
+                setBrandingSource('none');
+              }
+            }
+            return;
+          }
+        } catch (brandingErr) {
+          console.warn('Failed to load team branding in EventModal. Falling back to profile branding.', brandingErr);
+        }
+      }
+
+      if (isMounted) {
+        if (profile?.branding) {
+          setEffectiveBranding(profile.branding);
+          setBrandingSource('profile');
+        } else {
+          setEffectiveBranding(null);
+          setBrandingSource('none');
+        }
+      }
+    };
+
+    loadBranding();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentTeam?.id, isOpen, profile?.branding]);
+
+
+
+  const handleChange = (field: keyof ContentIdea, value: any) => {
+    setFormData(prev => prev ? ({ ...prev, [field]: value }) : null);
+    setError(null);
+  };
+
+  const togglePlatform = (platform: string) => {
+    setFormData(prev => {
+      if (!prev) return null;
+      const currentPlatforms = prev.platform;
+      if (currentPlatforms.includes(platform)) {
+        return { ...prev, platform: currentPlatforms.filter(p => p !== platform) };
+      } else {
+        return { ...prev, platform: [...currentPlatforms, platform] };
+      }
+    });
+  };
+
+  const getMinDate = () => {
+    if (!isNew) return undefined;
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const handleSave = async () => {
+    if (formData) {
+      if (!formData.title.trim()) {
+        setError(t('modal.title_required'));
+        return;
+      }
+
+      if (isNew && formData.date) {
+        const minDate = getMinDate();
+        if (minDate && formData.date < minDate) {
+          setError(t('modal.date_past_error'));
+          return;
+        }
+      }
+
+      await onSave(formData);
+      onClose();
+    }
+  };
+
+  const handleCopyContent = async () => {
+    if (formData) {
+      const content = formData.caption || formData.description;
+      const textToCopy = `${formData.title}\n\n${content}\n\n${formData.hashtags || ''}`;
+
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        setShowCopyFeedback(true);
+        setTimeout(() => {
+          setShowCopyFeedback(false);
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy text: ', err);
+      }
+    }
+  };
+
+  const statusOptions = Object.keys(STATUS_COLORS).map(status => ({
+    value: status,
+    label: t(`status.${status}`)
+  }));
+
+  /* 
+   * FIX: Move hook calculations BEFORE any conditional returns. 
+   * Previously, `if (!isOpen || !formData) return null;` was here, causing hook count mismatch.
+   */
+  const canvaPrompt = React.useMemo(() => {
+    if (idea?.canva_prompt) return idea.canva_prompt;
+
+    const currentData = formData || idea;
+    if (!currentData || !effectiveBranding) return '';
+
+    return buildCanvaPrompt(currentData, effectiveBranding);
+  }, [idea, formData, effectiveBranding]);
+
+  /* NOW it is safe to return conditionally */
+  if (!isOpen || !formData) return null;
+
+  /* Note: Removed the previous return prompt logic that was broken by regex replace */
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(val) => !val && onClose()}>
+      <DialogContent className="max-w-5xl h-[90vh] p-0 gap-0 overflow-hidden rounded-[24px]">
+
+        {/* Header */}
+        <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white rounded-lg shadow-sm border border-gray-100">
+              <Activity size={18} className="text-[#1A1A1A]" />
+            </div>
+            <DialogTitle className="text-lg font-bold text-[#1A1A1A]">{isNew ? t('modal.create_title') : t('modal.edit_title')}</DialogTitle>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="p-8 space-y-8 overflow-y-auto custom-scrollbar flex-1 bg-white">
+
+          {/* Top Row: Title & Date - Uses 5 columns now */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+            <div className="md:col-span-3 space-y-2">
+              <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('modal.title_label')}</Label>
+              <Textarea
+                value={formData.title}
+                onChange={(e) => handleChange('title', e.target.value)}
+                rows={2}
+                className="w-full text-lg font-bold text-[#1A1A1A] placeholder:text-gray-300 border-none border-b border-gray-200 rounded-none shadow-none focus-visible:ring-0 focus-visible:border-[#FFDA47] bg-transparent pb-2 transition-colors resize-none leading-snug px-0"
+                placeholder={t('modal.title_placeholder')}
+              />
+            </div>
+            <div className="md:col-span-2 space-y-2">
+              <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('modal.scheduled_for')}</Label>
+              <div className="flex gap-3">
+                <div className="relative flex-1">
+                  <Input
+                    type="date"
+                    value={formData.date || ''}
+                    min={getMinDate()}
+                    onChange={(e) => handleChange('date', e.target.value || null)}
+                    className="w-full bg-gray-50 border-gray-200 rounded-xl pl-9 pr-2 py-2.5 h-11 text-sm font-medium focus-visible:border-[#FFDA47] focus-visible:ring-0"
+                  />
+                  <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                </div>
+                <div className="relative flex-1">
+                  <Input
+                    type="time"
+                    value={formData.time || ''}
+                    onChange={(e) => handleChange('time', e.target.value || null)}
+                    className="w-full bg-gray-50 border-gray-200 rounded-xl pl-9 pr-2 py-2.5 h-11 text-sm font-medium focus-visible:border-[#FFDA47] focus-visible:ring-0"
+                  />
+                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Middle Section: The Content */}
+          <div className="space-y-6">
+
+            {/* Description (Separated) */}
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                <FileText size={12} /> {t('modal.description_label')}
+              </Label>
+              <Textarea
+                value={formData.description || ''}
+                onChange={(e) => handleChange('description', e.target.value)}
+                rows={3}
+                className="w-full text-sm text-gray-700 leading-relaxed placeholder:text-gray-300 border-gray-200 rounded-xl p-4 focus-visible:ring-[#FFDA47] resize-none bg-white min-h-[80px]"
+                placeholder={t('modal.description_placeholder')}
+              />
+            </div>
+
+            {/* Hook */}
+            <div className="space-y-2">
+              <FieldHeader label={t('modal.hook_label')} icon={Quote} text={formData.hook} />
+              <Input
+                type="text"
+                value={formData.hook || ''}
+                onChange={(e) => handleChange('hook', e.target.value)}
+                placeholder={t('modal.hook_placeholder')}
+                className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 h-11 text-sm font-medium text-[#1A1A1A] focus-visible:ring-[#FFDA47]"
+              />
+            </div>
+
+            {/* Caption */}
+            <div className="space-y-2">
+              <FieldHeader label={t('modal.caption_label')} icon={MessageSquare} text={formData.caption} />
+              <Textarea
+                value={formData.caption || ''}
+                onChange={(e) => handleChange('caption', e.target.value)}
+                rows={8}
+                className="w-full text-sm text-gray-700 leading-relaxed placeholder:text-gray-300 border-gray-200 rounded-xl p-4 focus-visible:ring-[#FFDA47] resize-none bg-white min-h-[200px]"
+                placeholder={t('modal.caption_placeholder')}
+              />
+            </div>
+
+            {/* CTA */}
+            <div className="space-y-2">
+              <FieldHeader label={t('modal.cta_label')} icon={Target} text={formData.cta} />
+              <Input
+                type="text"
+                value={formData.cta || ''}
+                onChange={(e) => handleChange('cta', e.target.value)}
+                placeholder={t('modal.cta_placeholder')}
+                className="w-full bg-gray-50 border-transparent rounded-xl px-4 py-3 h-11 text-sm font-medium text-[#1A1A1A] focus:bg-white focus-visible:border-[#FFDA47] focus-visible:ring-0"
+              />
+            </div>
+          </div>
+
+          {/* Bottom Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
+
+            {/* Hashtags */}
+            <div className="space-y-2 md:col-span-2">
+              <FieldHeader label={t('modal.hashtags_label')} icon={Hash} text={formData.hashtags} />
+              <Input
+                type="text"
+                value={formData.hashtags || ''}
+                onChange={(e) => handleChange('hashtags', e.target.value)}
+                placeholder={t('modal.hashtags_placeholder')}
+                className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 h-11 text-sm text-blue-600 font-medium focus-visible:ring-[#FFDA47]"
+              />
+            </div>
+
+            {/* Status */}
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('modal.status_label')}</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(val) => handleChange('status', val as IdeaStatus)}
+              >
+                <SelectTrigger className={cn("border text-sm font-bold rounded-xl h-11 px-3", STATUS_COLORS[formData.status])}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Platforms */}
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                <Monitor size={14} /> {t('modal.platforms_label')}
+              </Label>
+              <div className="flex flex-wrap gap-2">
+                {SOCIAL_PLATFORMS.map(p => (
+                  <Badge
+                    key={p}
+                    onClick={() => togglePlatform(p)}
+                    variant={formData.platform.includes(p) ? 'default' : 'outline'}
+                    className={cn(
+                      "cursor-pointer px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:opacity-80",
+                      !formData.platform.includes(p) && "text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700"
+                    )}
+                  >
+                    {p}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Canva Prompt Section */}
+          {effectiveBranding && (
+            <div className="pt-6 border-t border-gray-100 mt-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs font-bold text-indigo-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <Monitor size={12} /> {t('modal.canva_prompt_label')}
+                  </Label>
+                  <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                    Source: {brandingSource === 'team' ? 'Team Brand Kit' : 'Profile Brand Kit'}
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(canvaPrompt);
+                    triggerToast("Prompt copied to clipboard!");
+                  }}
+                  className="h-6 px-2 text-[10px] bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 font-bold rounded-lg"
+                >
+                  <Copy size={10} className="mr-1" /> Copy Prompt
+                </Button>
+              </div>
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                <p className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed select-text font-medium">
+                  {canvaPrompt || "Add branding details in your profile to generate a prompt."}
+                </p>
+              </div>
+            </div>
+          )}
+
+        </div>
+
+        {/* Footer */}
+        <div className="p-5 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center min-h-[80px]">
+          {showDeleteConfirm ? (
+            <div className="flex items-center justify-between w-full animate-fade-in bg-red-50 p-2 rounded-xl border border-red-100">
+              <div className="flex items-center gap-2 px-2">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+                <span className="text-xs font-bold text-red-700">{t('common.delete_confirm_msg')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="text-gray-500 hover:text-gray-700 px-3 h-8 text-xs font-bold"
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => { onDelete(formData.id); onClose(); }}
+                  className="px-4 h-8 rounded-lg text-xs font-bold shadow-sm"
+                >
+                  {t('common.confirm_delete')}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {!isNew && (
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="text-red-500 text-sm font-bold hover:bg-red-50 hover:text-red-600 px-4 h-10 rounded-xl flex items-center gap-2"
+                >
+                  <Trash2 size={16} /> {t('common.delete')}
+                </Button>
+              )}
+
+              {error ? (
+                <div className="flex-1 px-4 text-center">
+                  <span className="text-red-500 text-xs font-bold flex items-center justify-center gap-1">
+                    <AlertCircle size={14} /> {error}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex-1"></div>
+              )}
+
+              <div className="flex items-center gap-3">
+                {!isNew && (
+                  <>
+                    {showCopyFeedback && (
+                      <span className="text-xs font-bold text-green-600 animate-fade-in flex items-center gap-1">
+                        <Check size={14} /> {t('common.copied')}
+                      </span>
+                    )}
+                    <Button
+                      variant="outline"
+                      onClick={handleCopyContent}
+                      disabled={showCopyFeedback}
+                      className="text-gray-600 text-sm font-bold hover:bg-gray-100 px-4 h-10 rounded-xl flex items-center gap-2"
+                    >
+                      <Copy size={16} /> {t('common.copy_full')}
+                    </Button>
+                  </>
+                )}
+
+                <Button
+                  onClick={async () => {
+                    try {
+                      setIsSaving(true);
+                      await handleSave();
+                    } catch (e) {
+                      console.error("Save failed in onClick", e);
+                    } finally {
+                      setIsSaving(false);
+                    }
+                  }}
+                  disabled={isSaving}
+                  data-testid="event-modal-save-btn"
+                  className="bg-[#FFDA47] text-[#1A1A1A] hover:bg-[#FFC040] px-6 h-10 rounded-xl text-sm font-bold shadow-sm flex items-center gap-2"
+                >
+                  {isSaving ? (
+                    <>Saving...</>
+                  ) : isNew ? (
+                    <>
+                      <Plus size={16} /> {t('common.add_calendar')}
+                    </>
+                  ) : (
+                    <>
+                      <Save size={16} /> {t('common.save')}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog >
+  );
+};
+
+export default EventModal;

@@ -1,5 +1,5 @@
 {
     "imports": {
-        "@google/generative-ai": "npm:@google/generative-ai@^0.1.3"
+        "pdfjs-dist": "npm:pdfjs-dist@^4.10.38/legacy/build/pdf.mjs"
     }
 }
