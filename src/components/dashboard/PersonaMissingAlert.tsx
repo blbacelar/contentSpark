@@ -7,9 +7,10 @@ interface PersonaMissingAlertProps {
     onClose: () => void;
     onGoToProfile: () => void;
     onContinue: () => void;
+    canContinue?: boolean;
 }
 
-export function PersonaMissingAlert({ onClose, onGoToProfile, onContinue }: PersonaMissingAlertProps) {
+export function PersonaMissingAlert({ onClose, onGoToProfile, onContinue, canContinue = true }: PersonaMissingAlertProps) {
     const { t } = useTranslation();
 
     return (
@@ -35,12 +36,14 @@ export function PersonaMissingAlert({ onClose, onGoToProfile, onContinue }: Pers
                         >
                             {t('alert.setup_profile')}
                         </button>
-                        <button
-                            onClick={onContinue}
-                            className="w-full bg-white text-gray-500 py-3 rounded-xl font-bold text-sm hover:bg-gray-50 hover:text-gray-800 transition-all flex items-center justify-center gap-1"
-                        >
-                            {t('alert.continue_anyway')} <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
+                        {canContinue && (
+                            <button
+                                onClick={onContinue}
+                                className="w-full bg-white text-gray-500 py-3 rounded-xl font-bold text-sm hover:bg-gray-50 hover:text-gray-800 transition-all flex items-center justify-center gap-1"
+                            >
+                                {t('alert.continue_anyway')} <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

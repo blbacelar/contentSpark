@@ -12,8 +12,9 @@ dotenv.config();
 // Load test-specific environment variables
 dotenv.config({ path: path.resolve(__dirname, '.env.test') });
 
-const viteSupabaseUrl = process.env.VITE_SUPABASE_URL || process.env.TEST_SUPABASE_URL || '';
-const viteSupabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.TEST_SUPABASE_ANON_KEY || process.env.TEST_SUPABASE_KEY || '';
+// For E2E, always prefer TEST_* values to avoid accidentally targeting a different project.
+const viteSupabaseUrl = process.env.TEST_SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+const viteSupabaseAnonKey = process.env.TEST_SUPABASE_ANON_KEY || process.env.TEST_SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
 const isCI = !!process.env.CI;
 const headedMode = process.env.PW_HEADED === 'true';
 
@@ -22,14 +23,14 @@ const headedMode = process.env.PW_HEADED === 'true';
  */
 export default defineConfig({
     testDir: './tests',
-    /* Run tests in files in parallel */
-    fullyParallel: true,
+    /* This suite reuses authenticated accounts and shared DB state; keep execution deterministic. */
+    fullyParallel: false,
     /* Fail the build on CI if you accidentally left test.only in the source code. */
     forbidOnly: !!process.env.CI,
     /* Retry on CI only */
     retries: isCI ? 2 : 0,
-    /* Opt out of parallel tests on CI. */
-    workers: isCI ? 1 : undefined,
+    /* Shared test accounts and cleanup make parallel workers a source of flake. */
+    workers: 1,
     /* Reporter to use. See https://playwright.dev/docs/test-reporters */
     reporter: 'html',
     /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */

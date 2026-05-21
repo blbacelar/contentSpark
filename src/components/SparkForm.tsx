@@ -19,6 +19,7 @@ interface SparkFormProps {
 
 const SparkForm: React.FC<SparkFormProps> = ({ formData, setFormData, onSubmit, isLoading, credits, personas }) => {
   const { t } = useTranslation();
+  const selectablePersonas = personas.filter((persona): persona is PersonaData & { id: string } => Boolean(persona.id));
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -45,14 +46,14 @@ const SparkForm: React.FC<SparkFormProps> = ({ formData, setFormData, onSubmit, 
           <UserCheck className="w-3.5 h-3.5" /> {t('form.persona')}
         </Label>
         <Select
-          value={formData.persona_id || undefined}
+          value={formData.persona_id || ''}
           onValueChange={(val) => setFormData(prev => ({ ...prev, persona_id: val }))}
         >
           <SelectTrigger className="w-full bg-gray-50 border-transparent focus:bg-white rounded-xl h-12 text-base font-medium text-[#1A1A1A]">
             <SelectValue placeholder={t('common.select')} />
           </SelectTrigger>
           <SelectContent>
-            {personas.map(p => (
+            {selectablePersonas.map(p => (
               <SelectItem key={p.id} value={p.id}>{p.name || 'Untitled Persona'}</SelectItem>
             ))}
           </SelectContent>

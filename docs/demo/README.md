@@ -1,10 +1,13 @@
 # ContentSpark Demo Walkthrough
 
-This folder contains the portfolio demo assets for ContentSpark: a recorded product walkthrough and an ordered screenshot sequence covering the main user flow from public entry to scheduled content.
+This folder contains the portfolio demo assets for ContentSpark: a recorded product walkthrough and an ordered screenshot sequence covering the main flow from public entry through profile setup, brand context, persona creation, idea generation, and calendar scheduling.
 
 ## Demo Video
 
-- Recorded walkthrough: [contentspark-portfolio-demo.webm](./contentspark-portfolio-demo.webm)
+The recorded walkthrough covers the complete portfolio flow: profile creation, brand kit setup, persona creation, idea generation, and moving ideas into the calendar.
+
+- Watch or download the full demo video: [contentspark-portfolio-demo.webm](./contentspark-portfolio-demo.webm)
+- The video corresponds to the storyboard sequence documented below.
 
 ## Screenshot Storyboard
 
@@ -18,29 +21,33 @@ The demo starts on the marketing landing page before moving into the authenticat
 
 ### 2. Authenticated workspace
 
-After authentication, the walkthrough moves into the main dashboard and surfaces the in-app notifications experience.
+After authentication, the walkthrough moves into the main dashboard before the user starts configuring their workspace.
 
 ![Dashboard overview](./screenshots/03-dashboard-overview.png)
 
-![Notifications panel](./screenshots/04-notifications-panel.png)
+### 3. Profile and brand setup
 
-### 3. Strategy and planning setup
+The demo then creates the user profile details and adds a brand kit so later content generation has clear identity context.
 
-The flow then shows the strategy entry point and the profile area where persona and brand context are managed. In environments where the Strategy Engine CTA is unavailable during the recording run, the fallback screenshot keeps the storyboard complete.
+![Profile created](./screenshots/04-profile-created.png)
 
-![Strategy engine fallback](./screenshots/05-strategy-engine-fallback.png)
+![Brand kit configured](./screenshots/05-brand-kit.png)
 
-![Profile and brand kit](./screenshots/06-profile-brand-kit.png)
+### 4. Persona and strategy context
 
-### 4. Idea generation and editing
+Next, the walkthrough creates a persona strategy so generated ideas reflect a concrete audience.
 
-Next, the walkthrough demonstrates the generated content backlog and the edit modal used to refine a piece of content before scheduling.
+![Persona created](./screenshots/06-persona-created.png)
+
+### 5. Idea generation and editing
+
+With the profile, brand kit, and persona in place, the walkthrough generates ideas and opens the edit modal used to refine a piece of content before scheduling.
 
 ![Generated ideas](./screenshots/07-generated-ideas.png)
 
 ![Idea editor](./screenshots/08-idea-editor.png)
 
-### 5. Calendar scheduling outcome
+### 6. Calendar scheduling outcome
 
 The walkthrough ends with a scheduled idea placed into the calendar, showing the planning workflow outcome.
 

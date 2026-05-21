@@ -147,19 +147,23 @@ export function useIdeaManagement({
             return;
         }
 
-        const selectedPersona = allPersonas.find(p => p.id === formData.persona_id) || userPersona;
-
-        const isPersonaEmpty = !selectedPersona || (
-            !selectedPersona.occupation &&
-            !selectedPersona.pain_points &&
-            !selectedPersona.goals &&
-            !selectedPersona.age_range
-        );
-
-        if (isPersonaEmpty) {
+        if (allPersonas.length === 0) {
             setShowPersonaAlert(true);
             setIsFormOpen(false);
+            triggerToast(t('alert.missing_persona_title'), true);
             return;
+        }
+
+        const selectedPersona = allPersonas.find(p => p.id === formData.persona_id) || allPersonas[0] || userPersona;
+        if (!selectedPersona) {
+            setShowPersonaAlert(true);
+            setIsFormOpen(false);
+            triggerToast(t('alert.missing_persona_title'), true);
+            return;
+        }
+
+        if (!formData.persona_id && selectedPersona.id) {
+            setFormData(prev => ({ ...prev, persona_id: selectedPersona.id }));
         }
 
         performGeneration(selectedPersona);

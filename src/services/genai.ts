@@ -864,6 +864,8 @@ export const generateContent = async (
     const platform = normalizePlatforms(
       rawIdea.platform,
       rawIdea.Platform,
+      rawIdea.platforms,
+      rawIdea.Platforms,
       rawIdea.social_media_platforms,
       rawIdea['Social Media Platforms']
     );
@@ -905,16 +907,16 @@ export const generateContent = async (
 
   // Supabase Edge Function Implementation
   try {
-      // Prompt Construction (Kept in Client for now to reuse logic)
+    // Prompt Construction (Kept in Client for now to reuse logic)
 
 
-      let personaContext = "";
-      if (persona) {
-        const painsStr = (persona.pains_list || []).filter(s => s && s.trim()).map(s => `- ${s}`).join('\n') || persona.pain_points || "N/A";
-        const goalsStr = (persona.goals_list || []).filter(s => s && s.trim()).map(s => `- ${s}`).join('\n') || persona.goals || "N/A";
-        const questionsStr = (persona.questions_list || []).filter(s => s && s.trim()).map(s => `- ${s}`).join('\n') || "N/A";
+    let personaContext = "";
+    if (persona) {
+      const painsStr = (persona.pains_list || []).filter(s => s && s.trim()).map(s => `- ${s}`).join('\n') || persona.pain_points || "N/A";
+      const goalsStr = (persona.goals_list || []).filter(s => s && s.trim()).map(s => `- ${s}`).join('\n') || persona.goals || "N/A";
+      const questionsStr = (persona.questions_list || []).filter(s => s && s.trim()).map(s => `- ${s}`).join('\n') || "N/A";
 
-        personaContext = `
+      personaContext = `
             Target Persona Context:
             - Name: ${persona.name}
             - Description: ${persona.description || "N/A"}
@@ -931,98 +933,104 @@ export const generateContent = async (
             Burning Questions:
             ${questionsStr}
             `;
+    }
+
+    const safeTopic = (formData.topic || "").replace(/`/g, "'");
+    const safeAudience = (formData.audience || "").replace(/`/g, "'");
+    const safeTone = (formData.tone || "").replace(/`/g, "'");
+    const brandingStyle = branding?.style || 'N/A';
+    const brandingColors = Array.isArray(branding?.colors)
+      ? branding.colors.join(', ')
+      : 'N/A';
+
+    const prompt = `
+Generate 6 distinct content ideas for the context below.
+
+Output language: ${language.startsWith('pt') ? 'Brazilian Portuguese' : 'English'}
+
+Context:
+- Niche/Topic: ${safeTopic}
+- Target audience: ${safeAudience}
+- Tone of voice: ${safeTone}
+${personaContext}
+
+Branding:
+- Visual style: ${brandingStyle}
+- Palette: ${brandingColors}
+Use the style and palette to inform visual references inside the descriptions, not to literally describe colors in the captions.
+
+Per-field constraints:
+- title: up to 60 characters, no generic clickbait.
+- hook: 1 sentence, up to 15 words, grabs attention in the first seconds.
+- description: 1 to 2 sentences explaining the angle and why it works for this audience (internal use, does not go in the post).
+- caption: 80 to 220 words, short paragraphs, maximum 3 emojis, no hashtags inside the body.
+- cta: 1 sentence asking for a specific and measurable action (comment X, save, share with Y, reply in DMs).
+- hashtags: 8 to 12 hashtags separated by spaces, mixing high, medium, and niche volume.
+- platforms: subset of ["Instagram", "TikTok", "YouTube Shorts", "LinkedIn", "Threads", "X"]. Include only where the format and tone actually work.
+- format: one of the values in the schema.
+
+Ensure variety across the 6 ideas: format, emotional angle, and hook type must differ in each one.
+`;
+
+    // Supabase Edge Function Call
+    // Do not force a bearer token here because some environments issue tokens
+    // with algorithms rejected by the Edge gateway (e.g. ES256).
+    const invokeOptions: {
+      body: { prompt: string; language: string };
+    } = {
+      body: {
+        prompt,
+        // We pass context vars too just in case the backend wants to log or use them later,
+        // though currently it relies on the 'prompt' string.
+        language
       }
+    };
 
-      const safeTopic = (formData.topic || "").replace(/`/g, "'");
-      const safeAudience = (formData.audience || "").replace(/`/g, "'");
-      const safeTone = (formData.tone || "").replace(/`/g, "'");
-      const brandingStyle = branding?.style || 'N/A';
-      const brandingColors = Array.isArray(branding?.colors)
-        ? branding.colors.join(', ')
-        : 'N/A';
+    const { data: edgeData, error: edgeError } = await supabase.functions.invoke('generate-content', invokeOptions);
 
-      const prompt = `
-        Generate 6 unique, creative, and high-quality content ideas in ${language.startsWith('pt') ? 'Portuguese' : 'English'}.
-        
-        Context:
-        - Niche/Topic: ${safeTopic}
-        - Target Audience: ${safeAudience}
-        - Tone: ${safeTone}
-        ${personaContext}
+    if (edgeError) {
+      let detailedMessage = edgeError.message;
+      const responseContext = (edgeError as { context?: Response }).context;
 
-        Branding Context:
-        - Style: ${brandingStyle}
-        - Brand Colors: ${brandingColors}
-        
-        For each idea, provide:
-        1. A catchy Title
-        2. A Hook (The first sentence/attention grabber)
-        3. A short Description (Internal summary of the idea)
-        4. A full Caption (The actual post body text, engaging and formatted)
-        5. A Call to Action (CTA)
-        6. A set of relevant Hashtags (string format e.g. "#tag1 #tag2")
-        7. A list of suitable Social Media Platforms
-        `;
-
-      // Supabase Edge Function Call
-      // Do not force a bearer token here because some environments issue tokens
-      // with algorithms rejected by the Edge gateway (e.g. ES256).
-      const invokeOptions: {
-        body: { prompt: string; language: string };
-      } = {
-        body: {
-          prompt,
-          // We pass context vars too just in case the backend wants to log or use them later,
-          // though currently it relies on the 'prompt' string.
-          language
-        }
-      };
-
-      const { data: edgeData, error: edgeError } = await supabase.functions.invoke('generate-content', invokeOptions);
-
-      if (edgeError) {
-        let detailedMessage = edgeError.message;
-        const responseContext = (edgeError as { context?: Response }).context;
-
-        if (responseContext) {
-          try {
-            const responseBody = await responseContext.text();
-            if (responseBody) {
-              detailedMessage = `${detailedMessage} | ${responseBody}`;
-            }
-          } catch {
-            // Best-effort only: keep original message if response parsing fails.
+      if (responseContext) {
+        try {
+          const responseBody = await responseContext.text();
+          if (responseBody) {
+            detailedMessage = `${detailedMessage} | ${responseBody}`;
           }
+        } catch {
+          // Best-effort only: keep original message if response parsing fails.
         }
-
-        throw new Error(`Edge Function failed: ${detailedMessage}`);
       }
 
-      const text = edgeData?.text;
-      if (!text) {
-        const details = typeof edgeData === 'object' ? JSON.stringify(edgeData) : String(edgeData);
-        throw new Error(`Edge Function returned empty content. Payload: ${details}`);
-      }
+      throw new Error(`Edge Function failed: ${detailedMessage}`);
+    }
 
-      const rawIdeas = parseIdeasFromModelText(text);
-      if (!rawIdeas.length) {
-        throw new Error('AI returned zero ideas');
-      }
+    const text = edgeData?.text;
+    if (!text) {
+      const details = typeof edgeData === 'object' ? JSON.stringify(edgeData) : String(edgeData);
+      throw new Error(`Edge Function returned empty content. Payload: ${details}`);
+    }
 
-      generatedIdeas = rawIdeas.map(rawIdea => {
-        const normalizedIdea = normalizeGeneratedIdea(rawIdea);
+    const rawIdeas = parseIdeasFromModelText(text);
+    if (!rawIdeas.length) {
+      throw new Error('AI returned zero ideas');
+    }
 
-        return {
-          ...normalizedIdea,
-          id: generateId(),
-          date: null,
-          time: null,
-          status: 'Pending',
-          team_id: teamId,
-          persona_id: persona?.id,
-          persona_name: persona?.name
-        };
-      });
+    generatedIdeas = rawIdeas.map(rawIdea => {
+      const normalizedIdea = normalizeGeneratedIdea(rawIdea);
+
+      return {
+        ...normalizedIdea,
+        id: generateId(),
+        date: null,
+        time: null,
+        status: 'Pending',
+        team_id: teamId,
+        persona_id: persona?.id,
+        persona_name: persona?.name
+      };
+    });
 
   } catch (error) {
     console.error("AI generation failed:", error);

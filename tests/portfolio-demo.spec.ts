@@ -15,6 +15,12 @@ test.describe('Portfolio demo recording', () => {
         const screenshotsDir = path.resolve('docs', 'demo', 'screenshots');
         fs.mkdirSync(screenshotsDir, { recursive: true });
 
+        const demoProfile = {
+            firstName: 'Avery',
+            lastName: 'Stone'
+        };
+        const demoBrandColors = ['#0F172A', '#F4C542'];
+        const demoBrandStyle = 'Editorial, optimistic, strategy-first.';
         const demoPersonaName = `Demo Persona ${Date.now().toString().slice(-6)}`;
         const demoIdeaTitle = 'Portfolio Demo Idea';
         let generationIntercepted = false;
@@ -108,6 +114,23 @@ test.describe('Portfolio demo recording', () => {
             activeTeamId = createdTeam.id;
         }
 
+        await adminSupabase
+            .from('content_ideas')
+            .delete()
+            .eq('user_id', loggedInUser.id);
+
+        await adminSupabase
+            .from('personas')
+            .delete()
+            .eq('user_id', loggedInUser.id);
+
+        if (activeTeamId) {
+            await adminSupabase
+                .from('teams')
+                .update({ branding: { colors: [], fonts: {}, style: '' } })
+                .eq('id', activeTeamId);
+        }
+
         await page.route('**/functions/v1/generate-content**', async route => {
             generationIntercepted = true;
             // Keep a short, visible loading phase so the demo clearly shows "waiting for ideas".
@@ -163,40 +186,37 @@ test.describe('Portfolio demo recording', () => {
         await expect(page.getByText('ContentSpark').first()).toBeVisible({ timeout: 15_000 });
         await capture('03-dashboard-overview.png');
 
-        // Notifications panel snapshot
-        const notificationButton = page.getByTitle(/Notifications/i).first();
-        if (await notificationButton.isVisible({ timeout: 5_000 }).catch(() => false)) {
-            await notificationButton.click();
-            await expect(page.getByRole('heading', { name: /Notifications|Notificações/i })).toBeVisible({ timeout: 8_000 });
-            await capture('04-notifications-panel.png', 700);
-            await page.mouse.click(20, 20);
-        }
-
-        // 3) Strategy Engine form
-        const firstEngineOpened = await openStrategyEngine();
-        if (firstEngineOpened) {
-            await expect(page.getByRole('heading', { name: /Strategy Engine|Motor de Estratégia/i })).toBeVisible();
-            await page.waitForTimeout(800);
-
-            await page.getByPlaceholder(/Cooking|Culinária/i).fill('AI-powered content systems');
-            await page.getByPlaceholder(/Busy Moms|Mães ocupadas/i).fill('Solo creators and lean marketing teams');
-            await capture('05-strategy-engine.png', 1_000);
-
-            await page.getByRole('button', { name: /Close|Fechar/i }).click();
-            await page.waitForTimeout(1_000);
-        } else {
-            console.warn('[Portfolio Demo] Strategy Engine was unavailable in the first pass.');
-            await capture('05-strategy-engine-fallback.png', 700);
-        }
-
-        // 4) Profile + persona setup
+        // 3) Profile setup + brand kit + persona creation
         const profileButton = page.locator('div.border-t.border-gray-200 > button').last();
         await expect(profileButton).toBeVisible({ timeout: 10_000 });
         await profileButton.click({ force: true });
         await page.waitForLoadState('networkidle');
 
-        await expect(page.getByPlaceholder('Jane')).toBeVisible({ timeout: 15_000 });
+        await expect(page.getByPlaceholder(/Jane|João/i)).toBeVisible({ timeout: 15_000 });
         await expect(page.getByRole('heading', { name: /Brand Kit/i })).toBeVisible();
+
+        await page.getByPlaceholder(/Jane|João/i).fill(demoProfile.firstName);
+        await page.getByPlaceholder(/Doe|Silva/i).fill(demoProfile.lastName);
+        await capture('04-profile-created.png', 900);
+
+        const addColorButton = page.getByRole('button', { name: /Add Color/i });
+        const existingColorInputs = page.getByPlaceholder('#000000');
+        const existingColorCount = await existingColorInputs.count();
+        for (let index = existingColorCount; index < demoBrandColors.length; index += 1) {
+            await addColorButton.click();
+        }
+
+        for (const [index, color] of demoBrandColors.entries()) {
+            await page.getByPlaceholder('#000000').nth(index).fill(color);
+        }
+
+        await page.getByPlaceholder('e.g. Modern, Minimalist, Vibrant...').fill(demoBrandStyle);
+        await capture('05-brand-kit.png', 900);
+
+        const saveBrandKitButton = page.getByRole('button', { name: /Save Brand Kit|Salvar Kit de Marca/i });
+        await expect(saveBrandKitButton).toBeVisible({ timeout: 10_000 });
+        await saveBrandKitButton.click();
+        await expect(page.getByText(/Profile updated successfully!|Perfil atualizado com sucesso!/i)).toBeVisible({ timeout: 10_000 });
 
         const personaSelector = page.locator('#tour-persona-card button[role="combobox"]').first();
         await expect(personaSelector).toBeVisible({ timeout: 10_000 });
@@ -239,13 +259,13 @@ test.describe('Portfolio demo recording', () => {
                 });
         }
 
-        await capture('06-profile-brand-kit.png', 1_400);
+            await capture('06-persona-created.png', 1_400);
 
         await page.getByRole('button', { name: /Back to Calendar|Voltar ao Calendário/i }).click();
         await expect(page).toHaveURL(/\/app/);
         await page.reload({ waitUntil: 'networkidle' });
 
-        // 5) Generation with persona selection
+            // 4) Generation with persona selection
         const secondEngineOpened = await openStrategyEngine();
         if (secondEngineOpened) {
             await expect(page.getByRole('heading', { name: /Strategy Engine|Motor de Estratégia/i })).toBeVisible();
@@ -331,7 +351,7 @@ test.describe('Portfolio demo recording', () => {
             console.warn('[Portfolio Demo] generate-content route was not intercepted; fallback path may have been used.');
         }
 
-        // 6) Open idea editor for an explicit edit-state screenshot
+        // 5) Open idea editor for an explicit edit-state screenshot
         const draggableIdea = generatedIdeaHeading.first();
         await draggableIdea.click();
 

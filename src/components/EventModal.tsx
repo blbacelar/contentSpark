@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Trash2, Calendar as CalendarIcon, Save, Monitor, Activity, Copy, Check, Clock, AlertCircle, Quote, MessageSquare, Hash, Target, Plus, FileText } from 'lucide-react';
+import { X, Trash2, Calendar as CalendarIcon, Save, Monitor, Activity, Copy, Check, Clock, AlertCircle, Quote, MessageSquare, Hash, Target, Plus, FileText, Sparkles } from 'lucide-react';
 import { BrandingSettings, ContentIdea, IdeaStatus, STATUS_COLORS, SOCIAL_PLATFORMS, UserProfile } from '../types';
 import { useTeam } from '../context/TeamContext';
 import { supabase } from '../services/supabase';
@@ -62,7 +62,31 @@ const FieldHeader = ({ label, icon: Icon, text }: { label: string, icon: any, te
   );
 };
 
-const buildCanvaPrompt = (data: ContentIdea, branding: BrandingSettings): string => {
+type ContentFormat = 'single_post' | 'carousel' | 'story';
+
+const clampText = (value: string | undefined, maxLength: number): string => {
+  if (!value) return '';
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength).trim()}...`;
+};
+
+const buildBodyGuidance = (caption: string | undefined, format: ContentFormat): string => {
+  const compactCaption = clampText(caption, 240);
+  const base = compactCaption || 'Use concise copy aligned with the title and CTA.';
+
+  if (format === 'single_post') {
+    return `Convert this into one short on-canvas support line (max 14 words): "${base}"`;
+  }
+
+  if (format === 'story') {
+    return `Convert this into 3 short beats for story frames (max 8 words per frame): "${base}"`;
+  }
+
+  return `Convert this into a carousel flow with 5 to 8 short cards (max 12 words per card): "${base}"`;
+};
+
+const buildCanvaPrompt = (data: ContentIdea, branding: BrandingSettings, format: ContentFormat): string => {
   const { colors, fonts, style } = branding;
 
   // Assign explicit brand color roles so generation stays consistent.
@@ -83,8 +107,44 @@ const buildCanvaPrompt = (data: ContentIdea, branding: BrandingSettings): string
   const visualDirective = styleDirectives[normalizedStyle]
     || `${style || 'brand-aligned'} aesthetic with purposeful use of brand colors and clear visual hierarchy`;
 
+  const textBudgetRules: Record<ContentFormat, string> = {
+    single_post: 'On-canvas copy budget: headline up to 8 words, support text up to 14 words, one short CTA.',
+    carousel: 'On-canvas copy budget: cover headline up to 8 words; each slide body up to 12 words; closing CTA up to 6 words.',
+    story: 'On-canvas copy budget: up to 8 words per frame, high contrast for mobile readability, one CTA frame.',
+  };
+
+  const formatRules: Record<ContentFormat, string> = {
+    single_post: [
+      'Create one static social media post (1:1 square).',
+      'Deliver one hero concept with a single clear message and one CTA area.',
+    ].join(' '),
+    carousel: [
+      'Create a carousel concept (5 to 8 slides) with progression.',
+      'Define visual system consistency across slides: cover, content slides, and closing CTA slide.',
+      'Each slide should keep consistent typography and spacing while introducing micro-variation in layout.',
+    ].join(' '),
+    story: [
+      'Create an Instagram story sequence (3 to 5 stories) in vertical 9:16.',
+      'Prioritize legibility on mobile with large type, quick scan hierarchy, and sticker-safe margins.',
+      'Ensure sequence momentum: hook story, value story, CTA story.',
+    ].join(' '),
+  };
+
+  const title = clampText(data.title, 90);
+  const bodyGuidance = buildBodyGuidance(data.caption, format);
+
   return `
-Design a social media graphic (1080x1080px) with the following exact specifications:
+You are a senior social media specialist focused on UI/UX design for high-performing social content.
+
+Goal: generate a production-ready visual direction that follows current social design trends and avoids text overload.
+
+Design direction for format: ${format}.
+${formatRules[format]}
+${textBudgetRules[format]}
+
+Current trend direction (2026): bold headline-first hierarchy, editorial spacing, strong contrast, simple geometric accents, minimal visual clutter, mobile-first legibility.
+
+Now create the visual prompt with the following exact specifications:
 
 **VISUAL STYLE:**
 ${visualDirective}. The design must feel intentional and on-brand - avoid generic stock-image aesthetics.
@@ -96,11 +156,11 @@ ${visualDirective}. The design must feel intentional and on-brand - avoid generi
 - Do NOT introduce any colors outside this palette.
 
 **TYPOGRAPHY:**
-- Headline: "${data.title || ''}"
+- Headline: "${title}"
   - Font: ${fonts?.title || 'Source Sans Pro'}, Bold or ExtraBold weight
   - Size: dominant - largest element on canvas, center-aligned or left-anchored
   - Color: ${secondaryColor}
-- Body text: "${data.caption || ''}"
+- Body content guidance: ${bodyGuidance}
   - Font: ${fonts?.body || 'Roboto'}, Regular weight
   - Size: secondary - readable but clearly subordinate to headline
   - Color: ${secondaryColor} at 80% opacity or a softer tint
@@ -115,6 +175,8 @@ ${visualDirective}. The design must feel intentional and on-brand - avoid generi
 - Add placeholder lorem ipsum text
 - Invent colors outside the brand palette
 - Use drop shadows unless the style is playful or vibrant
+- Place long paragraphs on canvas
+- Use more than one visual focal point per slide/frame
 `.trim();
 };
 
@@ -128,9 +190,13 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
   const [isSaving, setIsSaving] = React.useState(false);
   const [effectiveBranding, setEffectiveBranding] = React.useState<BrandingSettings | null>(profile?.branding || null);
   const [brandingSource, setBrandingSource] = React.useState<'team' | 'profile' | 'none'>(profile?.branding ? 'profile' : 'none');
+  const [contentFormat, setContentFormat] = React.useState<ContentFormat>('single_post');
+  const [generatedCanvaPrompt, setGeneratedCanvaPrompt] = React.useState('');
 
   React.useEffect(() => {
     setFormData(idea);
+    setGeneratedCanvaPrompt(idea?.canva_prompt || '');
+    setContentFormat('single_post');
     setShowCopyFeedback(false);
     setShowDeleteConfirm(false);
     setError(null);
@@ -260,14 +326,15 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
    * FIX: Move hook calculations BEFORE any conditional returns. 
    * Previously, `if (!isOpen || !formData) return null;` was here, causing hook count mismatch.
    */
-  const canvaPrompt = React.useMemo(() => {
-    if (idea?.canva_prompt) return idea.canva_prompt;
+  const canvaPrompt = React.useMemo(() => generatedCanvaPrompt || formData?.canva_prompt || '', [generatedCanvaPrompt, formData?.canva_prompt]);
 
-    const currentData = formData || idea;
-    if (!currentData || !effectiveBranding) return '';
-
-    return buildCanvaPrompt(currentData, effectiveBranding);
-  }, [idea, formData, effectiveBranding]);
+  const handleGenerateCanvaPrompt = () => {
+    if (!formData || !effectiveBranding) return;
+    const prompt = buildCanvaPrompt(formData, effectiveBranding, contentFormat);
+    setGeneratedCanvaPrompt(prompt);
+    handleChange('canva_prompt', prompt);
+    triggerToast(t('modal.prompt_generated_toast'));
+  };
 
   /* NOW it is safe to return conditionally */
   if (!isOpen || !formData) return null;
@@ -455,17 +522,46 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
                   variant="ghost"
                   size="sm"
                   onClick={() => {
+                    if (!canvaPrompt) return;
                     navigator.clipboard.writeText(canvaPrompt);
                     triggerToast("Prompt copied to clipboard!");
                   }}
+                  disabled={!canvaPrompt}
                   className="h-6 px-2 text-[10px] bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 font-bold rounded-lg"
                 >
                   <Copy size={10} className="mr-1" /> Copy Prompt
                 </Button>
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 mb-3">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('modal.content_format_label')}</Label>
+                  <Select
+                    value={contentFormat}
+                    onValueChange={(val) => setContentFormat(val as ContentFormat)}
+                  >
+                    <SelectTrigger className="bg-white border-gray-200 rounded-xl h-10 text-sm font-medium">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="single_post">{t('modal.content_format_single')}</SelectItem>
+                      <SelectItem value="carousel">{t('modal.content_format_carousel')}</SelectItem>
+                      <SelectItem value="story">{t('modal.content_format_story')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    type="button"
+                    onClick={handleGenerateCanvaPrompt}
+                    className="h-10 px-4 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 text-sm font-bold"
+                  >
+                    <Sparkles size={14} className="mr-2" /> {t('modal.generate_prompt_btn')}
+                  </Button>
+                </div>
+              </div>
               <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
                 <p className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed select-text font-medium">
-                  {canvaPrompt || "Add branding details in your profile to generate a prompt."}
+                  {canvaPrompt || t('modal.canva_prompt_placeholder')}
                 </p>
               </div>
             </div>

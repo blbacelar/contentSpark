@@ -33,6 +33,10 @@ yarn-error.log*
 Consolidated_ContentSpark.json
 ContentSpark.json
 
+# BMAD
+.bmad/
+.agents/
+
 # IDE
 .vscode/*
 !.vscode/extensions.json

@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:e2e": "playwright test",
+    "test:credits": "node scripts/add-test-credits.mjs",
     "demo:record": "playwright test tests/portfolio-demo.spec.ts --project=chromium"
   },
   "dependencies": {

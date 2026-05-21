@@ -76,13 +76,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // Safety timeout
+    // Safety timeout - increased from 5s to 15s to accommodate slower networks
     const safetyTimer = setTimeout(() => {
       if (mounted) {
         console.warn("Auth check timed out, forcing loading false");
         setLoading(false);
       }
-    }, 5000);
+    }, 15000);
 
     const initAuth = async () => {
       try {

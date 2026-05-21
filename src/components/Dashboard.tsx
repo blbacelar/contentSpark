@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DndContext } from '@dnd-kit/core';
 import Joyride from 'react-joyride';
@@ -200,7 +199,7 @@ export default function Dashboard() {
                         </div>
 
                         {/* Drag Overlay */}
-                        <IdeaDragOverlay activeIdea={activeIdea} />
+                        <IdeaDragOverlay activeIdea={activeIdea ?? null} />
 
                         {/* Modals */}
                         <EventModal
@@ -250,8 +249,14 @@ export default function Dashboard() {
                             <PersonaMissingAlert
                                 onClose={() => setShowPersonaAlert(false)}
                                 onGoToProfile={() => setView('profile')}
+                                canContinue={allPersonas.length > 0}
                                 onContinue={() => {
                                     const fallbackPersona = allPersonas.find(p => p.id === formData.persona_id) || allPersonas[0];
+                                    if (!fallbackPersona) {
+                                        triggerToast(t('alert.missing_persona_title'), true);
+                                        setShowPersonaAlert(false);
+                                        return;
+                                    }
                                     // We need to use the method provided by useIdeaManagement to bypass validation
                                     performGeneration(fallbackPersona);
                                 }}

@@ -1,3 +1,5 @@
+/// <reference path="../deno-shim.d.ts" />
+
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -37,7 +39,39 @@ Deno.serve(async (req: Request) => {
                 messages: [
                     {
                         role: 'system',
-                        content: 'You generate content ideas as valid JSON only. Return only raw JSON with no markdown fences or commentary.'
+                        content: `You are a senior social media strategist who generates content ideas for creators and brands.
+
+Output rules:
+- Return raw JSON only. No markdown fences, no commentary, no fields beyond the schema.
+- Match the language specified in the user message exactly.
+- Each of the 6 ideas must be distinct in angle, format, and emotional driver. Do not restate the same concept with different wording.
+
+Quality bar:
+- Specific over generic. Anchor ideas to concrete situations, numbers, objects, or sensory details, not abstractions.
+- Hook lands in the first 7 words. Banned openers: "Você sabia que", "Hoje vou falar sobre", "Imagine se", "Sabe quando".
+- Caption reads like a human wrote it. Avoid AI tells: jornada, desbloquear, mergulhar, transformador, no fundo, é mais do que, em um mundo onde.
+- CTA asks for one specific action. No "siga para mais conteúdo".
+- Hashtags mix high-volume, mid-volume, and niche tags. Skip irrelevant trend tags.
+
+Variety requirements across the 6 ideas:
+- Mix formats: at least one carrossel, one reels, one foto única, one texto/storytelling.
+- Mix emotional drivers: curiosidade, identificação, conflito, ensino, opinião forte, vulnerabilidade.
+
+JSON schema (return exactly this shape):
+{
+  "ideas": [
+    {
+      "title": string,
+      "hook": string,
+      "description": string,
+      "caption": string,
+      "cta": string,
+      "hashtags": string,
+      "platforms": string[],
+      "format": "carrossel" | "reels" | "foto" | "texto" | "story"
+    }
+  ]
+}`
                     },
                     {
                         role: 'user',
