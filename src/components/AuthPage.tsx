@@ -118,11 +118,8 @@ export default function AuthPage() {
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
           <div className="mb-4">
-            <img src="/logo.png" alt="ContentSpark" className="w-16 h-16 rounded-2xl shadow-xl shadow-yellow-400/20" />
+            <img src="/logo.png" alt="ContentSpark" className="h-16 w-auto object-contain" />
           </div>
-          <h1 className="text-2xl font-bold text-[#1A1A1A] tracking-tight">
-            {t('auth.title')}
-          </h1>
           <p className="text-gray-400 text-sm mt-1 font-medium">
             {t('auth.subtitle')}
           </p>
@@ -159,13 +156,13 @@ export default function AuthPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider pl-2">{t('auth.first_name')}</label>
                 <div className="relative group">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#1A1A1A] transition-colors" />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#1C3A2F] transition-colors" />
                   <input
                     type="text"
                     required
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full bg-gray-50 border-2 border-transparent focus:border-[#FFDA47] focus:bg-white rounded-xl pl-11 pr-3 py-3.5 text-[#1A1A1A] font-medium placeholder-gray-300 outline-none transition-all"
+                    className="w-full bg-gray-50 border-2 border-transparent focus:border-[#C8E86A] focus:bg-white rounded-xl pl-11 pr-3 py-3.5 text-[#1C3A2F] font-medium placeholder-gray-300 outline-none transition-all"
                     placeholder={t('auth.name_placeholder')}
                   />
                 </div>
@@ -173,13 +170,13 @@ export default function AuthPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider pl-2">{t('auth.last_name')}</label>
                 <div className="relative group">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#1A1A1A] transition-colors" />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#1C3A2F] transition-colors" />
                   <input
                     type="text"
                     required
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full bg-gray-50 border-2 border-transparent focus:border-[#FFDA47] focus:bg-white rounded-xl pl-11 pr-3 py-3.5 text-[#1A1A1A] font-medium placeholder-gray-300 outline-none transition-all"
+                    className="w-full bg-gray-50 border-2 border-transparent focus:border-[#C8E86A] focus:bg-white rounded-xl pl-11 pr-3 py-3.5 text-[#1C3A2F] font-medium placeholder-gray-300 outline-none transition-all"
                     placeholder={t('auth.surname_placeholder')}
                   />
                 </div>
@@ -190,13 +187,13 @@ export default function AuthPage() {
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-gray-400 uppercase tracking-wider pl-2">{t('auth.email')}</label>
             <div className="relative group">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#1A1A1A] transition-colors" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#1C3A2F] transition-colors" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-gray-50 border-2 border-transparent focus:border-[#FFDA47] focus:bg-white rounded-xl pl-11 pr-4 py-3.5 text-[#1A1A1A] font-medium placeholder-gray-300 outline-none transition-all"
+                className="w-full bg-gray-50 border-2 border-transparent focus:border-[#C8E86A] focus:bg-white rounded-xl pl-11 pr-4 py-3.5 text-[#1C3A2F] font-medium placeholder-gray-300 outline-none transition-all"
                 placeholder={t('auth.email_placeholder')}
               />
             </div>
@@ -206,13 +203,13 @@ export default function AuthPage() {
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-400 uppercase tracking-wider pl-2">{t('auth.password')}</label>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#1A1A1A] transition-colors" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#1C3A2F] transition-colors" />
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-gray-50 border-2 border-transparent focus:border-[#FFDA47] focus:bg-white rounded-xl pl-11 pr-4 py-3.5 text-[#1A1A1A] font-medium placeholder-gray-300 outline-none transition-all"
+                  className="w-full bg-gray-50 border-2 border-transparent focus:border-[#C8E86A] focus:bg-white rounded-xl pl-11 pr-4 py-3.5 text-[#1C3A2F] font-medium placeholder-gray-300 outline-none transition-all"
                   placeholder={t('auth.password_placeholder')}
                 />
               </div>
@@ -228,7 +225,7 @@ export default function AuthPage() {
                   setError(null);
                   setSuccessMessage(null);
                 }}
-                className="text-xs font-bold text-gray-500 hover:text-[#1A1A1A] hover:underline"
+                className="text-xs font-bold text-gray-500 hover:text-[#1C3A2F] hover:underline"
               >
                 {t('auth.forgot_password')}
               </button>
@@ -238,7 +235,7 @@ export default function AuthPage() {
           <button
             type="submit"
             disabled={loading || !isSupabaseConfigured}
-            className="w-full mt-2 bg-[#FFDA47] text-[#1A1A1A] py-4 rounded-xl font-bold text-base hover:bg-[#FFC040] hover:scale-[1.02] hover:shadow-lg hover:shadow-yellow-400/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            className="w-full mt-2 bg-[#C8E86A] text-[#1C3A2F] py-4 rounded-xl font-bold text-base hover:bg-[#B6D85E] hover:scale-[1.02] hover:shadow-lg hover:shadow-yellow-400/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
               <>
@@ -260,7 +257,7 @@ export default function AuthPage() {
                     setIsSignUp(false);
                     setError(null);
                   }}
-                  className="ml-2 text-[#1A1A1A] font-bold hover:underline decoration-[#FFDA47] decoration-2 underline-offset-2"
+                  className="ml-2 text-[#1C3A2F] font-bold hover:underline decoration-[#C8E86A] decoration-2 underline-offset-2"
                 >
                   {t('auth.sign_in')}
                 </button>
@@ -274,7 +271,7 @@ export default function AuthPage() {
                     setError(null);
                     setSuccessMessage(null);
                   }}
-                  className="ml-2 text-[#1A1A1A] font-bold hover:underline decoration-[#FFDA47] decoration-2 underline-offset-2"
+                  className="ml-2 text-[#1C3A2F] font-bold hover:underline decoration-[#C8E86A] decoration-2 underline-offset-2"
                 >
                   {isSignUp ? t('auth.sign_in') : t('auth.create_account')}
                 </button>

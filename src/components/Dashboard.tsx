@@ -122,12 +122,12 @@ export default function Dashboard() {
                 floaterProps={{ disableAnimation: true }}
                 styles={{
                     options: {
-                        primaryColor: '#FFDA47',
-                        textColor: '#1A1A1A',
+                        primaryColor: '#C8E86A',
+                        textColor: '#1C3A2F',
                         zIndex: 10000,
                     },
                     tooltip: { borderRadius: '16px', padding: '20px' },
-                    buttonNext: { backgroundColor: '#FFDA47', color: '#1A1A1A', fontWeight: 'bold', borderRadius: '8px', outline: 'none' }
+                    buttonNext: { backgroundColor: '#C8E86A', color: '#1C3A2F', fontWeight: 'bold', borderRadius: '8px', outline: 'none' }
                 }}
             />
 
@@ -145,7 +145,7 @@ export default function Dashboard() {
 
                         {/* Global Toast */}
                         {toast && (
-                            <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-2xl z-[100] animate-fade-in flex items-center gap-3 font-bold text-sm border ${toast.isError ? 'bg-red-500 text-white border-red-600' : 'bg-[#1A1A1A] text-white border-black'}`}>
+                            <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-2xl z-[100] animate-fade-in flex items-center gap-3 font-bold text-sm border ${toast.isError ? 'bg-red-500 text-white border-red-600' : 'bg-[#1C3A2F] text-white border-black'}`}>
                                 {toast.message}
                             </div>
                         )}
@@ -217,7 +217,7 @@ export default function Dashboard() {
                         />
 
                         {isFormOpen && (
-                            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A1A1A]/30 backdrop-blur-sm animate-fade-in">
+                            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1C3A2F]/30 backdrop-blur-sm animate-fade-in">
                                 <div className="bg-white rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-scale-in relative">
                                     <button
                                         onClick={() => setIsFormOpen(false)}

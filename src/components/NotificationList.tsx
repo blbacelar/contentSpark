@@ -39,11 +39,11 @@ const NotificationList: React.FC<NotificationListProps> = ({ notifications, onCl
             className="absolute top-16 right-8 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-[60] animate-scale-in origin-top-right"
         >
             <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50/50">
-                <h3 className="text-sm font-bold text-[#1A1A1A]">{t('settings.notifications_tab')}</h3>
+                <h3 className="text-sm font-bold text-[#1C3A2F]">{t('settings.notifications_tab')}</h3>
                 {notifications.some(n => !n.read_at) && (
                     <button
                         onClick={onMarkAllRead}
-                        className="text-xs font-bold text-[#1A1A1A] hover:bg-gray-100 px-2 py-1 rounded-lg transition-colors"
+                        className="text-xs font-bold text-[#1C3A2F] hover:bg-gray-100 px-2 py-1 rounded-lg transition-colors"
                     >
                         Mark all read
                     </button>
@@ -66,7 +66,7 @@ const NotificationList: React.FC<NotificationListProps> = ({ notifications, onCl
                             <div className="flex items-start gap-3">
                                 <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${!notification.read_at ? 'bg-blue-500' : 'bg-gray-300'}`} />
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-bold text-[#1A1A1A] truncate">{notification.title}</p>
+                                    <p className="text-sm font-bold text-[#1C3A2F] truncate">{notification.title}</p>
                                     <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notification.message}</p>
                                     <span className="text-[10px] text-gray-400 font-medium mt-2 block">
                                         {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true, locale: getDateLocale() })}

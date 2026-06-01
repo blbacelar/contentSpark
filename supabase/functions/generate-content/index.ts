@@ -11,13 +11,61 @@ Deno.serve(async (req: Request) => {
     }
 
     try {
-        const { prompt } = await req.json()
-        if (!prompt || typeof prompt !== 'string') {
-            return new Response(JSON.stringify({ error: 'Missing or invalid prompt' }), {
+        const requestBody = await req.json()
+        const {
+            prompt,
+            topic,
+            count,
+            tone,
+            additionalContext,
+            especialidade,
+            pilares_conteudo,
+            paciente_perfil,
+        } = requestBody ?? {}
+
+        const resolvedTopic = typeof topic === 'string' && topic.trim().length > 0
+            ? topic.trim()
+            : typeof prompt === 'string' && prompt.trim().length > 0
+                ? prompt.trim()
+                : undefined
+
+        if (!resolvedTopic) {
+            return new Response(JSON.stringify({ error: 'Missing or invalid topic' }), {
                 status: 400,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             })
         }
+
+        const parsedCount = typeof count === 'number'
+            ? Math.trunc(count)
+            : typeof count === 'string' && count.trim().length > 0
+                ? Math.trunc(Number(count))
+                : 10
+        const boundedCount = Number.isFinite(parsedCount)
+            ? Math.max(1, Math.min(20, parsedCount))
+            : 10
+
+        const safeString = (value: unknown, fallback: string) => {
+            if (typeof value !== 'string') return fallback
+            const cleaned = value.trim()
+            return cleaned.length > 0 ? cleaned : fallback
+        }
+
+        const normalizedPillars = Array.isArray(pilares_conteudo)
+            ? pilares_conteudo
+                .filter((pillar): pillar is string => typeof pillar === 'string')
+                .map((pillar) => pillar.trim())
+                .filter(Boolean)
+            : []
+
+        const userMessage = `Generate ${boundedCount} content ideas for an Instagram-based nutritionist with the following profile:
+
+Specialty: ${safeString(especialidade, 'Nutrição geral')}
+Target patient profile: ${safeString(paciente_perfil, 'not specified')}
+Content pillars to focus on: ${normalizedPillars.length > 0 ? normalizedPillars.join(', ') : 'any'}
+Topic or theme for this batch: ${resolvedTopic}
+Tone of voice: ${safeString(tone, 'educativo e acessível')}
+Additional context: ${safeString(additionalContext, 'none')}`
 
         const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY')
         const openRouterModel = Deno.env.get('OPENROUTER_MODEL') ?? 'openai/gpt-4o-mini'
@@ -39,43 +87,32 @@ Deno.serve(async (req: Request) => {
                 messages: [
                     {
                         role: 'system',
-                        content: `You are a senior social media strategist who generates content ideas for creators and brands.
+                        content: `You are a content planning assistant for Brazilian nutritionists who use Instagram to attract patients. You generate content ideas in Brazilian Portuguese only.
 
-Output rules:
-- Return raw JSON only. No markdown fences, no commentary, no fields beyond the schema.
-- Match the language specified in the user message exactly.
-- Each of the 6 ideas must be distinct in angle, format, and emotional driver. Do not restate the same concept with different wording.
+HARD RULES — CFN COMPLIANCE:
+The Conselho Federal de Nutricionistas (CFN) prohibits the following in professional nutritionist advertising. Never generate ideas that involve:
+- Before and after photos or comparisons (antes e depois)
+- Guaranteed results or specific outcomes ("emagreça X kg em Y dias", "resultado garantido")
+- Comparisons with other professionals
+- Testimonials that promise specific results
+- Any claim that a diet or supplement cures or treats diseases
+- Promotion of unregulated supplements
 
-Quality bar:
-- Specific over generic. Anchor ideas to concrete situations, numbers, objects, or sensory details, not abstractions.
-- Hook lands in the first 7 words. Banned openers: "Você sabia que", "Hoje vou falar sobre", "Imagine se", "Sabe quando".
-- Caption reads like a human wrote it. Avoid AI tells: jornada, desbloquear, mergulhar, transformador, no fundo, é mais do que, em um mundo onde.
-- CTA asks for one specific action. No "siga para mais conteúdo".
-- Hashtags mix high-volume, mid-volume, and niche tags. Skip irrelevant trend tags.
+If a user's input would lead to any of the above, reframe the idea into a compliant angle without mentioning the restriction.
 
-Variety requirements across the 6 ideas:
-- Mix formats: at least one carrossel, one reels, one foto única, one texto/storytelling.
-- Mix emotional drivers: curiosidade, identificação, conflito, ensino, opinião forte, vulnerabilidade.
+OUTPUT FORMAT:
+Return a JSON array. Each idea must have these fields:
+- title: string — a specific, compelling post title in Portuguese (not generic)
+- description: string — 2-3 sentences explaining the angle and what to include
+- format: "carrossel" | "reels" | "stories" — the best Instagram format for this idea
+- pillar: string — the content pillar this idea belongs to (e.g., "Educação nutricional", "Bastidores", "Captação de pacientes", "Engajamento")
+- cfn_compliant: true — always true; if you can't make an idea compliant, skip it entirely
 
-JSON schema (return exactly this shape):
-{
-  "ideas": [
-    {
-      "title": string,
-      "hook": string,
-      "description": string,
-      "caption": string,
-      "cta": string,
-      "hashtags": string,
-      "platforms": string[],
-      "format": "carrossel" | "reels" | "foto" | "texto" | "story"
-    }
-  ]
-}`
+Generate exactly the number of ideas requested. Make each title specific to the user's specialty and audience — never generic like "5 dicas de alimentação saudável".`
                     },
                     {
                         role: 'user',
-                        content: prompt
+                        content: userMessage
                     }
                 ]
             })
@@ -97,7 +134,73 @@ JSON schema (return exactly this shape):
             throw new Error('OpenRouter returned an empty response')
         }
 
-        return new Response(JSON.stringify({ text }), {
+        const cleanText = text
+            .trim()
+            .replace(/^```json\s*/i, '')
+            .replace(/^```\s*/i, '')
+            .replace(/```$/, '')
+            .trim()
+
+        const normalizeFormat = (value: unknown): 'carrossel' | 'reels' | 'stories' | undefined => {
+            if (typeof value !== 'string') return undefined
+            const cleaned = value.trim().toLowerCase()
+            if (cleaned === 'carrossel' || cleaned === 'reels' || cleaned === 'stories') return cleaned
+            if (cleaned === 'story') return 'stories'
+            return undefined
+        }
+
+        const firstSentence = (value: unknown) => {
+            if (typeof value !== 'string') return ''
+            const cleaned = value.trim()
+            if (!cleaned) return ''
+            const sentence = cleaned.split(/(?<=[.!?])\s+/)[0]?.trim()
+            return sentence || cleaned
+        }
+
+        const safeIdeaString = (value: unknown) => (typeof value === 'string' ? value.trim() : '')
+
+        let ideas: Array<Record<string, unknown>> | undefined
+        let ideasParseError: string | undefined
+        try {
+            const parsed = JSON.parse(cleanText)
+            const parsedIdeas = Array.isArray(parsed)
+                ? parsed
+                : Array.isArray(parsed?.ideas)
+                    ? parsed.ideas
+                    : undefined
+
+            if (parsedIdeas) {
+                ideas = parsedIdeas.map((idea: Record<string, unknown>) => ({
+                    title: safeIdeaString(idea.title),
+                    hook: safeIdeaString(idea.hook) || firstSentence(idea.description),
+                    description: safeIdeaString(idea.description),
+                    caption: safeIdeaString(idea.caption) || safeIdeaString(idea.description),
+                    cta: safeIdeaString(idea.cta) || 'Comente sua principal duvida sobre esse tema.',
+                    hashtags: safeIdeaString(idea.hashtags),
+                    platforms: Array.isArray(idea.platforms)
+                        ? idea.platforms.filter((platform): platform is string => typeof platform === 'string' && platform.trim().length > 0)
+                        : ['Instagram'],
+                    format: normalizeFormat(idea.format),
+                    pillar: safeIdeaString(idea.pillar),
+                    cfn_compliant: idea.cfn_compliant === true,
+                })).filter((idea: {
+                    title: string
+                    description: string
+                    format: 'carrossel' | 'reels' | 'stories' | undefined
+                    cfn_compliant: boolean
+                }) => (
+                    idea.title.length > 0
+                    && idea.description.length > 0
+                    && idea.format !== undefined
+                    && idea.cfn_compliant === true
+                ))
+            }
+        } catch (error) {
+            ideas = undefined
+            ideasParseError = (error as Error).message
+        }
+
+        return new Response(JSON.stringify({ text, ideas, ideas_parse_error: ideas ? undefined : ideasParseError }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
 

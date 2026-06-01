@@ -14,14 +14,14 @@ export function PersonaMissingAlert({ onClose, onGoToProfile, onContinue, canCon
     const { t } = useTranslation();
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A1A1A]/50 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1C3A2F]/50 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-[24px] w-full max-w-sm shadow-2xl overflow-hidden animate-scale-in p-6">
                 <div className="flex flex-col items-center text-center space-y-4">
                     <div className="w-12 h-12 bg-yellow-50 rounded-full flex items-center justify-center">
                         <UserCircle2 className="w-6 h-6 text-[#E6C200]" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-bold text-[#1A1A1A]">{t('alert.missing_persona_title')}</h3>
+                        <h3 className="text-lg font-bold text-[#1C3A2F]">{t('alert.missing_persona_title')}</h3>
                         <p className="text-sm text-gray-500 mt-2 leading-relaxed">
                             {t('alert.missing_persona_desc')}
                         </p>
@@ -32,7 +32,7 @@ export function PersonaMissingAlert({ onClose, onGoToProfile, onContinue, canCon
                                 onClose();
                                 onGoToProfile();
                             }}
-                            className="w-full bg-[#1A1A1A] text-white py-3 rounded-xl font-bold text-sm hover:bg-black transition-all shadow-lg shadow-black/5"
+                            className="w-full bg-[#1C3A2F] text-white py-3 rounded-xl font-bold text-sm hover:bg-black transition-all shadow-lg shadow-black/5"
                         >
                             {t('alert.setup_profile')}
                         </button>
@@ -58,8 +58,8 @@ export function IdeaDragOverlay({ activeIdea }: { activeIdea: ContentIdea | null
     if (!activeIdea) return null;
 
     return (
-        <div className="bg-white border border-[#FFDA47] shadow-xl p-3 rounded-lg w-48 rotate-3 cursor-grabbing z-50">
-            <p className="font-bold text-sm text-[#1A1A1A] truncate">{activeIdea.title}</p>
+        <div className="bg-white border border-[#C8E86A] shadow-xl p-3 rounded-lg w-48 rotate-3 cursor-grabbing z-50">
+            <p className="font-bold text-sm text-[#1C3A2F] truncate">{activeIdea.title}</p>
         </div>
     );
 }

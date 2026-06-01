@@ -13,6 +13,8 @@ export interface ContentIdea {
   id: string;
   title: string;
   description: string; // Used for short summary
+  format?: 'carrossel' | 'reels' | 'stories';
+  cfn_compliant?: boolean;
   hook?: string; // First sentence/attention grabber
   caption?: string; // Full post body
   cta?: string; // Call to Action
@@ -83,6 +85,9 @@ export interface PersonaData {
   id?: string;
   name?: string;
   description: string;
+  especialidade?: string;
+  pilares_conteudo?: string[];
+  paciente_perfil?: string;
   user_id?: string;
   team_id?: string | null;
   gender: string;

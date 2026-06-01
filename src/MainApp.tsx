@@ -15,7 +15,7 @@ const RequireAuth = ({ children }: { children?: React.ReactNode }) => {
   if (loading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-[#F2F2F2]">
-        <Loader2 className="w-8 h-8 animate-spin text-[#FFDA47]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#C8E86A]" />
       </div>
     );
   }
@@ -34,7 +34,7 @@ const PublicRoute = ({ children }: { children?: React.ReactNode }) => {
   if (loading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-[#F2F2F2]">
-        <Loader2 className="w-8 h-8 animate-spin text-[#FFDA47]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#C8E86A]" />
       </div>
     );
   }

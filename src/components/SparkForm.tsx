@@ -36,7 +36,7 @@ const SparkForm: React.FC<SparkFormProps> = ({ formData, setFormData, onSubmit, 
   return (
     <div className="bg-white rounded-[28px] p-6 space-y-6">
       <div className="text-center mb-2">
-        <h3 className="text-xl font-bold text-[#1A1A1A]">{t('form.title')}</h3>
+        <h3 className="text-xl font-bold text-[#1C3A2F]">{t('form.title')}</h3>
         <p className="text-sm text-gray-400">{t('form.subtitle')}</p>
       </div>
 
@@ -49,7 +49,7 @@ const SparkForm: React.FC<SparkFormProps> = ({ formData, setFormData, onSubmit, 
           value={formData.persona_id || ''}
           onValueChange={(val) => setFormData(prev => ({ ...prev, persona_id: val }))}
         >
-          <SelectTrigger className="w-full bg-gray-50 border-transparent focus:bg-white rounded-xl h-12 text-base font-medium text-[#1A1A1A]">
+          <SelectTrigger className="w-full bg-gray-50 border-transparent focus:bg-white rounded-xl h-12 text-base font-medium text-[#1C3A2F]">
             <SelectValue placeholder={t('common.select')} />
           </SelectTrigger>
           <SelectContent>
@@ -72,7 +72,7 @@ const SparkForm: React.FC<SparkFormProps> = ({ formData, setFormData, onSubmit, 
           value={formData.topic}
           onChange={handleChange}
           placeholder={t('form.topic_placeholder')}
-          className="w-full bg-gray-50 border-transparent focus-visible:bg-white focus-visible:ring-[#FFDA47] rounded-xl h-12 px-5 text-base font-medium placeholder:text-gray-400 transition-all shadow-none"
+          className="w-full bg-gray-50 border-transparent focus-visible:bg-white focus-visible:ring-[#C8E86A] rounded-xl h-12 px-5 text-base font-medium placeholder:text-gray-400 transition-all shadow-none"
         />
       </div>
 
@@ -87,7 +87,7 @@ const SparkForm: React.FC<SparkFormProps> = ({ formData, setFormData, onSubmit, 
           value={formData.audience}
           onChange={handleChange}
           placeholder={t('form.audience_placeholder')}
-          className="w-full bg-gray-50 border-transparent focus-visible:bg-white focus-visible:ring-[#FFDA47] rounded-xl h-12 px-5 text-base font-medium placeholder:text-gray-400 transition-all shadow-none"
+          className="w-full bg-gray-50 border-transparent focus-visible:bg-white focus-visible:ring-[#C8E86A] rounded-xl h-12 px-5 text-base font-medium placeholder:text-gray-400 transition-all shadow-none"
         />
       </div>
 
@@ -100,7 +100,7 @@ const SparkForm: React.FC<SparkFormProps> = ({ formData, setFormData, onSubmit, 
           value={formData.tone}
           onValueChange={(val) => setFormData(prev => ({ ...prev, tone: val as Tone }))}
         >
-          <SelectTrigger className="w-full bg-gray-50 border-transparent focus:bg-white rounded-xl h-12 text-base font-medium text-[#1A1A1A]">
+          <SelectTrigger className="w-full bg-gray-50 border-transparent focus:bg-white rounded-xl h-12 text-base font-medium text-[#1C3A2F]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -118,9 +118,9 @@ const SparkForm: React.FC<SparkFormProps> = ({ formData, setFormData, onSubmit, 
           disabled={isLoading || !formData.topic || !formData.audience || !hasCredits}
           className={cn(
             "w-full mt-2 h-14 rounded-xl font-bold text-base tracking-wide flex items-center justify-center gap-3 transition-all duration-300 transform shadow-none",
-            isLoading ? "bg-[#1A1A1A] text-white opacity-80" :
+            isLoading ? "bg-[#1C3A2F] text-white opacity-80" :
               !hasCredits ? "bg-gray-100 text-gray-400" :
-                "bg-[#FFDA47] text-[#1A1A1A] hover:bg-[#FFC040] hover:scale-[1.02] hover:shadow-lg hover:shadow-yellow-400/20"
+                "bg-[#C8E86A] text-[#1C3A2F] hover:bg-[#B6D85E] hover:scale-[1.02] hover:shadow-lg hover:shadow-yellow-400/20"
           )}
         >
           {isLoading ? (

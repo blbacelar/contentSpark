@@ -46,7 +46,7 @@ export function DashboardHeader({
     return (
         <header className="flex items-center justify-between px-8 py-5 bg-[#F2F2F2] border-b border-gray-200/50">
             <div className="flex items-center gap-6">
-                <h2 className="text-2xl font-bold text-[#1A1A1A] tracking-tight capitalize">
+                <h2 className="text-2xl font-bold text-[#1C3A2F] tracking-tight capitalize">
                     {format(currentDate, 'MMMM yyyy', { locale: dateLocale })}
                 </h2>
                 <div className="flex items-center gap-1 bg-white rounded-lg p-1 border border-gray-200 shadow-sm">
@@ -119,7 +119,7 @@ export function DashboardHeader({
                     variant="default"
                     size="icon"
                     onClick={onSignOut}
-                    className="w-10 h-10 rounded-xl bg-[#1A1A1A] hover:bg-black text-white"
+                    className="w-10 h-10 rounded-xl bg-[#1C3A2F] hover:bg-black text-white"
                     title={t('common.sign_out')}
                 >
                     <LogOut size={20} />

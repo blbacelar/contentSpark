@@ -30,7 +30,7 @@ const HelperTooltip = ({ text }: { text: string }) => {
         <TooltipProvider>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <Info size={14} className="text-gray-400 hover:text-[#1A1A1A] cursor-help transition-colors" />
+                    <Info size={14} className="text-gray-400 hover:text-[#1C3A2F] cursor-help transition-colors" />
                 </TooltipTrigger>
                 <TooltipContent>
                     <p className="w-64 text-center">{text}</p>
@@ -87,7 +87,7 @@ const DynamicList = ({
             <Button
                 variant="ghost"
                 onClick={onAdd}
-                className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-[#1A1A1A] px-2 py-1 transition-colors"
+                className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-[#1C3A2F] px-2 py-1 transition-colors"
             >
                 <Plus size={16} /> {t('profile.add_another')}
             </Button>
@@ -135,7 +135,7 @@ const DynamicColorList = ({
                 variant="outline"
                 size="sm"
                 onClick={onAdd}
-                className="rounded-full h-9 border-dashed border-gray-300 text-gray-500 hover:text-[#1A1A1A] hover:border-gray-400"
+                className="rounded-full h-9 border-dashed border-gray-300 text-gray-500 hover:text-[#1C3A2F] hover:border-gray-400"
             >
                 <Plus size={14} className="mr-1" /> Add Color
             </Button>
@@ -189,6 +189,9 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
         pains_list: [''],
         goals_list: [''],
         questions_list: [''],
+        especialidade: '',
+        pilares_conteudo: [],
+        paciente_perfil: '',
         description: ''
     };
 
@@ -265,6 +268,9 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
             pains_list: persona.pains_list.length ? persona.pains_list : [''],
             goals_list: persona.goals_list.length ? persona.goals_list : [''],
             questions_list: persona.questions_list.length ? persona.questions_list : [''],
+            especialidade: persona.especialidade || '',
+            pilares_conteudo: persona.pilares_conteudo || [],
+            paciente_perfil: persona.paciente_perfil || '',
         });
     };
 
@@ -407,6 +413,9 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
             pains_list: personaData.pains_list.filter(i => i.trim() !== ''),
             goals_list: personaData.goals_list.filter(i => i.trim() !== ''),
             questions_list: personaData.questions_list.filter(i => i.trim() !== ''),
+            especialidade: personaData.especialidade?.trim() || undefined,
+            pilares_conteudo: (personaData.pilares_conteudo || []).filter(i => i.trim() !== ''),
+            paciente_perfil: personaData.paciente_perfil?.trim() || undefined,
             user_id: user.id,
             team_id: currentTeam?.id || null
         };
@@ -526,6 +535,27 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
         { value: 'High', label: t('options.income.High') },
         { value: 'Affluent', label: t('options.income.Affluent') },
     ];
+    const especialidadeOptions = [
+        'Nutrição Esportiva',
+        'Nutrição Clínica',
+        'Nutrição Estética',
+        'Nutrição Funcional',
+        'Nutrição Materno-Infantil',
+        'Nutrição Comportamental',
+        'Outra'
+    ];
+    const pilaresConteudoOptions = [
+        'Emagrecimento',
+        'Hipertrofia',
+        'Saúde intestinal',
+        'Suplementação',
+        'Receitas saudáveis',
+        'Nutrição esportiva',
+        'Dieta plant-based',
+        'Saúde feminina',
+        'Nutrição infantil',
+        'Comportamento alimentar'
+    ];
 
     const tabs = [
         { id: 0, label: t('profile.tabs.identity'), icon: User },
@@ -569,7 +599,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                     </div>
                                 )}
                             </div>
-                            <label className="absolute bottom-0 right-0 cursor-pointer rounded-full bg-[#1A1A1A] p-2 text-white shadow-lg transition-transform hover:scale-110 hover:bg-black z-20">
+                            <label className="absolute bottom-0 right-0 cursor-pointer rounded-full bg-[#1C3A2F] p-2 text-white shadow-lg transition-transform hover:scale-110 hover:bg-black z-20">
                                 <Camera size={14} />
                                 <input
                                     type="file"
@@ -629,9 +659,9 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                     <div className="p-8 pb-8">
                         <div className="flex items-center gap-2 mb-6 justify-between">
                             <div className="flex items-center gap-2">
-                                <Palette className="w-6 h-6 text-[#1A1A1A]" />
+                                <Palette className="w-6 h-6 text-[#1C3A2F]" />
                                 <div>
-                                    <h2 className="text-xl font-bold text-[#1A1A1A] tracking-tight">{t('profile.brand_kit.title')}</h2>
+                                    <h2 className="text-xl font-bold text-[#1C3A2F] tracking-tight">{t('profile.brand_kit.title')}</h2>
                                     <p className="text-sm text-gray-500 font-medium">{t('profile.brand_kit.desc')}</p>
                                 </div>
                             </div>
@@ -645,7 +675,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                     onChange={handlePdfUpload}
                                     disabled={isAnalyzingPdf}
                                 />
-                                <div className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${isAnalyzingPdf ? 'bg-gray-100 text-gray-400' : 'bg-[#FFDA47] text-[#1A1A1A] hover:bg-[#FFC040] shadow-sm hover:shadow-md font-bold text-sm'}`}>
+                                <div className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${isAnalyzingPdf ? 'bg-gray-100 text-gray-400' : 'bg-[#C8E86A] text-[#1C3A2F] hover:bg-[#B6D85E] shadow-sm hover:shadow-md font-bold text-sm'}`}>
                                     {isAnalyzingPdf ? (
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                     ) : (
@@ -660,7 +690,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                             {/* Brand Colors */}
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <h3 className="text-sm font-bold text-[#1A1A1A]">{t('profile.brand_kit.colors')}</h3>
+                                    <h3 className="text-sm font-bold text-[#1C3A2F]">{t('profile.brand_kit.colors')}</h3>
                                     <HelperTooltip text={t('profile.brand_kit.colors_tooltip')} />
                                 </div>
                                 <DynamicColorList
@@ -681,7 +711,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                             {/* Typography */}
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <h3 className="text-sm font-bold text-[#1A1A1A]">{t('profile.brand_kit.typography')}</h3>
+                                    <h3 className="text-sm font-bold text-[#1C3A2F]">{t('profile.brand_kit.typography')}</h3>
                                     <HelperTooltip text={t('profile.brand_kit.typography_tooltip')} />
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -707,7 +737,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                             {/* Visual Style */}
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <h3 className="text-sm font-bold text-[#1A1A1A]">{t('profile.brand_kit.style')}</h3>
+                                    <h3 className="text-sm font-bold text-[#1C3A2F]">{t('profile.brand_kit.style')}</h3>
                                     <HelperTooltip text={t('profile.brand_kit.style_tooltip')} />
                                 </div>
                                 <Input
@@ -724,7 +754,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                             <Button
                                 onClick={updateProfile}
                                 disabled={loading}
-                                className="font-bold text-[#1A1A1A] bg-[#FFDA47] hover:bg-[#FFC040] hover:text-[#1A1A1A]"
+                                className="font-bold text-[#1C3A2F] bg-[#C8E86A] hover:bg-[#B6D85E] hover:text-[#1C3A2F]"
                                 size="lg"
                             >
                                 {loading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
@@ -740,7 +770,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                     {/* Header */}
                     <div className="p-8 pb-0 flex flex-col md:flex-row items-start justify-between gap-4">
                         <div>
-                            <h2 className="text-xl font-bold text-[#1A1A1A] tracking-tight">{t('profile.strategy_title')}</h2>
+                            <h2 className="text-xl font-bold text-[#1C3A2F] tracking-tight">{t('profile.strategy_title')}</h2>
                             <p className="text-sm text-gray-500 font-medium mt-1">{t('profile.strategy_desc')}</p>
                         </div>
 
@@ -799,7 +829,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                             key={tab.id}
                                             value={String(tab.id)}
                                             disabled={selectedPersonaId === 'new' && tab.id !== 0}
-                                            className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#FFDA47] rounded-none pb-4 pt-2 px-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#C8E86A] rounded-none pb-4 pt-2 px-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <div className="flex items-center gap-2">
                                                 <Icon size={16} />
@@ -958,7 +988,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                                                 key={platform}
                                                                 value={platform}
                                                                 aria-label={`Toggle ${platform}`}
-                                                                className="data-[state=on]:bg-[#FFDA47] data-[state=on]:text-[#1A1A1A] data-[state=on]:font-bold border-gray-200"
+                                                                className="data-[state=on]:bg-[#C8E86A] data-[state=on]:text-[#1C3A2F] data-[state=on]:font-bold border-gray-200"
                                                             >
                                                                 {platform}
                                                             </ToggleGroupItem>
@@ -972,7 +1002,65 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                                         checked={personaData.has_children}
                                                         onCheckedChange={(checked) => handlePersonaChange('has_children', checked)}
                                                     />
-                                                    <span className="text-sm font-bold text-[#1A1A1A]">{t('profile.has_children')}</span>
+                                                    <span className="text-sm font-bold text-[#1C3A2F]">{t('profile.has_children')}</span>
+                                                </div>
+
+                                                {/* Especialidade */}
+                                                <div className="space-y-2 md:col-span-2">
+                                                    <Label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">Especialidade</Label>
+                                                    <Select
+                                                        value={personaData.especialidade || ''}
+                                                        onValueChange={(val) => handlePersonaChange('especialidade', val)}
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Selecione sua especialidade" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {especialidadeOptions.map((opt) => (
+                                                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                {/* Pilares de conteúdo */}
+                                                <div className="space-y-2 md:col-span-2">
+                                                    <Label className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">Pilares de conteúdo</Label>
+                                                    <p className="text-xs text-gray-500">Escolha os temas que você mais aborda</p>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-xl border border-gray-200 p-3 bg-gray-50/40">
+                                                        {pilaresConteudoOptions.map((option) => {
+                                                            const selected = (personaData.pilares_conteudo || []).includes(option);
+                                                            return (
+                                                                <label key={option} className="flex items-center gap-2 text-sm text-[#1C3A2F] cursor-pointer">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={selected}
+                                                                        onChange={(e) => {
+                                                                            const current = personaData.pilares_conteudo || [];
+                                                                            const next = e.target.checked
+                                                                                ? [...current, option]
+                                                                                : current.filter((item) => item !== option);
+                                                                            handlePersonaChange('pilares_conteudo', next);
+                                                                        }}
+                                                                        className="h-4 w-4 rounded border-gray-300 accent-[#1C3A2F]"
+                                                                    />
+                                                                    <span>{option}</span>
+                                                                </label>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+
+                                                {/* Perfil do paciente ideal */}
+                                                <div className="space-y-2 md:col-span-2">
+                                                    <Label htmlFor="paciente-perfil" className="pl-2 text-xs font-bold uppercase tracking-wider text-gray-500">Perfil do seu paciente ideal</Label>
+                                                    <Textarea
+                                                        id="paciente-perfil"
+                                                        rows={3}
+                                                        value={personaData.paciente_perfil || ''}
+                                                        onChange={(e) => handlePersonaChange('paciente_perfil', e.target.value)}
+                                                        placeholder="Ex: Mulheres entre 25 e 40 anos que treinam 3 vezes por semana e querem emagrecer com saúde"
+                                                    />
                                                 </div>
                                             </div>
                                         </div>
@@ -981,7 +1069,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                     <TabsContent value="1" className="mt-0">
                                         <div className="space-y-4">
                                             <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="text-sm font-bold text-[#1A1A1A]">{t('profile.tabs.pains')}</h3>
+                                                <h3 className="text-sm font-bold text-[#1C3A2F]">{t('profile.tabs.pains')}</h3>
                                                 <HelperTooltip text={t('profile.pains_desc')} />
                                             </div>
                                             <DynamicList
@@ -997,7 +1085,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                     <TabsContent value="2" className="mt-0">
                                         <div className="space-y-4">
                                             <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="text-sm font-bold text-[#1A1A1A]">{t('profile.tabs.goals')}</h3>
+                                                <h3 className="text-sm font-bold text-[#1C3A2F]">{t('profile.tabs.goals')}</h3>
                                                 <HelperTooltip text={t('profile.goals_desc')} />
                                             </div>
                                             <DynamicList
@@ -1013,7 +1101,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                     <TabsContent value="3" className="mt-0">
                                         <div className="space-y-4">
                                             <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="text-sm font-bold text-[#1A1A1A]">{t('profile.tabs.questions')}</h3>
+                                                <h3 className="text-sm font-bold text-[#1C3A2F]">{t('profile.tabs.questions')}</h3>
                                                 <HelperTooltip text={t('profile.questions_desc')} />
                                             </div>
                                             <DynamicList
@@ -1059,7 +1147,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
                                             <Button
                                                 onClick={handleSavePersona}
                                                 disabled={savingPersona}
-                                                className="font-bold text-[#1A1A1A] bg-[#FFDA47] hover:bg-[#FFC040] hover:text-[#1A1A1A]"
+                                                className="font-bold text-[#1C3A2F] bg-[#C8E86A] hover:bg-[#B6D85E] hover:text-[#1C3A2F]"
                                                 size="lg"
                                             >
                                                 {savingPersona ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}

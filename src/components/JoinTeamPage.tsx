@@ -65,7 +65,7 @@ export default function JoinTeamPage() {
     if (authLoading) {
         return (
             <div className="flex h-screen items-center justify-center bg-[#F2F2F2]">
-                <Loader2 className="animate-spin text-[#FFDA47] w-8 h-8" />
+                <Loader2 className="animate-spin text-[#C8E86A] w-8 h-8" />
             </div>
         );
     }
@@ -76,8 +76,8 @@ export default function JoinTeamPage() {
 
                 {status === 'joining' && (
                     <>
-                        <Loader2 className="w-12 h-12 text-[#FFDA47] animate-spin mx-auto" />
-                        <h2 className="text-xl font-bold text-[#1A1A1A]">Joining Team...</h2>
+                        <Loader2 className="w-12 h-12 text-[#C8E86A] animate-spin mx-auto" />
+                        <h2 className="text-xl font-bold text-[#1C3A2F]">Joining Team...</h2>
                         <p className="text-gray-500">Please wait while we add you to the team.</p>
                     </>
                 )}
@@ -87,7 +87,7 @@ export default function JoinTeamPage() {
                         <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
                             <CheckCircle2 size={32} />
                         </div>
-                        <h2 className="text-2xl font-bold text-[#1A1A1A]">Welcome to {teamName}!</h2>
+                        <h2 className="text-2xl font-bold text-[#1C3A2F]">Welcome to {teamName}!</h2>
                         <p className="text-gray-500">You have successfully joined the team.</p>
                         <Button onClick={() => navigate('/app')} className="w-full mt-4">
                             Go to Dashboard
@@ -100,7 +100,7 @@ export default function JoinTeamPage() {
                         <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
                             <AlertCircle size={32} />
                         </div>
-                        <h2 className="text-xl font-bold text-[#1A1A1A]">Unable to Join</h2>
+                        <h2 className="text-xl font-bold text-[#1C3A2F]">Unable to Join</h2>
                         <p className="text-gray-500">{errorMsg}</p>
                         <Button variant="outline" onClick={() => navigate('/app')} className="w-full mt-4">
                             Back to Dashboard

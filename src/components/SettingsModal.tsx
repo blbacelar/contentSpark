@@ -64,12 +64,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A1A1A]/20 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1C3A2F]/20 backdrop-blur-sm animate-fade-in">
       <div className="bg-white rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-scale-in border border-white flex flex-col max-h-[90vh]">
         <div className="p-6 border-b border-gray-100 flex items-center justify-between shrink-0">
-          <h3 className="text-[#1A1A1A] text-lg font-bold flex items-center gap-2">
+          <h3 className="text-[#1C3A2F] text-lg font-bold flex items-center gap-2">
             <div className="p-2 bg-[#F5F5F5] rounded-full">
-              <SettingsIcon className="w-4 h-4 text-[#1A1A1A]" />
+              <SettingsIcon className="w-4 h-4 text-[#1C3A2F]" />
             </div>
             {t('common.settings')}
           </h3>
@@ -88,9 +88,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                   <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-white rounded-lg shadow-sm">
-                        <Bell className="w-4 h-4 text-[#1A1A1A]" />
+                        <Bell className="w-4 h-4 text-[#1C3A2F]" />
                       </div>
-                      <span className="text-sm font-bold text-[#1A1A1A]">{t('settings.notify_team_join')}</span>
+                      <span className="text-sm font-bold text-[#1C3A2F]">{t('settings.notify_team_join')}</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -99,7 +99,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                         checked={notificationSettings.notify_on_team_join}
                         onChange={() => toggleNotification('notify_on_team_join')}
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1A1A1A]"></div>
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1C3A2F]"></div>
                     </label>
                   </div>
 
@@ -107,9 +107,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                   <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-white rounded-lg shadow-sm">
-                        <Bell className="w-4 h-4 text-[#1A1A1A]" />
+                        <Bell className="w-4 h-4 text-[#1C3A2F]" />
                       </div>
-                      <span className="text-sm font-bold text-[#1A1A1A]">{t('settings.notify_idea_due')}</span>
+                      <span className="text-sm font-bold text-[#1C3A2F]">{t('settings.notify_idea_due')}</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -118,7 +118,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                         checked={notificationSettings.notify_on_idea_due}
                         onChange={() => toggleNotification('notify_on_idea_due')}
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1A1A1A]"></div>
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1C3A2F]"></div>
                     </label>
                   </div>
 
@@ -135,7 +135,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                           max="72"
                           value={notificationSettings.idea_due_threshold_hours}
                           onChange={(e) => setNotificationSettings(posts => posts ? ({ ...posts, idea_due_threshold_hours: parseInt(e.target.value) || 24 }) : null)}
-                          className="w-24 bg-[#F5F5F5] border-2 border-transparent focus:border-[#FFE566] rounded-xl px-4 py-2 text-sm text-[#1A1A1A] outline-none transition-all font-bold text-center"
+                          className="w-24 bg-[#F5F5F5] border-2 border-transparent focus:border-[#C8E86A] rounded-xl px-4 py-2 text-sm text-[#1C3A2F] outline-none transition-all font-bold text-center"
                         />
                         <span className="text-sm font-medium text-gray-400">hours</span>
                       </div>
@@ -149,7 +149,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         <div className="p-6 bg-[#F9F9F9] flex justify-end shrink-0">
           <button
             onClick={handleSave}
-            className="flex items-center gap-2 bg-[#1A1A1A] text-white px-6 py-3 rounded-2xl text-sm font-bold hover:bg-black transition-transform hover:scale-105"
+            className="flex items-center gap-2 bg-[#1C3A2F] text-white px-6 py-3 rounded-2xl text-sm font-bold hover:bg-black transition-transform hover:scale-105"
           >
             <CheckCircle2 className="w-4 h-4" />
             {t('common.save')}

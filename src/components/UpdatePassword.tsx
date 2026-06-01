@@ -67,7 +67,7 @@ export default function UpdatePassword() {
     if (isProcessingSession) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-[#F2F2F2] gap-4">
-                <Loader2 className="w-8 h-8 animate-spin text-[#FFDA47]" />
+                <Loader2 className="w-8 h-8 animate-spin text-[#C8E86A]" />
                 <p className="text-gray-500 font-medium text-sm">Verifying reset link...</p>
             </div>
         );
@@ -81,13 +81,13 @@ export default function UpdatePassword() {
                     <div className="bg-red-50 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
                         <AlertCircle className="w-8 h-8 text-red-500" />
                     </div>
-                    <h2 className="text-xl font-bold text-[#1A1A1A] mb-2">Link Expired or Invalid</h2>
+                    <h2 className="text-xl font-bold text-[#1C3A2F] mb-2">Link Expired or Invalid</h2>
                     <p className="text-gray-500 text-sm mb-8 leading-relaxed">
                         We couldn't verify your session. The link might have expired or was already used.
                     </p>
                     <button
                         onClick={() => navigate('/login')}
-                        className="w-full bg-[#1A1A1A] text-white py-4 rounded-xl font-bold hover:bg-black hover:scale-[1.02] transition-all"
+                        className="w-full bg-[#1C3A2F] text-white py-4 rounded-xl font-bold hover:bg-black hover:scale-[1.02] transition-all"
                     >
                         Back to Login
                     </button>
@@ -101,10 +101,10 @@ export default function UpdatePassword() {
             <div className="bg-white rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-scale-in border border-white p-8">
 
                 <div className="flex flex-col items-center mb-8">
-                    <div className="bg-[#1A1A1A] p-3 rounded-2xl shadow-lg shadow-black/10 mb-4">
-                        <Lock className="w-8 h-8 text-[#FFE566] fill-[#FFE566]" />
+                    <div className="bg-[#1C3A2F] p-3 rounded-2xl shadow-lg shadow-black/10 mb-4">
+                        <Lock className="w-8 h-8 text-[#C8E86A] fill-[#C8E86A]" />
                     </div>
-                    <h1 className="text-2xl font-bold text-[#1A1A1A] tracking-tight">
+                    <h1 className="text-2xl font-bold text-[#1C3A2F] tracking-tight">
                         {t('auth.update_password', { defaultValue: 'Set New Password' })}
                     </h1>
                     <p className="text-gray-400 text-sm mt-1 font-medium text-center">
@@ -134,14 +134,14 @@ export default function UpdatePassword() {
                         <div className="space-y-1.5">
                             <label className="text-xs font-bold text-gray-400 uppercase tracking-wider pl-2">New Password</label>
                             <div className="relative group">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#1A1A1A] transition-colors" />
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#1C3A2F] transition-colors" />
                                 <input
                                     type="password"
                                     required
                                     minLength={6}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full bg-gray-50 border-2 border-transparent focus:border-[#FFDA47] focus:bg-white rounded-xl pl-11 pr-4 py-3.5 text-[#1A1A1A] font-medium placeholder-gray-300 outline-none transition-all"
+                                    className="w-full bg-gray-50 border-2 border-transparent focus:border-[#C8E86A] focus:bg-white rounded-xl pl-11 pr-4 py-3.5 text-[#1C3A2F] font-medium placeholder-gray-300 outline-none transition-all"
                                     placeholder="Enter new password"
                                 />
                             </div>
@@ -150,7 +150,7 @@ export default function UpdatePassword() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full mt-2 bg-[#FFDA47] text-[#1A1A1A] py-4 rounded-xl font-bold text-base hover:bg-[#FFC040] hover:scale-[1.02] hover:shadow-lg hover:shadow-yellow-400/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                            className="w-full mt-2 bg-[#C8E86A] text-[#1C3A2F] py-4 rounded-xl font-bold text-base hover:bg-[#B6D85E] hover:scale-[1.02] hover:shadow-lg hover:shadow-yellow-400/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                         >
                             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Update Password"}
                         </button>

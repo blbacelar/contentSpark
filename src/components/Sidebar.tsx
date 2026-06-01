@@ -3,6 +3,7 @@ import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { useTranslation } from 'react-i18next';
 import { ContentIdea, IdeaStatus } from '../types';
 import { GripVertical, Plus, Zap, Search, Filter, FileText, PlusCircle, Calendar, X, Users, ChevronDown, Check } from 'lucide-react';
+import { IconLayoutColumns, IconPlayerPlay, IconClock24 } from '@tabler/icons-react';
 import { useAuth } from '../context/AuthContext';
 import { useTeam } from '../context/TeamContext';
 import { Button } from './ui/button';
@@ -36,6 +37,25 @@ const DraggableChip: React.FC<DraggableChipProps> = ({ idea, onClick }) => {
     const platformDisplay = idea.platform && idea.platform.length > 0 ? idea.platform.join(', ') : t('sidebar.general');
     const hasContent = !!idea.caption && idea.caption.length > 10;
     const isScheduled = !!idea.date;
+    const formatMeta = idea.format ? {
+        carrossel: {
+            label: 'carrossel',
+            className: 'bg-blue-50 text-blue-700',
+            icon: IconLayoutColumns,
+        },
+        reels: {
+            label: 'reels',
+            className: 'bg-purple-50 text-purple-700',
+            icon: IconPlayerPlay,
+        },
+        stories: {
+            label: 'stories',
+            className: 'bg-amber-50 text-amber-700',
+            icon: IconClock24,
+        },
+    }[idea.format] : null;
+
+    const FormatIcon = formatMeta?.icon;
 
     return (
         <div
@@ -45,18 +65,26 @@ const DraggableChip: React.FC<DraggableChipProps> = ({ idea, onClick }) => {
             {...attributes}
             onClick={onClick}
             className={`
-          group flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 shadow-sm cursor-grab active:cursor-grabbing
-          hover:shadow-md hover:border-[#FFDA47] transition-all
+          group relative flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 shadow-sm cursor-grab active:cursor-grabbing
+          hover:shadow-md hover:border-[#C8E86A] transition-all
           ${isDragging ? 'opacity-40' : ''}
         `}
         >
-            <GripVertical size={16} className="text-gray-300 group-hover:text-[#FFDA47]" />
+            {idea.cfn_compliant === true && (
+                <span
+                    title="Conteúdo dentro das normas do CFN"
+                    className="absolute top-2 right-2 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-bold text-green-600 leading-none"
+                >
+                    CFN ✓
+                </span>
+            )}
+            <GripVertical size={16} className="text-gray-300 group-hover:text-[#C8E86A]" />
             <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                    <h4 className="text-sm font-bold text-[#1A1A1A] truncate">{idea.title}</h4>
+                    <h4 className="text-sm font-bold text-[#1C3A2F] truncate">{idea.title}</h4>
                     {hasContent && (
-                        <div title={t('sidebar.draft_ready')} className="text-[#FFDA47] flex-shrink-0">
-                            <FileText size={12} fill="#FFDA47" />
+                        <div title={t('sidebar.draft_ready')} className="text-[#C8E86A] flex-shrink-0">
+                            <FileText size={12} fill="#C8E86A" />
                         </div>
                     )}
                     {isScheduled && (
@@ -65,6 +93,14 @@ const DraggableChip: React.FC<DraggableChipProps> = ({ idea, onClick }) => {
                         </div>
                     )}
                 </div>
+                {formatMeta && FormatIcon && (
+                    <div className="mt-1">
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${formatMeta.className}`}>
+                            <FormatIcon size={12} stroke={2.2} />
+                            {formatMeta.label}
+                        </span>
+                    </div>
+                )}
                 <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-[10px] bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded-full uppercase tracking-wide font-bold truncate max-w-full">
                         {platformDisplay}
@@ -181,8 +217,8 @@ const Sidebar: React.FC<SidebarProps> = ({
             {/* Header */}
             <div className="p-6 pb-2">
                 <div className="flex items-center gap-2 mb-6">
-                    <div className="bg-[#1A1A1A] p-2 rounded-lg shadow-md">
-                        <Zap className="w-4 h-4 text-[#FFE566] fill-[#FFE566]" />
+                    <div className="bg-[#1C3A2F] p-2 rounded-lg shadow-md">
+                        <Zap className="w-4 h-4 text-[#C8E86A] fill-[#C8E86A]" />
                     </div>
                     <div>
                         <span className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-0.5">
@@ -192,7 +228,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <div id="tour-team-switcher">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="h-auto p-0 hover:bg-transparent font-bold text-lg text-[#1A1A1A] gap-2 flex items-center">
+                                    <Button variant="ghost" className="h-auto p-0 hover:bg-transparent font-bold text-lg text-[#1C3A2F] gap-2 flex items-center">
                                         {currentTeam ? currentTeam.name : t('sidebar.personal_workspace')}
                                         <ChevronDown size={16} className="text-gray-400" />
                                     </Button>
@@ -219,7 +255,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     {currentTeam && (
                                         <>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem onClick={() => setIsInviteOpen(true)} className="gap-2 text-[#1A1A1A] font-medium">
+                                            <DropdownMenuItem onClick={() => setIsInviteOpen(true)} className="gap-2 text-[#1C3A2F] font-medium">
                                                 <Users size={14} />
                                                 {t('sidebar.invite_members') || "Invite Members"}
                                             </DropdownMenuItem>
@@ -241,7 +277,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     className={cn(
                         "w-full h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg mb-6",
                         hasCredits
-                            ? "bg-[#1A1A1A] text-white hover:bg-black shadow-black/5 hover:scale-[1.02]"
+                            ? "bg-[#1C3A2F] text-white hover:bg-black shadow-black/5 hover:scale-[1.02]"
                             : "bg-gray-200 text-gray-500 cursor-not-allowed shadow-none"
                     )}
                     title={hasCredits ? t('sidebar.new_strategy') : t('sidebar.out_of_credits')}
@@ -271,7 +307,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     variant="ghost"
                                     size="icon"
                                     onClick={onManualCreate}
-                                    className="h-6 w-6 text-gray-400 hover:text-[#1A1A1A] hover:bg-gray-200"
+                                    className="h-6 w-6 text-gray-400 hover:text-[#1C3A2F] hover:bg-gray-200"
                                     title={t('sidebar.add_manual')}
                                 >
                                     <PlusCircle size={16} />
@@ -285,13 +321,13 @@ const Sidebar: React.FC<SidebarProps> = ({
 
                     {/* Search Input */}
                     <div className="relative group">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#1A1A1A] transition-colors" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#1C3A2F] transition-colors" />
                         <Input
                             type="text"
                             placeholder={t('sidebar.search_placeholder')}
                             value={searchQuery}
                             onChange={handleSearchChange}
-                            className="w-full bg-white border-gray-200 rounded-lg pl-9 pr-8 h-9 text-xs font-medium placeholder:text-gray-400 focus-visible:ring-[#FFDA47] transition-all"
+                            className="w-full bg-white border-gray-200 rounded-lg pl-9 pr-8 h-9 text-xs font-medium placeholder:text-gray-400 focus-visible:ring-[#C8E86A] transition-all"
                         />
                         {searchQuery && (
                             <Button
@@ -308,9 +344,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 
                     {/* Status Filter */}
                     <div className="relative group">
-                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within:text-[#1A1A1A] transition-colors pointer-events-none z-10" />
+                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within:text-[#1C3A2F] transition-colors pointer-events-none z-10" />
                         <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val as IdeaStatus | 'All')}>
-                            <SelectTrigger className="w-full bg-white border-gray-200 rounded-lg pl-9 pr-3 h-9 text-xs font-medium text-gray-600 focus:ring-[#FFDA47]">
+                            <SelectTrigger className="w-full bg-white border-gray-200 rounded-lg pl-9 pr-3 h-9 text-xs font-medium text-gray-600 focus:ring-[#C8E86A]">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -365,14 +401,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                     onClick={onProfileClick}
                     className="flex items-center gap-3 w-full h-auto p-2 rounded-xl hover:bg-gray-100 transition-colors text-left justify-start"
                 >
-                    <Avatar className="h-8 w-8 ring-2 ring-white group-hover:ring-[#FFDA47] transition-all">
+                    <Avatar className="h-8 w-8 ring-2 ring-white group-hover:ring-[#C8E86A] transition-all">
                         <AvatarImage src={profile?.avatar_url} className="object-cover" />
-                        <AvatarFallback className="bg-[#FFDA47] text-[#1A1A1A] text-xs font-bold">
+                        <AvatarFallback className="bg-[#C8E86A] text-[#1C3A2F] text-xs font-bold">
                             {userInitial}
                         </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0 flex flex-col items-start">
-                        <p className="font-bold text-[#1A1A1A] text-xs truncate group-hover:text-[#000]">
+                        <p className="font-bold text-[#1C3A2F] text-xs truncate group-hover:text-[#000]">
                             {displayName}
                         </p>
                         <p className="text-gray-400 text-[10px] truncate group-hover:text-gray-600">{tierDisplay} • {t('common.settings')}</p>

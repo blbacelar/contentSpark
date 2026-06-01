@@ -131,7 +131,7 @@ const DayCell: React.FC<DayCellProps> = ({ day, currentMonth, ideas, onEventClic
         <span className={`
           text-xs font-bold w-7 h-7 flex items-center justify-center rounded-full
           ${isDayToday
-            ? 'bg-[#FFDA47] text-[#1A1A1A]'
+            ? 'bg-[#C8E86A] text-[#1C3A2F]'
             : isPast ? 'text-gray-300' : !isCurrentMonth ? 'text-gray-300' : 'text-gray-500'}
         `}>
           {format(day, 'd')}
@@ -186,7 +186,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentDate, ideas, onEvent
       <div className="absolute top-4 right-4 z-20">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="h-9 w-9 bg-white border-gray-200 hover:shadow-md text-gray-500 hover:text-[#1A1A1A]">
+            <Button variant="outline" size="icon" className="h-9 w-9 bg-white border-gray-200 hover:shadow-md text-gray-500 hover:text-[#1C3A2F]">
               <Download size={18} />
             </Button>
           </DropdownMenuTrigger>

@@ -620,7 +620,8 @@ export const fetchPersonas = async (userId: string, teamId: string | null = null
         // Ensure arrays
         pains_list: p.pains_list || [],
         goals_list: p.goals_list || [],
-        questions_list: p.questions_list || []
+        questions_list: p.questions_list || [],
+        pilares_conteudo: p.pilares_conteudo || []
       }));
       setCache(cacheKey, personas);
       return personas;
@@ -659,6 +660,9 @@ export const createPersona = async (persona: PersonaData, userId?: string, token
       description: persona.description || '',
       user_id: userId || persona.user_id,
       team_id: persona.team_id, // Include Team ID
+      especialidade: persona.especialidade || null,
+      pilares_conteudo: persona.pilares_conteudo || [],
+      paciente_perfil: persona.paciente_perfil || null,
       // Clean up lists to ensure they are arrays
       pains_list: persona.pains_list || [],
       goals_list: persona.goals_list || [],
@@ -738,6 +742,9 @@ export const updateUserPersona = async (persona: PersonaData, token?: string) =>
       has_children: persona.has_children,
       income_level: persona.income_level,
       social_networks: persona.social_networks,
+      especialidade: persona.especialidade || null,
+      pilares_conteudo: persona.pilares_conteudo || [],
+      paciente_perfil: persona.paciente_perfil || null,
       pains_list: persona.pains_list || [],
       goals_list: persona.goals_list || [],
       questions_list: persona.questions_list || [],
@@ -976,10 +983,27 @@ Ensure variety across the 6 ideas: format, emotional angle, and hook type must d
     // Do not force a bearer token here because some environments issue tokens
     // with algorithms rejected by the Edge gateway (e.g. ES256).
     const invokeOptions: {
-      body: { prompt: string; language: string };
+      body: {
+        prompt: string;
+        language: string;
+        topic: string;
+        count: number;
+        tone: string;
+        additionalContext: string;
+        especialidade?: string;
+        pilares_conteudo?: string[];
+        paciente_perfil?: string;
+      };
     } = {
       body: {
         prompt,
+        topic: safeTopic,
+        count: 6,
+        tone: safeTone || 'educativo e acessível',
+        additionalContext: personaContext.trim() || 'none',
+        especialidade: persona?.especialidade,
+        pilares_conteudo: persona?.pilares_conteudo,
+        paciente_perfil: persona?.paciente_perfil,
         // We pass context vars too just in case the backend wants to log or use them later,
         // though currently it relies on the 'prompt' string.
         language
@@ -1007,14 +1031,31 @@ Ensure variety across the 6 ideas: format, emotional angle, and hook type must d
     }
 
     const text = edgeData?.text;
-    if (!text) {
-      const details = typeof edgeData === 'object' ? JSON.stringify(edgeData) : String(edgeData);
-      throw new Error(`Edge Function returned empty content. Payload: ${details}`);
+    const structuredIdeas = Array.isArray(edgeData?.ideas)
+      ? edgeData.ideas.filter((idea: unknown): idea is Record<string, unknown> => Boolean(idea) && typeof idea === 'object')
+      : undefined;
+    const parseErrorFromEdge =
+      typeof edgeData?.ideas_parse_error === 'string' && edgeData.ideas_parse_error.trim().length > 0
+        ? edgeData.ideas_parse_error.trim()
+        : undefined;
+
+    let rawIdeas: Array<Record<string, unknown>> = [];
+
+    if (structuredIdeas && structuredIdeas.length > 0) {
+      rawIdeas = structuredIdeas;
+    } else if (text) {
+      rawIdeas = parseIdeasFromModelText(text).filter((idea) => {
+        const compliant = (idea as { cfn_compliant?: unknown }).cfn_compliant;
+        return compliant === true;
+      });
     }
 
-    const rawIdeas = parseIdeasFromModelText(text);
     if (!rawIdeas.length) {
-      throw new Error('AI returned zero ideas');
+      const details = typeof edgeData === 'object' ? JSON.stringify(edgeData) : String(edgeData);
+      if (parseErrorFromEdge) {
+        throw new Error(`AI returned zero compliant ideas. Edge parse diagnostic: ${parseErrorFromEdge}. Payload: ${details}`);
+      }
+      throw new Error(`AI returned zero compliant ideas. Payload: ${details}`);
     }
 
     generatedIdeas = rawIdeas.map(rawIdea => {

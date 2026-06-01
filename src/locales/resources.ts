@@ -52,7 +52,7 @@ export const resources = {
         search_placeholder: "Filter ideas...",
         unscheduled_ideas: "Unscheduled Ideas",
         search_results: "Search Results",
-        no_ideas: "No unscheduled ideas.",
+        no_ideas: "Generate your first content ideas for this week",
         no_results: "No matching ideas found.",
         pro_plan: "Pro Plan",
         general: "General",
@@ -88,7 +88,7 @@ export const resources = {
         subtitle: "Define parameters for your new content batch.",
         persona: "Target Persona",
         topic: "Topic",
-        topic_placeholder: "e.g., Cooking",
+        topic_placeholder: "What topic do you want to cover this week? e.g., pre-workout supplementation, healthy weight loss, gut health...",
         audience: "Audience",
         audience_placeholder: "e.g., Busy Moms",
         tone: "Tone",
@@ -235,7 +235,7 @@ export const resources = {
       },
       alert: {
         missing_persona_title: "Target Persona Missing",
-        missing_persona_desc: "You haven't defined your Target Persona yet. The results might be generic. Do you want to continue or set up your profile first?",
+        missing_persona_desc: "What is your specialty and who is your ideal patient? Configure your persona to start generating ideas.",
         setup_profile: "Set Up Profile",
         continue_anyway: "Continue Anyway"
       },
@@ -283,6 +283,8 @@ export const resources = {
         },
         hero: {
           badge: "AI-Powered Strategy",
+          headline: "Do you know what to post tomorrow?",
+          subheadline: "ContentSpark generates Instagram post ideas for nutritionists. You provide your specialty and your style. It returns a ready-to-use calendar already aligned with CFN rules.",
           title_line1: "Stop Staring at a",
           title_line2: "Blank Page.",
           subtitle: "The only AI Content Generator that reads your audience's mind. Define your",
@@ -341,6 +343,8 @@ export const resources = {
           pro_cta: "Contact Sales"
         },
         cta: {
+          primary: "Try free for 14 days",
+          secondary: "See a sample calendar",
           title: "Ready to explode your engagement?",
           button_auth: "Go to Dashboard",
           button_guest: "Create My Free Account",
@@ -420,7 +424,7 @@ export const resources = {
         search_placeholder: "Filtrar ideias...",
         unscheduled_ideas: "Ideias Não Agendadas",
         search_results: "Resultados da Busca",
-        no_ideas: "Nenhuma ideia pendente.",
+        no_ideas: "Gere suas primeiras ideias de posts para essa semana",
         no_results: "Nenhuma ideia encontrada.",
         pro_plan: "Plano Pro",
         general: "Geral",
@@ -456,7 +460,7 @@ export const resources = {
         subtitle: "Defina parâmetros para seu novo lote de conteúdo.",
         persona: "Persona Alvo",
         topic: "Tópico",
-        topic_placeholder: "ex: Culinária",
+        topic_placeholder: "Qual tema você quer abordar essa semana? Ex: suplementação pré-treino, emagrecimento saudável, saúde intestinal...",
         audience: "Público",
         audience_placeholder: "ex: Mães ocupadas",
         tone: "Tom",
@@ -602,7 +606,7 @@ export const resources = {
       },
       alert: {
         missing_persona_title: "Persona Alvo Ausente",
-        missing_persona_desc: "Você ainda não definiu sua Persona. Os resultados podem ser genéricos. Deseja continuar ou configurar seu perfil primeiro?",
+        missing_persona_desc: "Qual é a sua especialidade e quem é o seu paciente ideal? Configure sua persona para começar a gerar ideias.",
         setup_profile: "Configurar Perfil",
         continue_anyway: "Continuar Assim Mesmo"
       },
@@ -650,6 +654,8 @@ export const resources = {
         },
         hero: {
           badge: "Estratégia Baseada em IA",
+          headline: "Você sabe o que postar amanhã?",
+          subheadline: "ContentSpark gera ideias de posts para nutricionistas no Instagram. Você entra com a sua especialidade e o seu estilo. Ele devolve um calendário pronto, já dentro das regras do CFN.",
           title_line1: "Pare de Olhar para uma",
           title_line2: "Página em Branco.",
           subtitle: "O único Gerador de Conteúdo com IA que lê a mente do seu público. Defina sua",
@@ -662,12 +668,12 @@ export const resources = {
         features: {
           section_title: "Não é Apenas Mais um Wrapper de IA",
           section_subtitle: "Nós não apenas vomitamos palavras. Criamos estratégias baseadas em com quem você está realmente falando.",
-          feature1_title: "Motor Baseado em Persona",
-          feature1_desc: "IA genérica dá conselhos genéricos. Nós usamos as Dores e Objetivos específicos do seu público para criar conteúdo que realmente converte.",
-          feature2_title: "Primeiros Rascunhos, Prontos",
-          feature2_desc: "Não apenas receba ideias. Receba o texto completo, Gancho Viral, CTA e Hashtags prontos para copiar e colar imediatamente.",
-          feature3_title: "Planejamento Visual",
-          feature3_desc: "Arraste suas ideias favoritas para um calendário estilo Google e planeje todo o seu mês em minutos."
+          feature1_title: "Dentro das normas do CFN",
+          feature1_desc: "Nenhum gerador genérico sabe o que o CFN permite ou proíbe. O ContentSpark foi feito para nutricionistas — cada ideia respeita as restrições de publicidade profissional.",
+          feature2_title: "Carrossel, reels ou stories",
+          feature2_desc: "Cada ideia já vem com o formato ideal para o Instagram. Sem precisar pensar: você só produz.",
+          feature3_title: "Do seu jeito, na sua especialidade",
+          feature3_desc: "Esportiva, clínica, estética ou funcional — as ideias refletem o seu nicho e o perfil do seu paciente, não um nutricionista genérico."
         },
         how_it_works: {
           step1_number: "01",
@@ -708,6 +714,8 @@ export const resources = {
           pro_cta: "Entrar em Contato"
         },
         cta: {
+          primary: "Experimentar grátis por 14 dias",
+          secondary: "Ver um exemplo de calendário",
           title: "Pronto para explodir seu engajamento?",
           button_auth: "Ir para o Painel",
           button_guest: "Criar Minha Conta Grátis",

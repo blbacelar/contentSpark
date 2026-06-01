@@ -51,7 +51,7 @@ const FieldHeader = ({ label, icon: Icon, text }: { label: string, icon: any, te
           variant="ghost"
           size="sm"
           onClick={handleCopy}
-          className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 hover:text-[#1A1A1A] h-6 px-2 py-1 rounded-md transition-all"
+          className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 hover:text-[#1C3A2F] h-6 px-2 py-1 rounded-md transition-all"
           title={t('common.copy_clipboard')}
         >
           {copied ? <Check size={10} className="text-green-600" /> : <Copy size={10} />}
@@ -349,9 +349,9 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
         <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white rounded-lg shadow-sm border border-gray-100">
-              <Activity size={18} className="text-[#1A1A1A]" />
+              <Activity size={18} className="text-[#1C3A2F]" />
             </div>
-            <DialogTitle className="text-lg font-bold text-[#1A1A1A]">{isNew ? t('modal.create_title') : t('modal.edit_title')}</DialogTitle>
+            <DialogTitle className="text-lg font-bold text-[#1C3A2F]">{isNew ? t('modal.create_title') : t('modal.edit_title')}</DialogTitle>
           </div>
         </div>
 
@@ -366,7 +366,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
                 value={formData.title}
                 onChange={(e) => handleChange('title', e.target.value)}
                 rows={2}
-                className="w-full text-lg font-bold text-[#1A1A1A] placeholder:text-gray-300 border-none border-b border-gray-200 rounded-none shadow-none focus-visible:ring-0 focus-visible:border-[#FFDA47] bg-transparent pb-2 transition-colors resize-none leading-snug px-0"
+                className="w-full text-lg font-bold text-[#1C3A2F] placeholder:text-gray-300 border-none border-b border-gray-200 rounded-none shadow-none focus-visible:ring-0 focus-visible:border-[#C8E86A] bg-transparent pb-2 transition-colors resize-none leading-snug px-0"
                 placeholder={t('modal.title_placeholder')}
               />
             </div>
@@ -379,7 +379,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
                     value={formData.date || ''}
                     min={getMinDate()}
                     onChange={(e) => handleChange('date', e.target.value || null)}
-                    className="w-full bg-gray-50 border-gray-200 rounded-xl pl-9 pr-2 py-2.5 h-11 text-sm font-medium focus-visible:border-[#FFDA47] focus-visible:ring-0"
+                    className="w-full bg-gray-50 border-gray-200 rounded-xl pl-9 pr-2 py-2.5 h-11 text-sm font-medium focus-visible:border-[#C8E86A] focus-visible:ring-0"
                   />
                   <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                 </div>
@@ -388,7 +388,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
                     type="time"
                     value={formData.time || ''}
                     onChange={(e) => handleChange('time', e.target.value || null)}
-                    className="w-full bg-gray-50 border-gray-200 rounded-xl pl-9 pr-2 py-2.5 h-11 text-sm font-medium focus-visible:border-[#FFDA47] focus-visible:ring-0"
+                    className="w-full bg-gray-50 border-gray-200 rounded-xl pl-9 pr-2 py-2.5 h-11 text-sm font-medium focus-visible:border-[#C8E86A] focus-visible:ring-0"
                   />
                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                 </div>
@@ -408,7 +408,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
                 value={formData.description || ''}
                 onChange={(e) => handleChange('description', e.target.value)}
                 rows={3}
-                className="w-full text-sm text-gray-700 leading-relaxed placeholder:text-gray-300 border-gray-200 rounded-xl p-4 focus-visible:ring-[#FFDA47] resize-none bg-white min-h-[80px]"
+                className="w-full text-sm text-gray-700 leading-relaxed placeholder:text-gray-300 border-gray-200 rounded-xl p-4 focus-visible:ring-[#C8E86A] resize-none bg-white min-h-[80px]"
                 placeholder={t('modal.description_placeholder')}
               />
             </div>
@@ -421,7 +421,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
                 value={formData.hook || ''}
                 onChange={(e) => handleChange('hook', e.target.value)}
                 placeholder={t('modal.hook_placeholder')}
-                className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 h-11 text-sm font-medium text-[#1A1A1A] focus-visible:ring-[#FFDA47]"
+                className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 h-11 text-sm font-medium text-[#1C3A2F] focus-visible:ring-[#C8E86A]"
               />
             </div>
 
@@ -432,7 +432,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
                 value={formData.caption || ''}
                 onChange={(e) => handleChange('caption', e.target.value)}
                 rows={8}
-                className="w-full text-sm text-gray-700 leading-relaxed placeholder:text-gray-300 border-gray-200 rounded-xl p-4 focus-visible:ring-[#FFDA47] resize-none bg-white min-h-[200px]"
+                className="w-full text-sm text-gray-700 leading-relaxed placeholder:text-gray-300 border-gray-200 rounded-xl p-4 focus-visible:ring-[#C8E86A] resize-none bg-white min-h-[200px]"
                 placeholder={t('modal.caption_placeholder')}
               />
             </div>
@@ -445,7 +445,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
                 value={formData.cta || ''}
                 onChange={(e) => handleChange('cta', e.target.value)}
                 placeholder={t('modal.cta_placeholder')}
-                className="w-full bg-gray-50 border-transparent rounded-xl px-4 py-3 h-11 text-sm font-medium text-[#1A1A1A] focus:bg-white focus-visible:border-[#FFDA47] focus-visible:ring-0"
+                className="w-full bg-gray-50 border-transparent rounded-xl px-4 py-3 h-11 text-sm font-medium text-[#1C3A2F] focus:bg-white focus-visible:border-[#C8E86A] focus-visible:ring-0"
               />
             </div>
           </div>
@@ -461,7 +461,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
                 value={formData.hashtags || ''}
                 onChange={(e) => handleChange('hashtags', e.target.value)}
                 placeholder={t('modal.hashtags_placeholder')}
-                className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 h-11 text-sm text-blue-600 font-medium focus-visible:ring-[#FFDA47]"
+                className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 h-11 text-sm text-blue-600 font-medium focus-visible:ring-[#C8E86A]"
               />
             </div>
 
@@ -650,7 +650,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, idea, onClose, onSave, 
                   }}
                   disabled={isSaving}
                   data-testid="event-modal-save-btn"
-                  className="bg-[#FFDA47] text-[#1A1A1A] hover:bg-[#FFC040] px-6 h-10 rounded-xl text-sm font-bold shadow-sm flex items-center gap-2"
+                  className="bg-[#C8E86A] text-[#1C3A2F] hover:bg-[#B6D85E] px-6 h-10 rounded-xl text-sm font-bold shadow-sm flex items-center gap-2"
                 >
                   {isSaving ? (
                     <>Saving...</>
